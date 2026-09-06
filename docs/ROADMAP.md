@@ -22,8 +22,9 @@
 - [x] Sync API endpoints (push / pull)
 - [x] Desktop sync trigger with persisted device ID
 - [x] Local SQLite schema (core + ERP cache models)
-- [ ] Local SQLite migrations and Prisma client wiring in Electron
-- [ ] Sync queue processing on desktop
+- [x] Electron local DB init (`prisma db push` on startup)
+- [x] Pull → SQLite apply for products, customers, suppliers, warehouses, units, stock
+- [ ] Sync queue processing for offline writes
 - [ ] Conflict detection and resolution rules
 
 ## Phase 3: Core ERP (Partial)

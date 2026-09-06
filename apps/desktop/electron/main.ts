@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, net } from 'electron';
 import path from 'path';
 import { registerSyncHandlers } from './sync-service';
 import { getOrCreateDeviceId } from './device-store';
+import { initLocalDatabase } from './local-db';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 let mainWindow: BrowserWindow | null = null;
@@ -67,6 +68,9 @@ ipcMain.handle('auth:setAccessToken', (_event, token: string | null) => {
 
 app.whenReady().then(() => {
   registerSyncHandlers(() => currentAccessToken);
+  void initLocalDatabase().catch(() => {
+    // Local DB optional until first sync; errors surfaced in sync UI.
+  });
   createWindow();
 
   app.on('activate', () => {

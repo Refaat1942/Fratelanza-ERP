@@ -137,6 +137,36 @@ export class SyncService {
       }
     }
 
+    if (!entityType || entityType === 'unit') {
+      const units = await this.prisma.unitOfMeasure.findMany({
+        where: { tenantId, updatedAt: { gt: since } },
+        take: 100,
+      });
+      for (const u of units) {
+        changes.push({
+          entityType: 'unit',
+          entityId: u.id,
+          updatedAt: u.updatedAt.toISOString(),
+          data: u,
+        });
+      }
+    }
+
+    if (!entityType || entityType === 'stock_balance') {
+      const balances = await this.prisma.stockBalance.findMany({
+        where: { tenantId, updatedAt: { gt: since } },
+        take: 200,
+      });
+      for (const b of balances) {
+        changes.push({
+          entityType: 'stock_balance',
+          entityId: b.id,
+          updatedAt: b.updatedAt.toISOString(),
+          data: b,
+        });
+      }
+    }
+
     const newCursor = changes.length
       ? changes.reduce((max, c) => (c.updatedAt > max ? c.updatedAt : max), since.toISOString())
       : since.toISOString();

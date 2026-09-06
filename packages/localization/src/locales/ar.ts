@@ -72,6 +72,8 @@ export const ar: TranslationSchema = {
     lastSync: 'آخر مزامنة: {{time}}',
     pendingChanges: '{{count}} تغييرات معلقة',
     syncNow: 'مزامنة الآن',
+    localProducts: '{{count}} مخزّن محلياً',
+    applied: 'تمت مزامنة {{count}} سجل · {{local}} منتج دون اتصال',
   },
   settings: {
     title: 'الإعدادات',

@@ -70,6 +70,8 @@ export const en = {
     lastSync: 'Last sync: {{time}}',
     pendingChanges: '{{count}} pending changes',
     syncNow: 'Sync now',
+    localProducts: '{{count}} cached locally',
+    applied: 'Synced {{count}} records · {{local}} products offline',
   },
   settings: {
     title: 'Settings',

@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ConnectivityStatus } from '@fratelanza/types';
 import { useAppStore } from '../stores';
@@ -12,6 +13,18 @@ export function SyncStatusBadge() {
   const deviceId = useAppStore((s) => s.deviceId);
   const setDeviceId = useAppStore((s) => s.setDeviceId);
   const accessToken = useAuthStore((s) => s.accessToken);
+  const [localProducts, setLocalProducts] = useState<number | null>(null);
+  const [syncNote, setSyncNote] = useState('');
+
+  useEffect(() => {
+    async function loadLocalStats() {
+      if (window.desktopApi) {
+        const stats = await window.desktopApi.getLocalStats();
+        if (stats.ready) setLocalProducts(stats.productCount);
+      }
+    }
+    void loadLocalStats();
+  }, []);
 
   const labels: Record<string, string> = {
     [ConnectivityStatus.ONLINE]: t('sync.online'),
@@ -33,10 +46,15 @@ export function SyncStatusBadge() {
   async function handleSync() {
     if (connectivity === ConnectivityStatus.OFFLINE) return;
     setConnectivity(ConnectivityStatus.SYNCING);
+    setSyncNote('');
     try {
       if (window.desktopApi) {
         const result = await window.desktopApi.runSync();
         if (!result.success) throw new Error(result.message ?? 'Sync failed');
+        const applied = result.data?.appliedCount ?? 0;
+        const localCount = result.data?.localProductCount ?? 0;
+        setLocalProducts(localCount);
+        setSyncNote(t('sync.applied', { count: applied, local: localCount }));
       } else {
         const id = await resolveDeviceId();
         if (!id) throw new Error('Device ID unavailable');
@@ -51,11 +69,16 @@ export function SyncStatusBadge() {
   }
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
       <span className={`sync-badge ${connectivity}`}>
         <span className="sync-dot" />
         {labels[connectivity] ?? connectivity}
       </span>
+      {localProducts !== null && (
+        <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+          {t('sync.localProducts', { count: localProducts })}
+        </span>
+      )}
       <button
         type="button"
         className="btn btn-ghost"
@@ -65,6 +88,9 @@ export function SyncStatusBadge() {
       >
         {t('sync.syncNow')}
       </button>
+      {syncNote && (
+        <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>{syncNote}</span>
+      )}
     </div>
   );
 }

@@ -27,7 +27,8 @@
     "migrate:server": "prisma migrate dev --schema=./prisma/schema.server.prisma",
     "migrate:server:deploy": "prisma migrate deploy --schema=./prisma/schema.server.prisma",
     "reset:server": "prisma migrate reset --force --schema=./prisma/schema.server.prisma",
-    "migrate:local": "prisma migrate dev --schema=./prisma/schema.local.prisma",
+    "migrate:local": "prisma db push --schema=./prisma/schema.local.prisma --skip-generate",
+    "push:local": "prisma db push --schema=./prisma/schema.local.prisma --skip-generate",
     "seed": "tsx prisma/seed.ts",
     "studio:server": "prisma studio --schema=./prisma/schema.server.prisma"
   },
