@@ -24,7 +24,8 @@
 - [x] Local SQLite schema (core + ERP cache models)
 - [x] Electron local DB init (`prisma db push` on startup)
 - [x] Pull → SQLite apply for products, customers, suppliers, warehouses, units, stock
-- [ ] Sync queue processing for offline writes
+- [x] Offline write queue (local SQLite + push on sync)
+- [x] Server sync processor for customer/supplier/product mutations
 - [ ] Conflict detection and resolution rules
 
 ## Phase 3: Core ERP (Partial)

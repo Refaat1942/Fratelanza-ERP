@@ -2,10 +2,14 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTable, FormField, Modal, PageHeader, useApiClient } from '../components/DataTable';
 import type { CustomerRow } from '../lib/api';
+import { fetchListWithOffline, mutateWithOffline } from '../lib/offline-api';
+import { useAppStore, useAuthStore } from '../stores';
 
 export function CustomersPage() {
   const { t } = useTranslation();
   const client = useApiClient();
+  const connectivity = useAppStore((s) => s.connectivity);
+  const user = useAuthStore((s) => s.user);
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -20,8 +24,18 @@ export function CustomersPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) return;
     try {
-      await client.createCustomer(form);
+      await mutateWithOffline({
+        connectivity,
+        online: () => client.createCustomer(form),
+        offline: () =>
+          window.desktopApi!.offlineCreateCustomer({
+            tenantId: user.tenantId,
+            branchId: user.branchId,
+            payload: form,
+          }),
+      });
       setOpen(false);
       setForm({ code: '', name: '', phone: '', email: '' });
       setRefreshKey((k) => k + 1);
@@ -32,11 +46,26 @@ export function CustomersPage() {
 
   async function handleEdit(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) return;
     try {
-      await client.updateCustomer(editForm.id, {
-        name: editForm.name,
-        phone: editForm.phone || undefined,
-        email: editForm.email || undefined,
+      await mutateWithOffline({
+        connectivity,
+        online: () =>
+          client.updateCustomer(editForm.id, {
+            name: editForm.name,
+            phone: editForm.phone || undefined,
+            email: editForm.email || undefined,
+          }),
+        offline: () =>
+          window.desktopApi!.offlineUpdateCustomer({
+            tenantId: user.tenantId,
+            id: editForm.id,
+            payload: {
+              name: editForm.name,
+              phone: editForm.phone || undefined,
+              email: editForm.email || undefined,
+            },
+          }),
       });
       setEditOpen(false);
       setRefreshKey((k) => k + 1);
@@ -72,7 +101,14 @@ export function CustomersPage() {
             ),
           },
         ]}
-        fetchData={(c) => c.getCustomers()}
+        fetchData={(c) =>
+          fetchListWithOffline({
+            connectivity,
+            client: c,
+            online: (api) => api.getCustomers(),
+            offline: () => window.desktopApi!.getLocalCustomers(),
+          })
+        }
       />
       <Modal open={open} title={t('customers.create')} onClose={() => setOpen(false)}>
         <form onSubmit={(e) => void handleSubmit(e)}>

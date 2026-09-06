@@ -10,6 +10,22 @@ import {
   isLocalDbReady,
 } from './local-db';
 import { applyPullChanges, getLocalProductCount } from './local-sync';
+import {
+  getPendingQueueCount,
+  getPendingQueueItems,
+  markQueueItemsProcessed,
+} from './local-queue';
+import {
+  offlineCreateCustomer,
+  offlineUpdateCustomer,
+  offlineCreateSupplier,
+  offlineUpdateSupplier,
+  offlineCreateProduct,
+  offlineUpdateProduct,
+  getLocalCustomersList,
+  getLocalSuppliersList,
+  getLocalProductsList,
+} from './offline-mutations';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 
@@ -37,9 +53,119 @@ export function registerSyncHandlers(getAccessToken: () => string | null) {
   });
 
   ipcMain.handle('sync:getLocalStats', async () => {
-    if (!isLocalDbReady()) return { ready: false, productCount: 0 };
-    const productCount = await getLocalProductCount();
-    return { ready: true, productCount };
+    if (!isLocalDbReady()) return { ready: false, productCount: 0, pendingCount: 0 };
+    const deviceId = getOrCreateDeviceId();
+    const [productCount, pendingCount] = await Promise.all([
+      getLocalProductCount(),
+      getPendingQueueCount(deviceId),
+    ]);
+    return { ready: true, productCount, pendingCount };
+  });
+
+  ipcMain.handle('offline:createCustomer', async (_e, args: {
+    tenantId: string;
+    branchId?: string;
+    payload: { code: string; name: string; email?: string; phone?: string };
+  }) => {
+    await initLocalDatabase();
+    const deviceId = getOrCreateDeviceId();
+    return offlineCreateCustomer(args.tenantId, deviceId, args.branchId, args.payload);
+  });
+
+  ipcMain.handle('offline:updateCustomer', async (_e, args: {
+    tenantId: string;
+    id: string;
+    payload: { name?: string; email?: string; phone?: string };
+  }) => {
+    await initLocalDatabase();
+    const deviceId = getOrCreateDeviceId();
+    await offlineUpdateCustomer(args.tenantId, deviceId, args.id, args.payload);
+    return { success: true };
+  });
+
+  ipcMain.handle('offline:createSupplier', async (_e, args: {
+    tenantId: string;
+    payload: { code: string; name: string; email?: string; phone?: string };
+  }) => {
+    await initLocalDatabase();
+    const deviceId = getOrCreateDeviceId();
+    return offlineCreateSupplier(args.tenantId, deviceId, args.payload);
+  });
+
+  ipcMain.handle('offline:updateSupplier', async (_e, args: {
+    tenantId: string;
+    id: string;
+    payload: { name?: string; email?: string };
+  }) => {
+    await initLocalDatabase();
+    const deviceId = getOrCreateDeviceId();
+    await offlineUpdateSupplier(args.tenantId, deviceId, args.id, args.payload);
+    return { success: true };
+  });
+
+  ipcMain.handle('offline:createProduct', async (_e, args: {
+    tenantId: string;
+    payload: {
+      sku: string;
+      name: string;
+      unitId: string;
+      barcode?: string;
+      salePrice?: number;
+      costPrice?: number;
+    };
+  }) => {
+    await initLocalDatabase();
+    const deviceId = getOrCreateDeviceId();
+    return offlineCreateProduct(args.tenantId, deviceId, args.payload);
+  });
+
+  ipcMain.handle('offline:updateProduct', async (_e, args: {
+    tenantId: string;
+    id: string;
+    payload: { name?: string; barcode?: string; salePrice?: number };
+  }) => {
+    await initLocalDatabase();
+    const deviceId = getOrCreateDeviceId();
+    await offlineUpdateProduct(args.tenantId, deviceId, args.id, args.payload);
+    return { success: true };
+  });
+
+  ipcMain.handle('local:getCustomers', async () => {
+    if (!isLocalDbReady()) return [];
+    const rows = await getLocalCustomersList();
+    return rows.map((r: { id: string; code: string; name: string; email?: string; phone?: string; balance: number }) => ({
+      id: r.id,
+      code: r.code,
+      name: r.name,
+      email: r.email ?? undefined,
+      phone: r.phone ?? undefined,
+      balance: Number(r.balance),
+    }));
+  });
+
+  ipcMain.handle('local:getSuppliers', async () => {
+    if (!isLocalDbReady()) return [];
+    const rows = await getLocalSuppliersList();
+    return rows.map((r: { id: string; code: string; name: string; email?: string; balance: number }) => ({
+      id: r.id,
+      code: r.code,
+      name: r.name,
+      email: r.email ?? undefined,
+      balance: Number(r.balance),
+    }));
+  });
+
+  ipcMain.handle('local:getProducts', async () => {
+    if (!isLocalDbReady()) return [];
+    const rows = await getLocalProductsList();
+    return rows.map((r: { id: string; sku: string; name: string; salePrice: number; barcode?: string; isActive: boolean }) => ({
+      id: r.id,
+      sku: r.sku,
+      name: r.name,
+      salePrice: Number(r.salePrice),
+      barcode: r.barcode ?? undefined,
+      isActive: r.isActive,
+    }));
   });
 
   ipcMain.handle('sync:run', async () => {
@@ -51,17 +177,39 @@ export function registerSyncHandlers(getAccessToken: () => string | null) {
     try {
       await initLocalDatabase();
 
+      const pendingItems = await getPendingQueueItems(deviceId);
+      const pushBody = {
+        deviceId,
+        items: pendingItems.map((item) => ({
+          entityType: item.entityType,
+          entityId: item.entityId,
+          operation: item.operation,
+          payload: item.payload,
+          idempotencyKey: item.idempotencyKey,
+          version: item.version,
+        })),
+      };
+
       const pushResponse = await fetch(`${API_URL}/api/v1/sync/push`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ deviceId, items: [] }),
+        body: JSON.stringify(pushBody),
       });
-      const pushJson = await pushResponse.json() as { data?: unknown; error?: { message?: string } };
+      const pushJson = await pushResponse.json() as {
+        data?: {
+          processed?: Array<{ idempotencyKey: string; status: string }>;
+        };
+        error?: { message?: string };
+      };
       if (!pushResponse.ok) {
         return { success: false, message: pushJson.error?.message ?? 'Push failed' };
+      }
+
+      if (pushJson.data?.processed) {
+        await markQueueItemsProcessed(pushJson.data.processed);
       }
 
       const pullResponse = await fetch(
@@ -79,10 +227,11 @@ export function registerSyncHandlers(getAccessToken: () => string | null) {
       const changes = pullJson.data?.changes ?? [];
       const applied = await applyPullChanges(changes);
       const productCount = await getLocalProductCount();
+      const pendingCount = await getPendingQueueCount(deviceId);
 
       const tenantId = str(
         changes.find((c) => typeof c.data?.tenantId === 'string')?.data?.tenantId,
-        'local',
+        pendingItems[0]?.payload?.tenantId as string ?? 'local',
       );
 
       const db = getLocalDb();
@@ -106,10 +255,12 @@ export function registerSyncHandlers(getAccessToken: () => string | null) {
       return {
         success: true,
         data: {
-          push: pushJson.data,
+          pushedCount: pendingItems.length,
+          processedCount: pushJson.data?.processed?.filter((p) => p.status === 'completed').length ?? 0,
           pulledCount: changes.length,
           appliedCount: applied,
           localProductCount: productCount,
+          pendingCount,
           cursor: pullJson.data?.cursor,
         },
       };

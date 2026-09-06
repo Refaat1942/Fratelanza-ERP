@@ -14,16 +14,21 @@ export function SyncStatusBadge() {
   const setDeviceId = useAppStore((s) => s.setDeviceId);
   const accessToken = useAuthStore((s) => s.accessToken);
   const [localProducts, setLocalProducts] = useState<number | null>(null);
+  const [pendingCount, setPendingCount] = useState(0);
   const [syncNote, setSyncNote] = useState('');
 
-  useEffect(() => {
-    async function loadLocalStats() {
-      if (window.desktopApi) {
-        const stats = await window.desktopApi.getLocalStats();
-        if (stats.ready) setLocalProducts(stats.productCount);
+  async function refreshLocalStats() {
+    if (window.desktopApi) {
+      const stats = await window.desktopApi.getLocalStats();
+      if (stats.ready) {
+        setLocalProducts(stats.productCount);
+        setPendingCount(stats.pendingCount);
       }
     }
-    void loadLocalStats();
+  }
+
+  useEffect(() => {
+    void refreshLocalStats();
   }, []);
 
   const labels: Record<string, string> = {
@@ -51,10 +56,12 @@ export function SyncStatusBadge() {
       if (window.desktopApi) {
         const result = await window.desktopApi.runSync();
         if (!result.success) throw new Error(result.message ?? 'Sync failed');
-        const applied = result.data?.appliedCount ?? 0;
+        const processed = result.data?.processedCount ?? 0;
+        const pending = result.data?.pendingCount ?? 0;
         const localCount = result.data?.localProductCount ?? 0;
         setLocalProducts(localCount);
-        setSyncNote(t('sync.applied', { count: applied, local: localCount }));
+        setPendingCount(pending);
+        setSyncNote(t('sync.applied', { count: processed, local: localCount }));
       } else {
         const id = await resolveDeviceId();
         if (!id) throw new Error('Device ID unavailable');
@@ -63,6 +70,7 @@ export function SyncStatusBadge() {
         await client.pullSync(id);
       }
       setConnectivity(ConnectivityStatus.ONLINE);
+      await refreshLocalStats();
     } catch {
       setConnectivity(ConnectivityStatus.SYNC_ERROR);
     }
@@ -77,6 +85,11 @@ export function SyncStatusBadge() {
       {localProducts !== null && (
         <span style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
           {t('sync.localProducts', { count: localProducts })}
+        </span>
+      )}
+      {pendingCount > 0 && (
+        <span style={{ fontSize: '0.8rem', color: 'var(--color-warning, #b45309)' }}>
+          {t('sync.pendingChanges', { count: pendingCount })}
         </span>
       )}
       <button

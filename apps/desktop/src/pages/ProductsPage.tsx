@@ -2,10 +2,14 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTable, FormField, Modal, PageHeader, useApiClient } from '../components/DataTable';
 import type { ProductRow } from '../lib/api';
+import { fetchListWithOffline, mutateWithOffline, isOfflineMode } from '../lib/offline-api';
+import { useAppStore, useAuthStore } from '../stores';
 
 export function ProductsPage() {
   const { t } = useTranslation();
   const client = useApiClient();
+  const connectivity = useAppStore((s) => s.connectivity);
+  const user = useAuthStore((s) => s.user);
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -16,8 +20,14 @@ export function ProductsPage() {
 
   async function openForm() {
     setError('');
-    const units = await client.getUnitsOfMeasure();
-    setUnitId(units[0]?.id ?? '');
+    try {
+      if (!isOfflineMode(connectivity)) {
+        const units = await client.getUnitsOfMeasure();
+        setUnitId(units[0]?.id ?? '');
+      }
+    } catch {
+      setUnitId('');
+    }
     setOpen(true);
   }
 
@@ -33,18 +43,28 @@ export function ProductsPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) return;
     if (!unitId) {
       setError(t('products.unitRequired'));
       return;
     }
+    const payload = {
+      sku: form.sku,
+      name: form.name,
+      unitId,
+      barcode: form.barcode || undefined,
+      salePrice: form.salePrice ? Number(form.salePrice) : undefined,
+      costPrice: form.costPrice ? Number(form.costPrice) : undefined,
+    };
     try {
-      await client.createProduct({
-        sku: form.sku,
-        name: form.name,
-        unitId,
-        barcode: form.barcode || undefined,
-        salePrice: form.salePrice ? Number(form.salePrice) : undefined,
-        costPrice: form.costPrice ? Number(form.costPrice) : undefined,
+      await mutateWithOffline({
+        connectivity,
+        online: () => client.createProduct(payload),
+        offline: () =>
+          window.desktopApi!.offlineCreateProduct({
+            tenantId: user.tenantId,
+            payload,
+          }),
       });
       setOpen(false);
       setForm({ sku: '', name: '', barcode: '', salePrice: '', costPrice: '' });
@@ -56,11 +76,26 @@ export function ProductsPage() {
 
   async function handleEdit(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) return;
     try {
-      await client.updateProduct(editForm.id, {
-        name: editForm.name,
-        barcode: editForm.barcode || undefined,
-        salePrice: Number(editForm.salePrice),
+      await mutateWithOffline({
+        connectivity,
+        online: () =>
+          client.updateProduct(editForm.id, {
+            name: editForm.name,
+            barcode: editForm.barcode || undefined,
+            salePrice: Number(editForm.salePrice),
+          }),
+        offline: () =>
+          window.desktopApi!.offlineUpdateProduct({
+            tenantId: user.tenantId,
+            id: editForm.id,
+            payload: {
+              name: editForm.name,
+              barcode: editForm.barcode || undefined,
+              salePrice: Number(editForm.salePrice),
+            },
+          }),
       });
       setEditOpen(false);
       setRefreshKey((k) => k + 1);
@@ -96,7 +131,14 @@ export function ProductsPage() {
             ),
           },
         ]}
-        fetchData={(c) => c.getProducts()}
+        fetchData={(c) =>
+          fetchListWithOffline({
+            connectivity,
+            client: c,
+            online: (api) => api.getProducts(),
+            offline: () => window.desktopApi!.getLocalProducts(),
+          })
+        }
       />
       <Modal open={open} title={t('products.create')} onClose={() => setOpen(false)}>
         <form onSubmit={(e) => void handleSubmit(e)}>

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '../../../../../packages/database/generated/server';
 import { PrismaService } from '../../database/prisma.service';
+import { SyncProcessorService } from './sync-processor.service';
 
 interface SyncItemInput {
   entityType: string;
@@ -13,7 +14,10 @@ interface SyncItemInput {
 
 @Injectable()
 export class SyncService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private processor: SyncProcessorService,
+  ) {}
 
   async push(
     tenantId: string,
@@ -59,7 +63,9 @@ export class SyncService {
       },
     });
 
-    return results;
+    const processed = await this.processor.processPending(tenantId, deviceId);
+
+    return { queued: results, processed };
   }
 
   async pull(

@@ -2,10 +2,14 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTable, FormField, Modal, PageHeader, useApiClient } from '../components/DataTable';
 import type { SupplierRow } from '../lib/api';
+import { fetchListWithOffline, mutateWithOffline } from '../lib/offline-api';
+import { useAppStore, useAuthStore } from '../stores';
 
 export function SuppliersPage() {
   const { t } = useTranslation();
   const client = useApiClient();
+  const connectivity = useAppStore((s) => s.connectivity);
+  const user = useAuthStore((s) => s.user);
   const [open, setOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -20,8 +24,17 @@ export function SuppliersPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) return;
     try {
-      await client.createSupplier(form);
+      await mutateWithOffline({
+        connectivity,
+        online: () => client.createSupplier(form),
+        offline: () =>
+          window.desktopApi!.offlineCreateSupplier({
+            tenantId: user.tenantId,
+            payload: form,
+          }),
+      });
       setOpen(false);
       setForm({ code: '', name: '', email: '', phone: '' });
       setRefreshKey((k) => k + 1);
@@ -32,10 +45,21 @@ export function SuppliersPage() {
 
   async function handleEdit(e: React.FormEvent) {
     e.preventDefault();
+    if (!user) return;
     try {
-      await client.updateSupplier(editForm.id, {
-        name: editForm.name,
-        email: editForm.email || undefined,
+      await mutateWithOffline({
+        connectivity,
+        online: () =>
+          client.updateSupplier(editForm.id, {
+            name: editForm.name,
+            email: editForm.email || undefined,
+          }),
+        offline: () =>
+          window.desktopApi!.offlineUpdateSupplier({
+            tenantId: user.tenantId,
+            id: editForm.id,
+            payload: { name: editForm.name, email: editForm.email || undefined },
+          }),
       });
       setEditOpen(false);
       setRefreshKey((k) => k + 1);
@@ -70,7 +94,14 @@ export function SuppliersPage() {
             ),
           },
         ]}
-        fetchData={(c) => c.getSuppliers()}
+        fetchData={(c) =>
+          fetchListWithOffline({
+            connectivity,
+            client: c,
+            online: (api) => api.getSuppliers(),
+            offline: () => window.desktopApi!.getLocalSuppliers(),
+          })
+        }
       />
       <Modal open={open} title={t('suppliers.create')} onClose={() => setOpen(false)}>
         <form onSubmit={(e) => void handleSubmit(e)}>
