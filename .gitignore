@@ -39,6 +39,8 @@ packages/database/generated/
 
 # Electron
 apps/desktop/release/
+apps/desktop/dist-electron/
+apps/desktop/dist/
 
 # Test coverage
 coverage/

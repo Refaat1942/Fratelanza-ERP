@@ -1,9 +1,11 @@
 import { app, BrowserWindow, ipcMain, net } from 'electron';
 import path from 'path';
-import { randomUUID } from 'crypto';
+import { registerSyncHandlers } from './sync-service';
+import { getOrCreateDeviceId } from './device-store';
 
 const API_URL = process.env.API_URL ?? 'http://localhost:3000';
 let mainWindow: BrowserWindow | null = null;
+let currentAccessToken: string | null = null;
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -39,7 +41,7 @@ function getDeviceFingerprint(): string {
 }
 
 ipcMain.handle('app:getDeviceInfo', () => ({
-  deviceId: randomUUID(),
+  deviceId: getOrCreateDeviceId(),
   fingerprint: getDeviceFingerprint(),
   deviceName: require('os').hostname(),
   os: `${process.platform} ${process.arch}`,
@@ -59,7 +61,12 @@ ipcMain.handle('app:checkConnectivity', async () => {
 
 ipcMain.handle('app:getApiUrl', () => API_URL);
 
+ipcMain.handle('auth:setAccessToken', (_event, token: string | null) => {
+  currentAccessToken = token;
+});
+
 app.whenReady().then(() => {
+  registerSyncHandlers(() => currentAccessToken);
   createWindow();
 
   app.on('activate', () => {

@@ -43,6 +43,14 @@ export const en = {
     devices: 'Devices',
     settings: 'Settings',
     auditLogs: 'Audit Logs',
+    products: 'Products',
+    customers: 'Customers',
+    suppliers: 'Suppliers',
+    inventory: 'Inventory',
+    sales: 'Sales',
+    purchasing: 'Purchasing',
+    accounting: 'Accounting',
+    pos: 'POS',
   },
   dashboard: {
     title: 'Dashboard',
@@ -61,6 +69,7 @@ export const en = {
     syncError: 'Sync Error',
     lastSync: 'Last sync: {{time}}',
     pendingChanges: '{{count}} pending changes',
+    syncNow: 'Sync now',
   },
   settings: {
     title: 'Settings',
@@ -106,6 +115,76 @@ export const en = {
     unauthorized: 'You are not authorized to perform this action.',
     notFound: 'The requested resource was not found.',
   },
+  products: {
+    name: 'Product Name',
+    price: 'Price',
+    barcode: 'Barcode',
+    create: 'New Product',
+    edit: 'Edit Product',
+    unitRequired: 'No unit of measure found. Run database seed first.',
+  },
+  customers: {
+    code: 'Code',
+    name: 'Name',
+    phone: 'Phone',
+    balance: 'Balance',
+    create: 'New Customer',
+    edit: 'Edit Customer',
+  },
+  suppliers: {
+    code: 'Code',
+    name: 'Name',
+    balance: 'Balance',
+    create: 'New Supplier',
+    edit: 'Edit Supplier',
+  },
+  inventory: {
+    quantity: 'Quantity',
+    adjust: 'Adjust Stock',
+    adjusted: 'Stock adjusted successfully',
+    notes: 'Notes',
+    requiredFields: 'Select warehouse and product',
+  },
+  sales: {
+    number: 'Invoice #',
+    total: 'Total',
+    post: 'Post',
+    posted: 'Invoice posted successfully',
+    create: 'New Sales Invoice',
+    created: 'Invoice created',
+  },
+  purchasing: {
+    number: 'PO #',
+    receive: 'Receive',
+    received: 'Purchase order received',
+    create: 'New Purchase Order',
+    created: 'Purchase order created',
+    requiredFields: 'Select supplier and warehouse',
+  },
+  accounting: {
+    trialBalance: 'Trial Balance',
+    code: 'Account Code',
+    name: 'Account Name',
+    debit: 'Debit',
+    credit: 'Credit',
+    seedCoa: 'Seed Chart of Accounts',
+    seeded: 'Seeded {{count}} accounts',
+  },
+  pos: {
+    searchPlaceholder: 'Search products or scan barcode...',
+    cart: 'Cart',
+    total: 'Total',
+    checkout: 'Checkout',
+    saleComplete: 'Sale completed successfully',
+    shiftOpen: 'Shift is open',
+    noBranch: 'Your user has no branch assigned. Contact an administrator.',
+  },
+  lineItems: {
+    selectProduct: 'Select product',
+    addLine: 'Add line',
+    total: 'Line total',
+    required: 'Add at least one line item',
+  },
 } as const;
 
 export type TranslationSchema = {
@@ -120,6 +199,15 @@ export type TranslationSchema = {
   users: Record<string, string>;
   devices: Record<string, string>;
   errors: Record<string, string>;
+  products: Record<string, string>;
+  customers: Record<string, string>;
+  suppliers: Record<string, string>;
+  inventory: Record<string, string>;
+  sales: Record<string, string>;
+  purchasing: Record<string, string>;
+  accounting: Record<string, string>;
+  pos: Record<string, string>;
+  lineItems: Record<string, string>;
 };
 
 export type TranslationKeys = typeof en;

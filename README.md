@@ -2,14 +2,17 @@
 
 A production-ready, modular, offline-first desktop ERP platform for multi-industry businesses.
 
-## Features (Planned)
+## Features
 
-- **Offline-first** — Full ERP operations without internet; automatic sync when online
 - **Multi-tenant** — Strict tenant isolation for SaaS or multi-company deployments
 - **Multi-branch & multi-warehouse** — Branch-level permissions and consolidated reporting
-- **Modular** — Enable only the modules each company needs
+- **Core ERP** — Products, customers, suppliers, inventory, sales, purchasing, accounting, POS
+- **Double-entry accounting** — Journal engine with chart of accounts and trial balance
 - **Bilingual** — Arabic and English with RTL/LTR support
-- **Double-entry accounting** — Proper financial engine with audit trail
+- **Sync foundation** — Push/pull API, connectivity badge, persisted device identity
+- **Modular** — Enable only the modules each company needs
+
+> Full offline SQLite replication is in progress. The desktop app currently operates online against the NestJS API, with sync endpoints ready for local queue integration.
 
 ## Tech Stack
 
@@ -18,7 +21,7 @@ A production-ready, modular, offline-first desktop ERP platform for multi-indust
 | Desktop | Electron, React, TypeScript, Vite |
 | API | NestJS, TypeScript |
 | Server DB | PostgreSQL |
-| Local DB | SQLite |
+| Local DB | SQLite (schema defined, migrations pending) |
 | ORM | Prisma |
 | State | Zustand |
 | i18n | i18next |
@@ -28,7 +31,7 @@ A production-ready, modular, offline-first desktop ERP platform for multi-indust
 ```
 apps/api          — NestJS REST API
 apps/desktop      — Electron desktop application
-packages/*        — Shared libraries
+packages/*        — Shared libraries (database, domain, types, localization)
 modules/*         — ERP module definitions
 infra/docker      — Development infrastructure
 docs/             — Architecture and roadmap
@@ -39,32 +42,28 @@ docs/             — Architecture and roadmap
 ### Prerequisites
 
 - Node.js 20+
-- Docker (for PostgreSQL)
+- PostgreSQL (local install or Docker via `npm run docker:up`)
 - npm 10+
 
 ### Setup
 
 ```bash
-# Clone and install
 git clone https://github.com/Refaat1942/Fratelanza-ERP.git
 cd Fratelanza-ERP
 npm install
 
-# Start PostgreSQL
-npm run docker:up
-
-# Copy environment
+# Copy environment and set DATABASE_URL
 cp .env.example .env
 
-# Generate Prisma clients and run migrations
+# Generate Prisma clients, migrate, and seed
 npm run db:generate
-npm run db:migrate:server
+npm run db:migrate:server:deploy
 npm run db:seed
 
-# Start API (terminal 1)
+# Terminal 1 — API
 npm run dev:api
 
-# Start desktop app (terminal 2)
+# Terminal 2 — Desktop
 npm run dev:desktop
 ```
 
@@ -72,6 +71,8 @@ npm run dev:desktop
 
 - Email: `admin@fratelanza.local`
 - Password: `Admin@123456`
+
+Sample data includes products with stock, a draft sales invoice, and a draft purchase order.
 
 ## Documentation
 

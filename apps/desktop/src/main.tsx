@@ -1,4 +1,4 @@
-import { StrictMode, useEffect } from 'react';
+import { StrictMode, useEffect, useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 import { I18nextProvider } from 'react-i18next';
 import { createI18nInstance } from '@fratelanza/localization';
@@ -11,8 +11,7 @@ import './styles/global.css';
 function Root() {
   const locale = useAppStore((s) => s.locale);
   const theme = useAppStore((s) => s.theme);
-
-  const i18n = createI18nInstance(locale);
+  const i18n = useMemo(() => createI18nInstance(locale), [locale]);
 
   useEffect(() => {
     void i18n.changeLanguage(locale);
@@ -36,6 +35,7 @@ function Root() {
       if (window.desktopApi) {
         const info = await window.desktopApi.getDeviceInfo();
         useAppStore.getState().setDeviceFingerprint(info.fingerprint);
+        useAppStore.getState().setDeviceId(info.deviceId);
         const apiUrl = await window.desktopApi.getApiUrl();
         useAppStore.getState().setApiUrl(apiUrl);
       }
@@ -47,9 +47,13 @@ function Root() {
     async function checkConnection() {
       if (window.desktopApi) {
         const online = await window.desktopApi.checkConnectivity();
-        useAppStore.getState().setConnectivity(online ? ConnectivityStatus.ONLINE : ConnectivityStatus.OFFLINE);
+        useAppStore.getState().setConnectivity(
+          online ? ConnectivityStatus.ONLINE : ConnectivityStatus.OFFLINE,
+        );
       } else {
-        useAppStore.getState().setConnectivity(navigator.onLine ? ConnectivityStatus.ONLINE : ConnectivityStatus.OFFLINE);
+        useAppStore.getState().setConnectivity(
+          navigator.onLine ? ConnectivityStatus.ONLINE : ConnectivityStatus.OFFLINE,
+        );
       }
     }
 

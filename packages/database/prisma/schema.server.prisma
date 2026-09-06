@@ -51,6 +51,10 @@ model Branch {
   users       User[]
   devices     Device[]
   auditLogs   AuditLog[]
+  customers   Customer[]
+  salesInvoices SalesInvoice[]
+  purchaseOrders PurchaseOrder[]
+  posShifts   PosShift[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -70,6 +74,9 @@ model Warehouse {
   deletedAt DateTime?
 
   branch Branch @relation(fields: [branchId], references: [id])
+  stockBalances StockBalance[]
+  inventoryMovements InventoryMovement[]
+  purchaseOrders PurchaseOrder[]
 
   @@unique([tenantId, code])
   @@index([tenantId, branchId])
@@ -242,6 +249,398 @@ model NumberSequence {
 
   @@unique([tenantId, branchId, documentType, fiscalYear])
   @@map("number_sequences")
+}
+
+// ─── ERP Business Models ───────────────────────────────────────────
+
+model UnitOfMeasure {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  name      String
+  code      String
+  symbol    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  products  Product[]
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("units_of_measure")
+}
+
+model ProductCategory {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @db.Uuid
+  name      String
+  code      String
+  parentId  String?   @db.Uuid
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  products  Product[]
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("product_categories")
+}
+
+model Product {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @db.Uuid
+  categoryId     String?   @db.Uuid
+  unitId         String    @db.Uuid
+  sku            String
+  name           String
+  description    String?
+  barcode        String?
+  type           String    @default("product")
+  costPrice      Decimal   @default(0) @db.Decimal(18, 4)
+  salePrice      Decimal   @default(0) @db.Decimal(18, 4)
+  taxRate        Decimal   @default(0) @db.Decimal(8, 4)
+  trackInventory Boolean   @default(true)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+  category       ProductCategory?   @relation(fields: [categoryId], references: [id])
+  unit           UnitOfMeasure      @relation(fields: [unitId], references: [id])
+  stockBalances  StockBalance[]
+  inventoryMovements InventoryMovement[]
+  salesInvoiceLines  SalesInvoiceLine[]
+  purchaseOrderLines PurchaseOrderLine[]
+  posSaleLines   PosSaleLine[]
+  @@unique([tenantId, sku])
+  @@index([tenantId, barcode])
+  @@map("products")
+}
+
+model Customer {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @db.Uuid
+  branchId         String?   @db.Uuid
+  code             String
+  name             String
+  email            String?
+  phone            String?
+  address          String?
+  taxNumber        String?
+  creditLimit      Decimal   @default(0) @db.Decimal(18, 4)
+  balance          Decimal   @default(0) @db.Decimal(18, 4)
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+  branch           Branch?   @relation(fields: [branchId], references: [id])
+  salesInvoices    SalesInvoice[]
+  customerPayments CustomerPayment[]
+  posSales         PosSale[]
+  @@unique([tenantId, code])
+  @@index([tenantId, name])
+  @@map("customers")
+}
+
+model Supplier {
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @db.Uuid
+  code             String
+  name             String
+  email            String?
+  phone            String?
+  address          String?
+  taxNumber        String?
+  balance          Decimal   @default(0) @db.Decimal(18, 4)
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
+  purchaseOrders   PurchaseOrder[]
+  supplierPayments SupplierPayment[]
+  @@unique([tenantId, code])
+  @@index([tenantId, name])
+  @@map("suppliers")
+}
+
+model StockBalance {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  warehouseId String   @db.Uuid
+  productId   String   @db.Uuid
+  quantity    Decimal  @default(0) @db.Decimal(18, 4)
+  avgCost     Decimal  @default(0) @db.Decimal(18, 4)
+  updatedAt   DateTime @updatedAt
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id])
+  @@unique([tenantId, warehouseId, productId])
+  @@map("stock_balances")
+}
+
+model InventoryMovement {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  branchId      String?  @db.Uuid
+  warehouseId   String   @db.Uuid
+  productId     String   @db.Uuid
+  movementType  String
+  quantity      Decimal  @db.Decimal(18, 4)
+  unitCost      Decimal  @default(0) @db.Decimal(18, 4)
+  referenceType String?
+  referenceId   String?
+  notes         String?
+  createdAt     DateTime @default(now())
+  createdById   String?  @db.Uuid
+  warehouse     Warehouse @relation(fields: [warehouseId], references: [id])
+  product       Product   @relation(fields: [productId], references: [id])
+  @@index([tenantId, warehouseId, productId])
+  @@index([tenantId, referenceType, referenceId])
+  @@map("inventory_movements")
+}
+
+model SalesInvoice {
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @db.Uuid
+  branchId       String    @db.Uuid
+  customerId     String?   @db.Uuid
+  warehouseId    String?   @db.Uuid
+  number         String
+  status         String    @default("draft")
+  invoiceDate    DateTime  @default(now())
+  dueDate        DateTime?
+  subtotal       Decimal   @default(0) @db.Decimal(18, 4)
+  taxAmount      Decimal   @default(0) @db.Decimal(18, 4)
+  discountAmount Decimal   @default(0) @db.Decimal(18, 4)
+  total          Decimal   @default(0) @db.Decimal(18, 4)
+  paidAmount     Decimal   @default(0) @db.Decimal(18, 4)
+  notes          String?
+  postedAt       DateTime?
+  createdById    String?   @db.Uuid
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+  customer       Customer? @relation(fields: [customerId], references: [id])
+  branch         Branch    @relation(fields: [branchId], references: [id])
+  lines          SalesInvoiceLine[]
+  payments       CustomerPayment[]
+  @@unique([tenantId, number])
+  @@index([tenantId, status, invoiceDate])
+  @@map("sales_invoices")
+}
+
+model SalesInvoiceLine {
+  id          String  @id @default(uuid()) @db.Uuid
+  invoiceId   String  @db.Uuid
+  productId   String? @db.Uuid
+  description String
+  quantity    Decimal @db.Decimal(18, 4)
+  unitPrice   Decimal @db.Decimal(18, 4)
+  discount    Decimal @default(0) @db.Decimal(18, 4)
+  taxRate     Decimal @default(0) @db.Decimal(8, 4)
+  taxAmount   Decimal @default(0) @db.Decimal(18, 4)
+  lineTotal   Decimal @default(0) @db.Decimal(18, 4)
+  invoice     SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product     Product?     @relation(fields: [productId], references: [id])
+  @@index([invoiceId])
+  @@map("sales_invoice_lines")
+}
+
+model CustomerPayment {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  branchId    String   @db.Uuid
+  customerId  String   @db.Uuid
+  invoiceId   String?  @db.Uuid
+  number      String
+  amount      Decimal  @db.Decimal(18, 4)
+  paymentDate DateTime @default(now())
+  method      String   @default("cash")
+  reference   String?
+  createdAt   DateTime @default(now())
+  customer    Customer      @relation(fields: [customerId], references: [id])
+  invoice     SalesInvoice? @relation(fields: [invoiceId], references: [id])
+  @@unique([tenantId, number])
+  @@index([tenantId, customerId])
+  @@map("customer_payments")
+}
+
+model PurchaseOrder {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @db.Uuid
+  branchId     String    @db.Uuid
+  supplierId   String    @db.Uuid
+  warehouseId  String    @db.Uuid
+  number       String
+  status       String    @default("draft")
+  orderDate    DateTime  @default(now())
+  expectedDate DateTime?
+  subtotal     Decimal   @default(0) @db.Decimal(18, 4)
+  taxAmount    Decimal   @default(0) @db.Decimal(18, 4)
+  total        Decimal   @default(0) @db.Decimal(18, 4)
+  notes        String?
+  receivedAt   DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  supplier     Supplier  @relation(fields: [supplierId], references: [id])
+  branch       Branch    @relation(fields: [branchId], references: [id])
+  warehouse    Warehouse @relation(fields: [warehouseId], references: [id])
+  lines        PurchaseOrderLine[]
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id          String  @id @default(uuid()) @db.Uuid
+  orderId     String  @db.Uuid
+  productId   String  @db.Uuid
+  description String
+  quantity    Decimal @db.Decimal(18, 4)
+  receivedQty Decimal @default(0) @db.Decimal(18, 4)
+  unitPrice   Decimal @db.Decimal(18, 4)
+  taxRate     Decimal @default(0) @db.Decimal(8, 4)
+  lineTotal   Decimal @default(0) @db.Decimal(18, 4)
+  order       PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product     Product       @relation(fields: [productId], references: [id])
+  @@index([orderId])
+  @@map("purchase_order_lines")
+}
+
+model SupplierPayment {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  supplierId  String   @db.Uuid
+  number      String
+  amount      Decimal  @db.Decimal(18, 4)
+  paymentDate DateTime @default(now())
+  method      String   @default("cash")
+  reference   String?
+  createdAt   DateTime @default(now())
+  supplier    Supplier @relation(fields: [supplierId], references: [id])
+  @@unique([tenantId, number])
+  @@map("supplier_payments")
+}
+
+model Account {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @db.Uuid
+  code         String
+  name         String
+  type         String
+  parentId     String?   @db.Uuid
+  isActive     Boolean   @default(true)
+  isSystem     Boolean   @default(false)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  journalLines JournalLine[]
+  @@unique([tenantId, code])
+  @@index([tenantId, type])
+  @@map("accounts")
+}
+
+model JournalEntry {
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @db.Uuid
+  branchId      String?   @db.Uuid
+  number        String
+  entryDate     DateTime  @default(now())
+  description   String?
+  referenceType String?
+  referenceId   String?
+  status        String    @default("posted")
+  createdAt     DateTime  @default(now())
+  lines         JournalLine[]
+  @@unique([tenantId, number])
+  @@index([tenantId, entryDate])
+  @@map("journal_entries")
+}
+
+model JournalLine {
+  id          String  @id @default(uuid()) @db.Uuid
+  entryId     String  @db.Uuid
+  accountId   String  @db.Uuid
+  debit       Decimal @default(0) @db.Decimal(18, 4)
+  credit      Decimal @default(0) @db.Decimal(18, 4)
+  description String?
+  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  account     Account      @relation(fields: [accountId], references: [id])
+  @@index([entryId])
+  @@index([accountId])
+  @@map("journal_lines")
+}
+
+model FiscalPeriod {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  name      String
+  startDate DateTime
+  endDate   DateTime
+  isClosed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  @@index([tenantId, startDate])
+  @@map("fiscal_periods")
+}
+
+model PosShift {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  branchId    String    @db.Uuid
+  deviceId    String?   @db.Uuid
+  userId      String    @db.Uuid
+  status      String    @default("open")
+  openedAt    DateTime  @default(now())
+  closedAt    DateTime?
+  openingCash Decimal   @default(0) @db.Decimal(18, 4)
+  closingCash Decimal?  @db.Decimal(18, 4)
+  totalSales  Decimal   @default(0) @db.Decimal(18, 4)
+  branch      Branch    @relation(fields: [branchId], references: [id])
+  sales       PosSale[]
+  @@index([tenantId, branchId, status])
+  @@map("pos_shifts")
+}
+
+model PosSale {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  branchId   String   @db.Uuid
+  shiftId    String   @db.Uuid
+  customerId String?  @db.Uuid
+  number     String
+  status     String   @default("completed")
+  subtotal   Decimal  @default(0) @db.Decimal(18, 4)
+  taxAmount  Decimal  @default(0) @db.Decimal(18, 4)
+  discount   Decimal  @default(0) @db.Decimal(18, 4)
+  total      Decimal  @default(0) @db.Decimal(18, 4)
+  saleDate   DateTime @default(now())
+  syncStatus String   @default("synced")
+  shift      PosShift     @relation(fields: [shiftId], references: [id])
+  customer   Customer?    @relation(fields: [customerId], references: [id])
+  lines      PosSaleLine[]
+  payments   PosPayment[]
+  @@unique([tenantId, number])
+  @@index([tenantId, shiftId])
+  @@map("pos_sales")
+}
+
+model PosSaleLine {
+  id          String  @id @default(uuid()) @db.Uuid
+  saleId      String  @db.Uuid
+  productId   String  @db.Uuid
+  description String
+  quantity    Decimal @db.Decimal(18, 4)
+  unitPrice   Decimal @db.Decimal(18, 4)
+  lineTotal   Decimal @default(0) @db.Decimal(18, 4)
+  sale        PosSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product     Product @relation(fields: [productId], references: [id])
+  @@index([saleId])
+  @@map("pos_sale_lines")
+}
+
+model PosPayment {
+  id     String  @id @default(uuid()) @db.Uuid
+  saleId String  @db.Uuid
+  method String
+  amount Decimal @db.Decimal(18, 4)
+  sale   PosSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  @@index([saleId])
+  @@map("pos_payments")
 }
 
 // ─── Synchronization ───────────────────────────────────────────────

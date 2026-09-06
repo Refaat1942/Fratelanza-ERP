@@ -3,6 +3,14 @@ import { useAuthStore } from './stores';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { ProductsPage } from './pages/ProductsPage';
+import { CustomersPage } from './pages/CustomersPage';
+import { SuppliersPage } from './pages/SuppliersPage';
+import { InventoryPage } from './pages/InventoryPage';
+import { SalesPage } from './pages/SalesPage';
+import { PurchasingPage } from './pages/PurchasingPage';
+import { AccountingPage } from './pages/AccountingPage';
+import { PosPage } from './pages/PosPage';
 import { AppLayout } from './components/AppLayout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -25,6 +33,14 @@ export function App() {
           }
         >
           <Route index element={<DashboardPage />} />
+          <Route path="products" element={<ProductsPage />} />
+          <Route path="customers" element={<CustomersPage />} />
+          <Route path="suppliers" element={<SuppliersPage />} />
+          <Route path="inventory" element={<InventoryPage />} />
+          <Route path="sales" element={<SalesPage />} />
+          <Route path="purchasing" element={<PurchasingPage />} />
+          <Route path="accounting" element={<AccountingPage />} />
+          <Route path="pos" element={<PosPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

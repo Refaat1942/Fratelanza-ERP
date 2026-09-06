@@ -8,6 +8,9 @@
     "node": ">=20.0.0",
     "npm": ">=10.0.0"
   },
+  "devDependencies": {
+    "dotenv-cli": "^8.0.0"
+  },
   "workspaces": [
     "apps/*",
     "packages/*",
@@ -23,9 +26,12 @@
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "db:generate": "npm run generate -w @fratelanza/database",
-    "db:migrate:server": "npm run migrate:server -w @fratelanza/database",
-    "db:migrate:local": "npm run migrate:local -w @fratelanza/database",
-    "db:seed": "npm run seed -w @fratelanza/database",
+    "db:migrate:server": "dotenv -e .env -- npm run migrate:server -w @fratelanza/database",
+    "db:migrate:server:deploy": "dotenv -e .env -- npm run migrate:server:deploy -w @fratelanza/database",
+    "db:reset": "dotenv -e .env -- npm run reset:server -w @fratelanza/database",
+    "db:migrate:local": "dotenv -e .env -- npm run migrate:local -w @fratelanza/database",
+    "db:seed": "dotenv -e .env -- npm run seed -w @fratelanza/database",
+    "db:setup": "npm run db:migrate:server:deploy && npm run db:seed",
     "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
     "docker:down": "docker compose -f infra/docker/docker-compose.yml down"
   }

@@ -2,7 +2,7 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores';
 import { SyncStatusBadge } from './SyncStatusBadge';
-import { createApiClient } from '../lib/api';
+import { createApiClient, resolveApiBaseUrl } from '../lib/api';
 import { useAppStore } from '../stores';
 
 export function AppLayout() {
@@ -15,15 +15,26 @@ export function AppLayout() {
 
   const navItems = [
     { to: '/', label: t('nav.dashboard'), end: true },
+    { to: '/products', label: t('nav.products') },
+    { to: '/customers', label: t('nav.customers') },
+    { to: '/suppliers', label: t('nav.suppliers') },
+    { to: '/inventory', label: t('nav.inventory') },
+    { to: '/sales', label: t('nav.sales') },
+    { to: '/purchasing', label: t('nav.purchasing') },
+    { to: '/accounting', label: t('nav.accounting') },
+    { to: '/pos', label: t('nav.pos') },
     { to: '/settings', label: t('nav.settings') },
   ];
 
   async function handleLogout() {
     try {
-      const client = createApiClient(() => apiUrl, () => accessToken);
+      const client = createApiClient(() => resolveApiBaseUrl(apiUrl), () => accessToken);
       await client.logout();
     } catch {
       // Continue logout even if API call fails (offline)
+    }
+    if (window.desktopApi) {
+      await window.desktopApi.setAccessToken(null);
     }
     clearAuth();
     navigate('/login');

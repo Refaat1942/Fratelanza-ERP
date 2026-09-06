@@ -45,11 +45,13 @@ interface AppState {
   connectivity: ConnectivityStatus;
   apiUrl: string;
   deviceFingerprint: string | null;
+  deviceId: string | null;
   setLocale: (locale: Locale) => void;
   setTheme: (theme: ThemeMode) => void;
   setConnectivity: (status: ConnectivityStatus) => void;
   setApiUrl: (url: string) => void;
   setDeviceFingerprint: (fp: string) => void;
+  setDeviceId: (id: string) => void;
 }
 
 export const useAppStore = create<AppState>()(
@@ -60,11 +62,13 @@ export const useAppStore = create<AppState>()(
       connectivity: ConnectivityStatus.OFFLINE,
       apiUrl: 'http://localhost:3000',
       deviceFingerprint: null,
+      deviceId: null,
       setLocale: (locale) => set({ locale }),
       setTheme: (theme) => set({ theme }),
       setConnectivity: (connectivity) => set({ connectivity }),
       setApiUrl: (apiUrl) => set({ apiUrl }),
       setDeviceFingerprint: (deviceFingerprint) => set({ deviceFingerprint }),
+      setDeviceId: (deviceId) => set({ deviceId }),
     }),
     { name: 'fratelanza-app' },
   ),

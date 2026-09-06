@@ -2,7 +2,7 @@ import { useState, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore, useAppStore } from '../stores';
-import { createApiClient } from '../lib/api';
+import { createApiClient, resolveApiBaseUrl } from '../lib/api';
 
 export function LoginPage() {
   const { t } = useTranslation();
@@ -22,7 +22,7 @@ export function LoginPage() {
     setLoading(true);
 
     try {
-      const client = createApiClient(() => apiUrl, () => null);
+      const client = createApiClient(() => resolveApiBaseUrl(apiUrl), () => null);
       let deviceName: string | undefined;
       if (window.desktopApi) {
         const info = await window.desktopApi.getDeviceInfo();
@@ -37,9 +37,19 @@ export function LoginPage() {
       );
 
       setAuth(result.accessToken, result.refreshToken, result.user);
+      if (window.desktopApi) {
+        const info = await window.desktopApi.getDeviceInfo();
+        useAppStore.getState().setDeviceId(info.deviceId);
+        await window.desktopApi.setAccessToken(result.accessToken);
+      }
       navigate('/');
     } catch (err) {
-      setError(err instanceof Error ? err.message : t('auth.invalidCredentials'));
+      const message = err instanceof Error ? err.message : t('auth.invalidCredentials');
+      if (message === 'Failed to fetch') {
+        setError('Cannot reach API. Make sure `npm run dev:api` is running on port 3000.');
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }

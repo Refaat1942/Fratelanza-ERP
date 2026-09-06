@@ -1,6 +1,6 @@
 # Development Roadmap
 
-## Phase 1: Foundation ✅ (In Progress)
+## Phase 1: Foundation ✅
 
 - [x] Monorepo structure (npm workspaces)
 - [x] TypeScript base configuration
@@ -16,37 +16,44 @@
 - [x] Theme system (dark/light)
 - [x] Docker PostgreSQL
 
-## Phase 2: Offline Engine
+## Phase 2: Offline Engine (Partial)
 
-- Local repository pattern
-- Sync queue, sync log, sync conflicts, sync cursor
-- Connectivity detection (ONLINE / OFFLINE / SYNCING / SYNC ERROR)
-- Sync engine with retry, backoff, idempotency
-- Device identity and registration
-- Conflict detection and resolution rules
+- [x] Connectivity detection (ONLINE / OFFLINE / SYNCING / SYNC ERROR)
+- [x] Sync API endpoints (push / pull)
+- [x] Desktop sync trigger with persisted device ID
+- [x] Local SQLite schema (core + ERP cache models)
+- [ ] Local SQLite migrations and Prisma client wiring in Electron
+- [ ] Sync queue processing on desktop
+- [ ] Conflict detection and resolution rules
 
-## Phase 3: Core ERP
+## Phase 3: Core ERP (Partial)
 
-- Products, services, categories, units
-- Customers, suppliers
-- Warehouses, inventory movements
-- Sales workflow (quotation → order → delivery → invoice → payment)
-- Purchasing workflow
-- Payments
+- [x] Products, categories, units (API + list/create/edit UI)
+- [x] Customers, suppliers (API + list/create/edit UI)
+- [x] Warehouses, inventory movements (API + balances + adjust UI)
+- [x] Sales invoices (API + list/create/post UI)
+- [x] Purchasing orders (API + list/create/receive UI)
+- [x] Customer/supplier payments (API)
+- [x] Sample seed data (stock, draft invoice, draft PO)
 
-## Phase 4: Accounting
+## Phase 4: Accounting (Partial)
 
-- Chart of accounts
-- Double-entry journal engine
-- General ledger, AR/AP
-- Fiscal periods
-- Financial reports
+- [x] Chart of accounts (API + seed)
+- [x] Double-entry journal engine
+- [x] Trial balance report (API + UI)
+- [ ] General ledger, AR/AP reports
+- [ ] Fiscal periods UI
+- [ ] Financial reports (P&L, balance sheet)
 
-## Phase 5: POS
+## Phase 5: POS (Partial)
 
-- Touch-friendly checkout
-- Barcode, split payments, shifts
-- Receipt printing, offline queue
+- [x] Touch-friendly checkout UI
+- [x] Shift open/close (API + auto-open on POS page)
+- [x] Cash payments
+- [ ] Barcode scanner integration
+- [ ] Split payments UI
+- [ ] Receipt printing
+- [ ] Offline POS queue
 
 ## Phase 6: CRM
 

@@ -77,6 +77,7 @@ model Warehouse {
   deviceId       String?
 
   branch Branch @relation(fields: [branchId], references: [id])
+  stockBalances StockBalance[]
 
   @@unique([tenantId, code])
   @@map("warehouses")
@@ -250,4 +251,118 @@ model AppMeta {
   value String
 
   @@map("app_meta")
+}
+
+// ─── ERP (offline cache) ───────────────────────────────────────────
+
+model UnitOfMeasure {
+  id        String   @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  symbol    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  syncStatus   String   @default("pending")
+  version      Int      @default(1)
+  lastSyncedAt DateTime?
+  products Product[]
+  @@unique([tenantId, code])
+  @@map("units_of_measure")
+}
+
+model ProductCategory {
+  id        String    @id @default(uuid())
+  tenantId  String
+  name      String
+  code      String
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  syncStatus   String   @default("pending")
+  version      Int      @default(1)
+  lastSyncedAt DateTime?
+  products Product[]
+  @@unique([tenantId, code])
+  @@map("product_categories")
+}
+
+model Product {
+  id             String    @id @default(uuid())
+  tenantId       String
+  categoryId     String?
+  unitId         String
+  sku            String
+  name           String
+  barcode        String?
+  costPrice      Float     @default(0)
+  salePrice      Float     @default(0)
+  trackInventory Boolean   @default(true)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  syncStatus     String    @default("pending")
+  version        Int       @default(1)
+  lastSyncedAt   DateTime?
+  deviceId       String?
+  category       ProductCategory? @relation(fields: [categoryId], references: [id])
+  unit           UnitOfMeasure    @relation(fields: [unitId], references: [id])
+  stockBalances  StockBalance[]
+  @@unique([tenantId, sku])
+  @@map("products")
+}
+
+model Customer {
+  id        String    @id @default(uuid())
+  tenantId  String
+  branchId  String?
+  code      String
+  name      String
+  email     String?
+  phone     String?
+  balance   Float     @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  syncStatus   String   @default("pending")
+  version      Int      @default(1)
+  lastSyncedAt DateTime?
+  deviceId     String?
+  @@unique([tenantId, code])
+  @@map("customers")
+}
+
+model Supplier {
+  id        String    @id @default(uuid())
+  tenantId  String
+  code      String
+  name      String
+  email     String?
+  balance   Float     @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  syncStatus   String   @default("pending")
+  version      Int      @default(1)
+  lastSyncedAt DateTime?
+  deviceId     String?
+  @@unique([tenantId, code])
+  @@map("suppliers")
+}
+
+model StockBalance {
+  id          String   @id @default(uuid())
+  tenantId    String
+  warehouseId String
+  productId   String
+  quantity    Float    @default(0)
+  avgCost     Float    @default(0)
+  updatedAt   DateTime @updatedAt
+  syncStatus  String   @default("pending")
+  version     Int      @default(1)
+  warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
+  product     Product   @relation(fields: [productId], references: [id])
+  @@unique([tenantId, warehouseId, productId])
+  @@map("stock_balances")
 }
