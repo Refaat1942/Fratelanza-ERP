@@ -6,6 +6,7 @@ import { SettingsPage } from './pages/SettingsPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { CustomersPage } from './pages/CustomersPage';
 import { SuppliersPage } from './pages/SuppliersPage';
+import { WarehousesPage } from './pages/WarehousesPage';
 import { InventoryPage } from './pages/InventoryPage';
 import { SalesPage } from './pages/SalesPage';
 import { PurchasingPage } from './pages/PurchasingPage';
@@ -36,6 +37,7 @@ export function App() {
           <Route path="products" element={<ProductsPage />} />
           <Route path="customers" element={<CustomersPage />} />
           <Route path="suppliers" element={<SuppliersPage />} />
+          <Route path="warehouses" element={<WarehousesPage />} />
           <Route path="inventory" element={<InventoryPage />} />
           <Route path="sales" element={<SalesPage />} />
           <Route path="purchasing" element={<PurchasingPage />} />

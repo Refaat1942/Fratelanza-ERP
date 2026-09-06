@@ -123,6 +123,7 @@ export const ar: TranslationSchema = {
   customers: { code: 'الرمز', name: 'الاسم', phone: 'الهاتف', balance: 'الرصيد', create: 'عميل جديد', edit: 'تعديل عميل' },
   suppliers: { code: 'الرمز', name: 'الاسم', balance: 'الرصيد', create: 'مورد جديد', edit: 'تعديل مورد' },
   inventory: { quantity: 'الكمية', adjust: 'تعديل المخزون', adjusted: 'تم تعديل المخزون', notes: 'ملاحظات', requiredFields: 'اختر المستودع والمنتج' },
+  warehouses: { code: 'الرمز', name: 'الاسم', address: 'العنوان', create: 'مستودع جديد', branchRequired: 'اختر الفرع للمستودع' },
   sales: { number: 'رقم الفاتورة', total: 'الإجمالي', post: 'ترحيل', posted: 'تم ترحيل الفاتورة', create: 'فاتورة مبيعات جديدة', created: 'تم إنشاء الفاتورة' },
   purchasing: { number: 'رقم أمر الشراء', receive: 'استلام', received: 'تم استلام أمر الشراء', create: 'أمر شراء جديد', created: 'تم إنشاء أمر الشراء', requiredFields: 'اختر المورد والمستودع' },
   accounting: { trialBalance: 'ميزان المراجعة', code: 'رمز الحساب', name: 'اسم الحساب', debit: 'مدين', credit: 'دائن', seedCoa: 'إنشاء دليل الحسابات', seeded: 'تم إنشاء {{count}} حساب' },

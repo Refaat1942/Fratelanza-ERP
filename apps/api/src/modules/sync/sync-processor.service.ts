@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, ConflictException } from '@nestjs/common';
 import { Prisma } from '../../../../../packages/database/generated/server';
 import { PrismaService } from '../../database/prisma.service';
 import { CustomersService } from '../customers/customers.service';
@@ -17,6 +17,16 @@ export class SyncProcessorService {
   ) {}
 
   async processPending(tenantId: string, deviceId: string) {
+    await this.prisma.syncQueue.updateMany({
+      where: {
+        tenantId,
+        deviceId,
+        status: 'failed',
+        retryCount: { lt: 5 },
+      },
+      data: { status: 'pending', lastError: null },
+    });
+
     const pending = await this.prisma.syncQueue.findMany({
       where: { tenantId, deviceId, status: 'pending' },
       orderBy: { createdAt: 'asc' },
@@ -40,6 +50,20 @@ export class SyncProcessorService {
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Processing failed';
         this.logger.warn(`Sync item ${item.id} failed: ${message}`);
+
+        if (err instanceof ConflictException) {
+          await this.prisma.syncConflict.create({
+            data: {
+              tenantId,
+              deviceId,
+              entityType: item.entityType,
+              entityId: item.entityId,
+              localVersion: item.payload as Prisma.InputJsonValue,
+              serverVersion: { error: message },
+            },
+          });
+        }
+
         await this.prisma.syncQueue.update({
           where: { id: item.id },
           data: {

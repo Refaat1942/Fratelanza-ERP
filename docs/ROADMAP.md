@@ -26,7 +26,9 @@
 - [x] Pull → SQLite apply for products, customers, suppliers, warehouses, units, stock
 - [x] Offline write queue (local SQLite + push on sync)
 - [x] Server sync processor for customer/supplier/product mutations
-- [ ] Conflict detection and resolution rules
+- [x] Auto-sync on reconnect
+- [x] Sync conflict logging (duplicate detection)
+- [ ] Conflict resolution UI
 
 ## Phase 3: Core ERP (Partial)
 

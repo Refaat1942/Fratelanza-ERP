@@ -45,6 +45,12 @@ export async function enqueueSyncItem(input: QueueItemInput): Promise<string> {
 
 export async function getPendingQueueItems(deviceId: string): Promise<PendingQueueItem[]> {
   const db = getLocalDb();
+
+  await db.syncQueue.updateMany({
+    where: { deviceId, status: 'failed' },
+    data: { status: 'pending' },
+  });
+
   const rows = await db.syncQueue.findMany({
     where: { deviceId, status: 'pending' },
     orderBy: { createdAt: 'asc' },

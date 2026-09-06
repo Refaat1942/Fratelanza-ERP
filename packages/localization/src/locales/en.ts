@@ -147,6 +147,13 @@ export const en = {
     notes: 'Notes',
     requiredFields: 'Select warehouse and product',
   },
+  warehouses: {
+    code: 'Code',
+    name: 'Name',
+    address: 'Address',
+    create: 'New Warehouse',
+    branchRequired: 'Select a branch for this warehouse',
+  },
   sales: {
     number: 'Invoice #',
     total: 'Total',
@@ -205,6 +212,7 @@ export type TranslationSchema = {
   customers: Record<string, string>;
   suppliers: Record<string, string>;
   inventory: Record<string, string>;
+  warehouses: Record<string, string>;
   sales: Record<string, string>;
   purchasing: Record<string, string>;
   accounting: Record<string, string>;

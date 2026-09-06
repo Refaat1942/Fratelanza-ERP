@@ -47,4 +47,18 @@ export class SyncController {
     const data = await this.syncService.pull(tenantId, deviceId, cursor, entityType);
     return { success: true, data };
   }
+
+  @Get('status')
+  @RequirePermissions('sync:sync:pull')
+  async status(@TenantId() tenantId: string, @Query('deviceId') deviceId: string) {
+    const data = await this.syncService.getStatus(tenantId, deviceId);
+    return { success: true, data };
+  }
+
+  @Get('conflicts')
+  @RequirePermissions('sync:sync:pull')
+  async conflicts(@TenantId() tenantId: string, @Query('deviceId') deviceId: string) {
+    const data = await this.syncService.listConflicts(tenantId, deviceId);
+    return { success: true, data };
+  }
 }

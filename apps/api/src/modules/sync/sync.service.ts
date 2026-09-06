@@ -199,4 +199,21 @@ export class SyncService {
 
     return { changes, cursor: newCursor };
   }
+
+  async getStatus(tenantId: string, deviceId: string) {
+    const [pending, failed, conflicts] = await Promise.all([
+      this.prisma.syncQueue.count({ where: { tenantId, deviceId, status: 'pending' } }),
+      this.prisma.syncQueue.count({ where: { tenantId, deviceId, status: 'failed' } }),
+      this.prisma.syncConflict.count({ where: { tenantId, deviceId, resolvedAt: null } }),
+    ]);
+    return { pending, failed, conflicts };
+  }
+
+  async listConflicts(tenantId: string, deviceId: string) {
+    return this.prisma.syncConflict.findMany({
+      where: { tenantId, deviceId, resolvedAt: null },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+    });
+  }
 }

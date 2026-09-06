@@ -120,7 +120,11 @@ export class ApiClient {
   }
 
   getWarehouses() {
-    return this.request<Array<{ id: string; code: string; name: string; isActive: boolean }>>('/warehouses');
+    return this.request<Array<{ id: string; code: string; name: string; isActive: boolean; branch?: { name: string } }>>('/warehouses');
+  }
+
+  createWarehouse(payload: { branchId: string; code: string; name: string; address?: string }) {
+    return this.request('/warehouses', { method: 'POST', body: JSON.stringify(payload) });
   }
 
   getInventoryBalances() {

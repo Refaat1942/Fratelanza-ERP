@@ -2,11 +2,13 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores';
 import { SyncStatusBadge } from './SyncStatusBadge';
+import { useAutoSync } from '../hooks/useAutoSync';
 import { createApiClient, resolveApiBaseUrl } from '../lib/api';
 import { useAppStore } from '../stores';
 
 export function AppLayout() {
   const { t } = useTranslation();
+  useAutoSync();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const clearAuth = useAuthStore((s) => s.clearAuth);
@@ -18,6 +20,7 @@ export function AppLayout() {
     { to: '/products', label: t('nav.products') },
     { to: '/customers', label: t('nav.customers') },
     { to: '/suppliers', label: t('nav.suppliers') },
+    { to: '/warehouses', label: t('nav.warehouses') },
     { to: '/inventory', label: t('nav.inventory') },
     { to: '/sales', label: t('nav.sales') },
     { to: '/purchasing', label: t('nav.purchasing') },
