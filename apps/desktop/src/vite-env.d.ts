@@ -64,6 +64,20 @@ interface DesktopApi {
   getLocalCustomers: () => Promise<Array<{ id: string; code: string; name: string; email?: string; phone?: string; balance: number }>>;
   getLocalSuppliers: () => Promise<Array<{ id: string; code: string; name: string; email?: string; balance: number }>>;
   getLocalProducts: () => Promise<Array<{ id: string; sku: string; name: string; salePrice: number; barcode?: string; isActive: boolean }>>;
+  getOrCreateLocalShift: (args: { branchId: string; userId: string }) => Promise<string>;
+  setLocalShift: (args: { branchId: string; userId: string; shiftId: string }) => Promise<{ success: boolean }>;
+  offlinePosSale: (args: {
+    tenantId: string;
+    payload: {
+      branchId: string;
+      userId: string;
+      shiftId: string;
+      warehouseId?: string;
+      customerId?: string;
+      lines: Array<{ productId: string; description: string; quantity: number; unitPrice: number }>;
+      payments: Array<{ method: string; amount: number }>;
+    };
+  }) => Promise<{ id: string; number: string }>;
 }
 
 interface Window {

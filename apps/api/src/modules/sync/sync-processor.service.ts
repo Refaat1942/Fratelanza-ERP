@@ -4,6 +4,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { CustomersService } from '../customers/customers.service';
 import { SuppliersService } from '../suppliers/suppliers.service';
 import { ProductsService } from '../products/products.service';
+import { PosService } from '../pos/pos.service';
 
 @Injectable()
 export class SyncProcessorService {
@@ -14,6 +15,7 @@ export class SyncProcessorService {
     private customers: CustomersService,
     private suppliers: SuppliersService,
     private products: ProductsService,
+    private pos: PosService,
   ) {}
 
   async processPending(tenantId: string, deviceId: string) {
@@ -58,7 +60,10 @@ export class SyncProcessorService {
               deviceId,
               entityType: item.entityType,
               entityId: item.entityId,
-              localVersion: item.payload as Prisma.InputJsonValue,
+              localVersion: {
+                ...(item.payload as Record<string, unknown>),
+                _operation: item.operation,
+              } as Prisma.InputJsonValue,
               serverVersion: { error: message },
             },
           });
@@ -199,6 +204,48 @@ export class SyncProcessorService {
             costPrice: payload.costPrice !== undefined ? Number(payload.costPrice) : undefined,
             salePrice: payload.salePrice !== undefined ? Number(payload.salePrice) : undefined,
             isActive: payload.isActive !== undefined ? Boolean(payload.isActive) : undefined,
+          });
+        }
+        break;
+
+      case 'pos_sale':
+        if (item.operation === 'create') {
+          const branchId = String(payload.branchId ?? '');
+          const userId = String(payload.userId ?? '');
+          let shiftId = String(payload.shiftId ?? '');
+
+          let shift = await this.prisma.posShift.findFirst({
+            where: { tenantId, branchId, userId, status: 'open' },
+          });
+          if (!shift && shiftId) {
+            shift = await this.prisma.posShift.findFirst({
+              where: { id: shiftId, tenantId, status: 'open' },
+            });
+          }
+          if (!shift) {
+            shift = await this.pos.openShift(tenantId, {
+              branchId,
+              userId,
+              openingCash: Number(payload.openingCash ?? 0),
+            });
+          }
+          shiftId = shift.id;
+
+          const lines = (payload.lines as Array<{
+            productId: string;
+            description: string;
+            quantity: number;
+            unitPrice: number;
+          }>) ?? [];
+          const payments = (payload.payments as Array<{ method: string; amount: number }>) ?? [];
+
+          await this.pos.createSale(tenantId, {
+            branchId,
+            shiftId,
+            customerId: payload.customerId ? String(payload.customerId) : undefined,
+            warehouseId: payload.warehouseId ? String(payload.warehouseId) : undefined,
+            lines,
+            payments,
           });
         }
         break;

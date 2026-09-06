@@ -1,8 +1,8 @@
 import {
-  Controller, Get, Post, Body, Query, UseGuards,
+  Controller, Get, Post, Param, Body, Query, UseGuards,
 } from '@nestjs/common';
 import {
-  IsString, IsArray, ValidateNested, IsOptional, IsNumber, IsObject,
+  IsString, IsArray, ValidateNested, IsOptional, IsNumber, IsObject, IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SyncService } from './sync.service';
@@ -22,6 +22,11 @@ class PushDto {
   @IsString() deviceId!: string;
   @IsArray() @ValidateNested({ each: true }) @Type(() => SyncItemDto)
   items!: SyncItemDto[];
+}
+
+class ResolveConflictDto {
+  @IsIn(['dismiss', 'server_wins', 'retry_local'])
+  resolution!: 'dismiss' | 'server_wins' | 'retry_local';
 }
 
 @Controller('sync')
@@ -59,6 +64,17 @@ export class SyncController {
   @RequirePermissions('sync:sync:pull')
   async conflicts(@TenantId() tenantId: string, @Query('deviceId') deviceId: string) {
     const data = await this.syncService.listConflicts(tenantId, deviceId);
+    return { success: true, data };
+  }
+
+  @Post('conflicts/:id/resolve')
+  @RequirePermissions('sync:sync:push')
+  async resolveConflict(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: ResolveConflictDto,
+  ) {
+    const data = await this.syncService.resolveConflict(tenantId, id, dto.resolution);
     return { success: true, data };
   }
 }

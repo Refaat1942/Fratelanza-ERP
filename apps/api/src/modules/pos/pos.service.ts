@@ -35,7 +35,7 @@ export class PosService {
     const existing = await this.prisma.posShift.findFirst({
       where: { tenantId, branchId: data.branchId, userId: data.userId, status: 'open' },
     });
-    if (existing) throw new BadRequestException('User already has an open shift');
+    if (existing) return existing;
 
     return this.prisma.posShift.create({
       data: {

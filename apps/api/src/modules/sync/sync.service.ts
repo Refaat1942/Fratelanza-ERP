@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '../../../../../packages/database/generated/server';
 import { PrismaService } from '../../database/prisma.service';
 import { SyncProcessorService } from './sync-processor.service';
@@ -214,6 +214,44 @@ export class SyncService {
       where: { tenantId, deviceId, resolvedAt: null },
       orderBy: { createdAt: 'desc' },
       take: 50,
+    });
+  }
+
+  async resolveConflict(
+    tenantId: string,
+    conflictId: string,
+    resolution: 'dismiss' | 'server_wins' | 'retry_local',
+  ) {
+    const conflict = await this.prisma.syncConflict.findFirst({
+      where: { id: conflictId, tenantId },
+    });
+    if (!conflict) {
+      throw new NotFoundException('Conflict not found');
+    }
+
+    if (resolution === 'retry_local') {
+      const local = conflict.localVersion as Record<string, unknown>;
+      const operation = typeof local._operation === 'string' ? local._operation : 'create';
+      const payload = { ...local };
+      delete payload._operation;
+
+      await this.prisma.syncQueue.create({
+        data: {
+          tenantId,
+          deviceId: conflict.deviceId,
+          entityType: conflict.entityType,
+          entityId: conflict.entityId,
+          operation,
+          payload: payload as Prisma.InputJsonValue,
+          idempotencyKey: `retry:${conflict.id}`,
+          status: 'pending',
+        },
+      });
+    }
+
+    return this.prisma.syncConflict.update({
+      where: { id: conflictId },
+      data: { resolution, resolvedAt: new Date() },
     });
   }
 }

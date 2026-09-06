@@ -26,6 +26,8 @@ export function AppLayout() {
     { to: '/purchasing', label: t('nav.purchasing') },
     { to: '/accounting', label: t('nav.accounting') },
     { to: '/pos', label: t('nav.pos') },
+    { to: '/users', label: t('nav.users') },
+    { to: '/branches', label: t('nav.branches') },
     { to: '/settings', label: t('nav.settings') },
   ];
 

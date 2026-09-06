@@ -22,6 +22,9 @@ import {
   offlineUpdateSupplier,
   offlineCreateProduct,
   offlineUpdateProduct,
+  offlinePosSale,
+  getOrCreateLocalShift,
+  setLocalShift,
   getLocalCustomersList,
   getLocalSuppliersList,
   getLocalProductsList,
@@ -166,6 +169,34 @@ export function registerSyncHandlers(getAccessToken: () => string | null) {
       barcode: r.barcode ?? undefined,
       isActive: r.isActive,
     }));
+  });
+
+  ipcMain.handle('offline:getOrCreateShift', async (_e, args: { branchId: string; userId: string }) => {
+    await initLocalDatabase();
+    return getOrCreateLocalShift(args.branchId, args.userId);
+  });
+
+  ipcMain.handle('offline:setShift', async (_e, args: { branchId: string; userId: string; shiftId: string }) => {
+    await initLocalDatabase();
+    await setLocalShift(args.branchId, args.userId, args.shiftId);
+    return { success: true };
+  });
+
+  ipcMain.handle('offline:posSale', async (_e, args: {
+    tenantId: string;
+    payload: {
+      branchId: string;
+      userId: string;
+      shiftId: string;
+      warehouseId?: string;
+      customerId?: string;
+      lines: Array<{ productId: string; description: string; quantity: number; unitPrice: number }>;
+      payments: Array<{ method: string; amount: number }>;
+    };
+  }) => {
+    await initLocalDatabase();
+    const deviceId = getOrCreateDeviceId();
+    return offlinePosSale(args.tenantId, deviceId, args.payload);
   });
 
   ipcMain.handle('sync:run', async () => {

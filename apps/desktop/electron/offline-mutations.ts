@@ -200,6 +200,57 @@ export async function offlineUpdateProduct(
   });
 }
 
+export async function getOrCreateLocalShift(branchId: string, userId: string): Promise<string> {
+  const db = getLocalDb();
+  const key = `pos_shift:${branchId}:${userId}`;
+  const existing = await db.appMeta.findUnique({ where: { key } });
+  if (existing) return existing.value;
+
+  const shiftId = newEntityId();
+  await db.appMeta.create({ data: { key, value: shiftId } });
+  return shiftId;
+}
+
+export async function setLocalShift(branchId: string, userId: string, shiftId: string) {
+  const db = getLocalDb();
+  const key = `pos_shift:${branchId}:${userId}`;
+  await db.appMeta.upsert({
+    where: { key },
+    create: { key, value: shiftId },
+    update: { value: shiftId },
+  });
+}
+
+export async function offlinePosSale(
+  tenantId: string,
+  deviceId: string,
+  payload: {
+    branchId: string;
+    userId: string;
+    shiftId: string;
+    warehouseId?: string;
+    customerId?: string;
+    lines: Array<{ productId: string; description: string; quantity: number; unitPrice: number }>;
+    payments: Array<{ method: string; amount: number }>;
+  },
+) {
+  const saleId = newEntityId();
+
+  await enqueueSyncItem({
+    tenantId,
+    deviceId,
+    entityType: 'pos_sale',
+    entityId: saleId,
+    operation: 'create',
+    payload,
+  });
+
+  return {
+    id: saleId,
+    number: `OFF-${saleId.slice(0, 8).toUpperCase()}`,
+  };
+}
+
 export async function getLocalCustomersList() {
   const db = getLocalDb();
   return db.customer.findMany({

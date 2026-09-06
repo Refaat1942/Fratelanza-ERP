@@ -23,6 +23,7 @@ export const ar: TranslationSchema = {
     status: 'الحالة',
     active: 'نشط',
     inactive: 'غير نشط',
+    refresh: 'تحديث',
   },
   auth: {
     login: 'تسجيل الدخول',
@@ -74,6 +75,11 @@ export const ar: TranslationSchema = {
     syncNow: 'مزامنة الآن',
     localProducts: '{{count}} مخزّن محلياً',
     applied: 'تمت مزامنة {{count}} سجل · {{local}} منتج دون اتصال',
+    conflictsTitle: 'تعارضات المزامنة',
+    noConflicts: 'لا توجد تعارضات مزامنة غير محلولة',
+    retryLocal: 'إعادة المحاولة بالنسخة المحلية',
+    keepServer: 'الاحتفاظ بنسخة الخادم',
+    dismiss: 'تجاهل',
   },
   settings: {
     title: 'الإعدادات',
@@ -101,6 +107,8 @@ export const ar: TranslationSchema = {
   users: {
     title: 'المستخدمون',
     name: 'الاسم الكامل',
+    firstName: 'الاسم الأول',
+    lastName: 'اسم العائلة',
     email: 'البريد الإلكتروني',
     role: 'الدور',
     branch: 'الفرع',
@@ -127,6 +135,6 @@ export const ar: TranslationSchema = {
   sales: { number: 'رقم الفاتورة', total: 'الإجمالي', post: 'ترحيل', posted: 'تم ترحيل الفاتورة', create: 'فاتورة مبيعات جديدة', created: 'تم إنشاء الفاتورة' },
   purchasing: { number: 'رقم أمر الشراء', receive: 'استلام', received: 'تم استلام أمر الشراء', create: 'أمر شراء جديد', created: 'تم إنشاء أمر الشراء', requiredFields: 'اختر المورد والمستودع' },
   accounting: { trialBalance: 'ميزان المراجعة', code: 'رمز الحساب', name: 'اسم الحساب', debit: 'مدين', credit: 'دائن', seedCoa: 'إنشاء دليل الحسابات', seeded: 'تم إنشاء {{count}} حساب' },
-  pos: { searchPlaceholder: 'بحث عن منتج أو مسح باركود...', cart: 'السلة', total: 'الإجمالي', checkout: 'إتمام البيع', saleComplete: 'تم البيع بنجاح', shiftOpen: 'الوردية مفتوحة', noBranch: 'المستخدم غير مرتبط بفرع. تواصل مع المسؤول.' },
+  pos: { searchPlaceholder: 'بحث عن منتج أو مسح باركود...', cart: 'السلة', total: 'الإجمالي', checkout: 'إتمام البيع', saleComplete: 'تم البيع بنجاح', shiftOpen: 'الوردية مفتوحة', shiftOffline: 'وردية دون اتصال — ستُزامَن المبيعات عند الاتصال', noBranch: 'المستخدم غير مرتبط بفرع. تواصل مع المسؤول.' },
   lineItems: { selectProduct: 'اختر منتج', addLine: 'إضافة سطر', total: 'إجمالي الأسطر', required: 'أضف سطراً واحداً على الأقل' },
 };

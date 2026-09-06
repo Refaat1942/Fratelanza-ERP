@@ -12,6 +12,8 @@ import { SalesPage } from './pages/SalesPage';
 import { PurchasingPage } from './pages/PurchasingPage';
 import { AccountingPage } from './pages/AccountingPage';
 import { PosPage } from './pages/PosPage';
+import { UsersPage } from './pages/UsersPage';
+import { BranchesPage } from './pages/BranchesPage';
 import { AppLayout } from './components/AppLayout';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -43,6 +45,8 @@ export function App() {
           <Route path="purchasing" element={<PurchasingPage />} />
           <Route path="accounting" element={<AccountingPage />} />
           <Route path="pos" element={<PosPage />} />
+          <Route path="users" element={<UsersPage />} />
+          <Route path="branches" element={<BranchesPage />} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/" replace />} />

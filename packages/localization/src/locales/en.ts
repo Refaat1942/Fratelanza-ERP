@@ -21,6 +21,7 @@ export const en = {
     status: 'Status',
     active: 'Active',
     inactive: 'Inactive',
+    refresh: 'Refresh',
   },
   auth: {
     login: 'Sign In',
@@ -72,6 +73,11 @@ export const en = {
     syncNow: 'Sync now',
     localProducts: '{{count}} cached locally',
     applied: 'Synced {{count}} records · {{local}} products offline',
+    conflictsTitle: 'Sync conflicts',
+    noConflicts: 'No unresolved sync conflicts',
+    retryLocal: 'Retry local version',
+    keepServer: 'Keep server version',
+    dismiss: 'Dismiss',
   },
   settings: {
     title: 'Settings',
@@ -99,6 +105,8 @@ export const en = {
   users: {
     title: 'Users',
     name: 'Full Name',
+    firstName: 'First name',
+    lastName: 'Last name',
     email: 'Email',
     role: 'Role',
     branch: 'Branch',
@@ -186,6 +194,7 @@ export const en = {
     checkout: 'Checkout',
     saleComplete: 'Sale completed successfully',
     shiftOpen: 'Shift is open',
+    shiftOffline: 'Offline shift — sales will sync when online',
     noBranch: 'Your user has no branch assigned. Contact an administrator.',
   },
   lineItems: {
