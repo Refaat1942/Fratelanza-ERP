@@ -1,0 +1,312 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/server"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Platform / Core ───────────────────────────────────────────────
+
+model Tenant {
+  id        String    @id @default(uuid()) @db.Uuid
+  name      String
+  code      String    @unique
+  isActive  Boolean   @default(true)
+  settings  Json      @default("{}")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  branches       Branch[]
+  users          User[]
+  roles          Role[]
+  devices        Device[]
+  auditLogs      AuditLog[]
+  tenantModules  TenantModule[]
+  numberSequences NumberSequence[]
+
+  @@map("tenants")
+}
+
+model Branch {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @db.Uuid
+  name      String
+  code      String
+  address   String?
+  phone     String?
+  email     String?
+  isActive  Boolean   @default(true)
+  isDefault Boolean   @default(false)
+  settings  Json      @default("{}")
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant      Tenant       @relation(fields: [tenantId], references: [id])
+  warehouses  Warehouse[]
+  users       User[]
+  devices     Device[]
+  auditLogs   AuditLog[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("branches")
+}
+
+model Warehouse {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @db.Uuid
+  branchId  String    @db.Uuid
+  name      String
+  code      String
+  address   String?
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  branch Branch @relation(fields: [branchId], references: [id])
+
+  @@unique([tenantId, code])
+  @@index([tenantId, branchId])
+  @@map("warehouses")
+}
+
+model User {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @db.Uuid
+  branchId     String?   @db.Uuid
+  roleId       String    @db.Uuid
+  email        String
+  passwordHash String
+  firstName    String
+  lastName     String
+  phone        String?
+  locale       String    @default("en")
+  isActive     Boolean   @default(true)
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  deletedAt    DateTime?
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id])
+  branch    Branch?    @relation(fields: [branchId], references: [id])
+  role      Role       @relation(fields: [roleId], references: [id])
+  sessions  Session[]
+  auditLogs AuditLog[]
+
+  @@unique([tenantId, email])
+  @@index([tenantId])
+  @@map("users")
+}
+
+model Role {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  name        String
+  code        String
+  description String?
+  isSystem    Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  tenant      Tenant           @relation(fields: [tenantId], references: [id])
+  users       User[]
+  permissions RolePermission[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId])
+  @@map("roles")
+}
+
+model Permission {
+  id          String   @id @default(uuid()) @db.Uuid
+  module      String
+  feature     String
+  action      String
+  description String?
+  createdAt   DateTime @default(now())
+
+  roles RolePermission[]
+
+  @@unique([module, feature, action])
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String @db.Uuid
+  permissionId String @db.Uuid
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model Session {
+  id           String    @id @default(uuid()) @db.Uuid
+  userId       String    @db.Uuid
+  deviceId     String?   @db.Uuid
+  refreshToken String    @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  device Device? @relation(fields: [deviceId], references: [id])
+
+  @@index([userId])
+  @@index([refreshToken])
+  @@map("sessions")
+}
+
+model Device {
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  branchId    String?   @db.Uuid
+  name        String
+  fingerprint String    @unique
+  os          String?
+  appVersion  String?
+  status      String    @default("active")
+  lastSeenAt  DateTime?
+  activatedAt DateTime  @default(now())
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  branch   Branch?   @relation(fields: [branchId], references: [id])
+  sessions Session[]
+
+  @@index([tenantId])
+  @@map("devices")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  branchId   String?  @db.Uuid
+  userId     String?  @db.Uuid
+  deviceId   String?  @db.Uuid
+  entity     String
+  entityId   String
+  action     String
+  oldValue   Json?
+  newValue   Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  tenant Tenant  @relation(fields: [tenantId], references: [id])
+  branch Branch? @relation(fields: [branchId], references: [id])
+  user   User?   @relation(fields: [userId], references: [id])
+
+  @@index([tenantId, entity, entityId])
+  @@index([tenantId, createdAt])
+  @@map("audit_logs")
+}
+
+model TenantModule {
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  moduleId  String
+  isEnabled Boolean  @default(true)
+  settings  Json     @default("{}")
+  enabledAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, moduleId])
+  @@map("tenant_modules")
+}
+
+model NumberSequence {
+  id           String @id @default(uuid()) @db.Uuid
+  tenantId     String @db.Uuid
+  branchId     String? @db.Uuid
+  documentType String
+  prefix       String
+  fiscalYear   Int?
+  nextNumber   Int    @default(1)
+  padding      Int    @default(6)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+
+  @@unique([tenantId, branchId, documentType, fiscalYear])
+  @@map("number_sequences")
+}
+
+// ─── Synchronization ───────────────────────────────────────────────
+
+model SyncQueue {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @db.Uuid
+  deviceId     String    @db.Uuid
+  entityType   String
+  entityId     String
+  operation    String
+  payload      Json
+  version      Int       @default(1)
+  status       String    @default("pending")
+  retryCount   Int       @default(0)
+  lastError    String?
+  idempotencyKey String  @unique
+  createdAt    DateTime  @default(now())
+  processedAt  DateTime?
+
+  @@index([tenantId, deviceId, status])
+  @@index([status, createdAt])
+  @@map("sync_queue")
+}
+
+model SyncLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  deviceId   String   @db.Uuid
+  direction  String
+  entityType String?
+  recordCount Int     @default(0)
+  status     String
+  message    String?
+  startedAt  DateTime @default(now())
+  completedAt DateTime?
+
+  @@index([tenantId, deviceId, startedAt])
+  @@map("sync_logs")
+}
+
+model SyncConflict {
+  id           String    @id @default(uuid()) @db.Uuid
+  tenantId     String    @db.Uuid
+  deviceId     String    @db.Uuid
+  entityType   String
+  entityId     String
+  localVersion Json
+  serverVersion Json
+  resolution   String?
+  resolvedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([tenantId, entityType, entityId])
+  @@map("sync_conflicts")
+}
+
+model SyncCursor {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  deviceId   String   @db.Uuid
+  entityType String
+  cursor     String
+  updatedAt  DateTime @updatedAt
+
+  @@unique([tenantId, deviceId, entityType])
+  @@map("sync_cursors")
+}

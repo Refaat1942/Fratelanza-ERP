@@ -1,0 +1,32 @@
+{
+  "name": "fratelanza-erp",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Fratelanza Grand ERP - Modular offline-first desktop ERP platform",
+  "license": "UNLICENSED",
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "modules/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "build:api": "npm run build -w @fratelanza/api",
+    "build:desktop": "npm run build -w @fratelanza/desktop",
+    "dev:api": "npm run dev -w @fratelanza/api",
+    "dev:desktop": "npm run dev -w @fratelanza/desktop",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "db:generate": "npm run generate -w @fratelanza/database",
+    "db:migrate:server": "npm run migrate:server -w @fratelanza/database",
+    "db:migrate:local": "npm run migrate:local -w @fratelanza/database",
+    "db:seed": "npm run seed -w @fratelanza/database",
+    "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
+    "docker:down": "docker compose -f infra/docker/docker-compose.yml down"
+  }
+}

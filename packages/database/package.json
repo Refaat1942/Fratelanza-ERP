@@ -1,0 +1,46 @@
+{
+  "name": "@fratelanza/database",
+  "version": "0.1.0",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./server": {
+      "types": "./dist/server.d.ts",
+      "default": "./dist/server.js"
+    },
+    "./local": {
+      "types": "./dist/local.d.ts",
+      "default": "./dist/local.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "generate": "npm run generate:server && npm run generate:local",
+    "generate:server": "prisma generate --schema=./prisma/schema.server.prisma",
+    "generate:local": "prisma generate --schema=./prisma/schema.local.prisma",
+    "migrate:server": "prisma migrate dev --schema=./prisma/schema.server.prisma",
+    "migrate:server:deploy": "prisma migrate deploy --schema=./prisma/schema.server.prisma",
+    "migrate:local": "prisma migrate dev --schema=./prisma/schema.local.prisma",
+    "seed": "tsx prisma/seed.ts",
+    "studio:server": "prisma studio --schema=./prisma/schema.server.prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.3.1",
+    "bcryptjs": "^2.4.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "prisma": "^6.3.1",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.3"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}
