@@ -164,8 +164,10 @@ const CONSTRUCTION_PERMISSIONS = [
   { module: 'construction', feature: 'retention', action: 'read' },
   { module: 'construction', feature: 'retention', action: 'manage' },
   { module: 'construction', feature: 'retention', action: 'release' },
-  { module: 'construction', feature: 'subcontractors', action: 'read' },
-  { module: 'construction', feature: 'subcontractors', action: 'manage' },
+    { module: 'construction', feature: 'subcontractors', action: 'read' },
+    { module: 'construction', feature: 'subcontractors', action: 'manage' },
+    { module: 'construction', feature: 'materials', action: 'read' },
+    { module: 'construction', feature: 'materials', action: 'issue' },
 ];
 
 const ALL_PERMISSIONS = [

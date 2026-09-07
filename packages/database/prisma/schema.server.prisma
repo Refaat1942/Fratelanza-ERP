@@ -54,6 +54,8 @@ model Tenant {
   constructionAdvanceEntries ConstructionAdvanceEntry[]
   constructionSubcontractorProfiles ConstructionSubcontractorProfile[]
   constructionSubcontractorAssignments ConstructionSubcontractorAssignment[]
+  constructionMaterialIssues ConstructionMaterialIssue[]
+  constructionMaterialIssueLines ConstructionMaterialIssueLine[]
   license             TenantLicense?
 
   @@map("tenants")
@@ -98,6 +100,7 @@ model Branch {
   constructionVariations ConstructionVariation[]
   constructionRetentionEntries ConstructionRetentionEntry[]
   constructionAdvanceEntries ConstructionAdvanceEntry[]
+  constructionMaterialIssues ConstructionMaterialIssue[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -120,6 +123,7 @@ model Warehouse {
   stockBalances StockBalance[]
   inventoryMovements InventoryMovement[]
   purchaseOrders PurchaseOrder[]
+  constructionMaterialIssues ConstructionMaterialIssue[]
 
   @@unique([tenantId, code])
   @@index([tenantId, branchId])
@@ -167,6 +171,8 @@ model User {
   constructionAdvanceEntriesCreated ConstructionAdvanceEntry[] @relation("ConstructionAdvanceEntryCreator")
   constructionSubcontractorProfilesCreated ConstructionSubcontractorProfile[] @relation("ConstructionSubcontractorProfileCreator")
   constructionSubcontractorAssignmentsCreated ConstructionSubcontractorAssignment[] @relation("ConstructionSubcontractorAssignmentCreator")
+  constructionMaterialIssuesCreated ConstructionMaterialIssue[] @relation("ConstructionMaterialIssueCreator")
+  constructionMaterialIssuesIssued ConstructionMaterialIssue[] @relation("ConstructionMaterialIssueIssuer")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -465,6 +471,7 @@ model Product {
   purchaseOrderLines PurchaseOrderLine[]
   posSaleLines   PosSaleLine[]
   constructionBoqItems ConstructionBoqItem[]
+  constructionMaterialIssueLines ConstructionMaterialIssueLine[]
   @@unique([tenantId, sku])
   @@index([tenantId, barcode])
   @@map("products")
@@ -627,6 +634,7 @@ model Project {
   constructionRetentionEntries ConstructionRetentionEntry[]
   constructionAdvanceEntries ConstructionAdvanceEntry[]
   constructionSubcontractorAssignments ConstructionSubcontractorAssignment[]
+  constructionMaterialIssues ConstructionMaterialIssue[]
 
   @@unique([tenantId, code])
   @@index([tenantId, status])
@@ -658,6 +666,8 @@ model CostCenter {
   constructionBoqItems ConstructionBoqItem[]
   constructionProgressItems ConstructionProgressItem[]
   constructionVariationItems ConstructionVariationItem[]
+  constructionMaterialIssues ConstructionMaterialIssue[]
+  constructionMaterialIssueLines ConstructionMaterialIssueLine[]
 
   @@unique([tenantId, code])
   @@index([tenantId, projectId])
@@ -884,6 +894,7 @@ model ConstructionBoqItem {
   product    Product?                @relation(fields: [productId], references: [id], onDelete: SetNull)
   progressItems ConstructionProgressItem[]
   variationItems ConstructionVariationItem[]
+  materialIssues ConstructionMaterialIssue[]
 
   @@index([tenantId, boqId, lineNumber])
   @@index([tenantId, sectionId])
@@ -1197,6 +1208,77 @@ model ConstructionSubcontractorAssignment {
   @@map("construction_subcontractor_assignments")
 }
 
+enum ConstructionMaterialIssueStatus {
+  draft
+  issued
+  cancelled
+}
+
+model ConstructionMaterialIssue {
+  id           String                          @id @default(uuid()) @db.Uuid
+  tenantId     String                          @db.Uuid
+  projectId    String                          @db.Uuid
+  branchId     String                          @db.Uuid
+  warehouseId  String                          @db.Uuid
+  number       String
+  status       ConstructionMaterialIssueStatus @default(draft)
+  boqItemId    String?                         @db.Uuid
+  costCenterId String?                         @db.Uuid
+  issueDate    DateTime?                       @db.Date
+  notes        String?
+  sourceModule String?
+  sourceType   String?
+  sourceId     String?                         @db.Uuid
+  sourceEvent  String?
+  totalCost    Decimal                         @default(0) @db.Decimal(18, 4)
+  issuedAt     DateTime?
+  issuedById   String?                         @db.Uuid
+  createdById  String?                         @db.Uuid
+  createdAt    DateTime                        @default(now())
+  updatedAt    DateTime                        @updatedAt
+
+  tenant     Tenant                  @relation(fields: [tenantId], references: [id])
+  project    Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch     Branch                  @relation(fields: [branchId], references: [id])
+  warehouse  Warehouse               @relation(fields: [warehouseId], references: [id])
+  boqItem    ConstructionBoqItem?    @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
+  costCenter CostCenter?             @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  issuedBy   User?                   @relation("ConstructionMaterialIssueIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
+  createdBy  User?                   @relation("ConstructionMaterialIssueCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  lines      ConstructionMaterialIssueLine[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, projectId, status])
+  @@index([tenantId, warehouseId])
+  @@index([tenantId, boqItemId])
+  @@map("construction_material_issues")
+}
+
+model ConstructionMaterialIssueLine {
+  id                  String   @id @default(uuid()) @db.Uuid
+  tenantId            String   @db.Uuid
+  issueId             String   @db.Uuid
+  lineNumber          Int      @default(1)
+  productId           String   @db.Uuid
+  quantity            Decimal  @db.Decimal(18, 4)
+  unitCost            Decimal  @default(0) @db.Decimal(18, 4)
+  totalCost           Decimal  @default(0) @db.Decimal(18, 4)
+  costCenterId        String?  @db.Uuid
+  inventoryMovementId String?  @unique @db.Uuid
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  tenant            Tenant                  @relation(fields: [tenantId], references: [id])
+  issue             ConstructionMaterialIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
+  product           Product                 @relation(fields: [productId], references: [id])
+  costCenter        CostCenter?             @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  inventoryMovement InventoryMovement?      @relation(fields: [inventoryMovementId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, issueId])
+  @@index([tenantId, productId])
+  @@map("construction_material_issue_lines")
+}
+
 model PartyRole {
   id         String        @id @default(uuid()) @db.Uuid
   tenantId   String        @db.Uuid
@@ -1309,6 +1391,7 @@ model InventoryMovement {
   createdById   String?  @db.Uuid
   warehouse     Warehouse @relation(fields: [warehouseId], references: [id])
   product       Product   @relation(fields: [productId], references: [id])
+  constructionMaterialIssueLine ConstructionMaterialIssueLine?
   @@index([tenantId, warehouseId, productId])
   @@index([tenantId, referenceType, referenceId])
   @@map("inventory_movements")

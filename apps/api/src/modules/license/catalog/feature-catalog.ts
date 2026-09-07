@@ -102,6 +102,12 @@ export const FEATURE_CATALOG: Record<string, FeatureCatalogEntry> = {
     displayName: 'Construction Subcontractors',
     description: 'Subcontractor profiles, project assignments, and contract linkage via Party roles',
   },
+  'construction.materials': {
+    key: 'construction.materials',
+    moduleKey: 'construction',
+    displayName: 'Construction Materials',
+    description: 'Material issues from warehouse to construction projects with inventory and cost subledger integration',
+  },
   'pms.patients': {
     key: 'pms.patients',
     moduleKey: 'pms',
