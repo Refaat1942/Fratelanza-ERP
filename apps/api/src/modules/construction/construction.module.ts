@@ -15,6 +15,8 @@ import { ConstructionProgressController } from './construction-progress.controll
 import { ConstructionProgressService } from './construction-progress.service';
 import { ConstructionRetentionController } from './construction-retention.controller';
 import { ConstructionRetentionService } from './construction-retention.service';
+import { ConstructionSubcontractorController } from './construction-subcontractor.controller';
+import { ConstructionSubcontractorService } from './construction-subcontractor.service';
 import { ConstructionVariationController } from './construction-variation.controller';
 import { ConstructionVariationService } from './construction-variation.service';
 import { ConstructionProjectProfileService } from './construction-project-profile.service';
@@ -29,6 +31,7 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionVariationController,
     ConstructionRetentionController,
     ConstructionAdvanceController,
+    ConstructionSubcontractorController,
   ],
   providers: [
     ConstructionProjectProfileService,
@@ -39,6 +42,7 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionProgressService,
     ConstructionRetentionService,
     ConstructionAdvanceService,
+    ConstructionSubcontractorService,
   ],
   exports: [
     ConstructionProjectProfileService,
@@ -49,6 +53,7 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionProgressService,
     ConstructionRetentionService,
     ConstructionAdvanceService,
+    ConstructionSubcontractorService,
   ],
 })
 export class ConstructionModule {}

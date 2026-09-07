@@ -43,6 +43,7 @@ export function featuresWithConstruction() {
     'construction.progress',
     'construction.variations',
     'construction.retention',
+    'construction.subcontractors',
   ];
 }
 

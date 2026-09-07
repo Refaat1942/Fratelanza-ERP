@@ -96,6 +96,12 @@ export const FEATURE_CATALOG: Record<string, FeatureCatalogEntry> = {
     displayName: 'Retention & Advances',
     description: 'Operational retention holds/releases and advance mobilization tracking',
   },
+  'construction.subcontractors': {
+    key: 'construction.subcontractors',
+    moduleKey: 'construction',
+    displayName: 'Construction Subcontractors',
+    description: 'Subcontractor profiles, project assignments, and contract linkage via Party roles',
+  },
   'pms.patients': {
     key: 'pms.patients',
     moduleKey: 'pms',

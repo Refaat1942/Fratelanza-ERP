@@ -52,6 +52,8 @@ model Tenant {
   constructionVariationItems ConstructionVariationItem[]
   constructionRetentionEntries ConstructionRetentionEntry[]
   constructionAdvanceEntries ConstructionAdvanceEntry[]
+  constructionSubcontractorProfiles ConstructionSubcontractorProfile[]
+  constructionSubcontractorAssignments ConstructionSubcontractorAssignment[]
   license             TenantLicense?
 
   @@map("tenants")
@@ -163,6 +165,8 @@ model User {
   constructionVariationsRejected ConstructionVariation[] @relation("ConstructionVariationRejecter")
   constructionRetentionEntriesCreated ConstructionRetentionEntry[] @relation("ConstructionRetentionEntryCreator")
   constructionAdvanceEntriesCreated ConstructionAdvanceEntry[] @relation("ConstructionAdvanceEntryCreator")
+  constructionSubcontractorProfilesCreated ConstructionSubcontractorProfile[] @relation("ConstructionSubcontractorProfileCreator")
+  constructionSubcontractorAssignmentsCreated ConstructionSubcontractorAssignment[] @relation("ConstructionSubcontractorAssignmentCreator")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -574,6 +578,7 @@ model Party {
   supplier    Supplier?
   customerProjects Project[] @relation("ProjectCustomerParty")
   constructionContracts ConstructionContract[]
+  constructionSubcontractorProfiles ConstructionSubcontractorProfile[]
 
   @@unique([tenantId, code])
   @@index([tenantId, displayName])
@@ -621,6 +626,7 @@ model Project {
   constructionVariations ConstructionVariation[]
   constructionRetentionEntries ConstructionRetentionEntry[]
   constructionAdvanceEntries ConstructionAdvanceEntry[]
+  constructionSubcontractorAssignments ConstructionSubcontractorAssignment[]
 
   @@unique([tenantId, code])
   @@index([tenantId, status])
@@ -781,6 +787,7 @@ model ConstructionContract {
   variations ConstructionVariation[]
   retentionEntries ConstructionRetentionEntry[]
   advanceEntries ConstructionAdvanceEntry[]
+  subcontractorAssignments ConstructionSubcontractorAssignment[]
 
   @@unique([tenantId, number])
   @@index([tenantId, projectId])
@@ -1128,6 +1135,66 @@ model ConstructionAdvanceEntry {
   @@unique([tenantId, sourceModule, sourceType, sourceId, sourceEvent, partyType])
   @@index([tenantId, contractId, partyType, createdAt])
   @@map("construction_advance_entries")
+}
+
+enum ConstructionSubcontractorProfileStatus {
+  active
+  inactive
+  suspended
+}
+
+enum ConstructionSubcontractorAssignmentStatus {
+  active
+  completed
+  cancelled
+}
+
+model ConstructionSubcontractorProfile {
+  id               String                               @id @default(uuid()) @db.Uuid
+  tenantId         String                               @db.Uuid
+  partyId          String                               @db.Uuid
+  trade            String?
+  specialty        String?
+  complianceNotes  String?
+  status           ConstructionSubcontractorProfileStatus @default(active)
+  createdById      String?                              @db.Uuid
+  createdAt        DateTime                             @default(now())
+  updatedAt        DateTime                             @updatedAt
+
+  tenant      Tenant                              @relation(fields: [tenantId], references: [id])
+  party       Party                               @relation(fields: [partyId], references: [id])
+  createdBy   User?                               @relation("ConstructionSubcontractorProfileCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  assignments ConstructionSubcontractorAssignment[]
+
+  @@unique([tenantId, partyId])
+  @@index([tenantId, status])
+  @@map("construction_subcontractor_profiles")
+}
+
+model ConstructionSubcontractorAssignment {
+  id          String                                  @id @default(uuid()) @db.Uuid
+  tenantId    String                                  @db.Uuid
+  profileId   String                                  @db.Uuid
+  projectId   String                                  @db.Uuid
+  contractId  String?                                 @db.Uuid
+  status      ConstructionSubcontractorAssignmentStatus @default(active)
+  assignedAt  DateTime                                @default(now())
+  notes       String?
+  createdById String?                                 @db.Uuid
+  createdAt   DateTime                                @default(now())
+  updatedAt   DateTime                                @updatedAt
+
+  tenant    Tenant                         @relation(fields: [tenantId], references: [id])
+  profile   ConstructionSubcontractorProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  project   Project                        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  contract  ConstructionContract?          @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  createdBy User?                          @relation("ConstructionSubcontractorAssignmentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, profileId, projectId, contractId])
+  @@index([tenantId, projectId])
+  @@index([tenantId, contractId])
+  @@index([tenantId, profileId])
+  @@map("construction_subcontractor_assignments")
 }
 
 model PartyRole {
