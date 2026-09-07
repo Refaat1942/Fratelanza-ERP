@@ -45,6 +45,7 @@ export function featuresWithConstruction() {
     'construction.retention',
     'construction.subcontractors',
     'construction.materials',
+    'construction.costing',
   ];
 }
 

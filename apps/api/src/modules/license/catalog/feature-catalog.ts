@@ -108,6 +108,12 @@ export const FEATURE_CATALOG: Record<string, FeatureCatalogEntry> = {
     displayName: 'Construction Materials',
     description: 'Material issues from warehouse to construction projects with inventory and cost subledger integration',
   },
+  'construction.costing': {
+    key: 'construction.costing',
+    moduleKey: 'construction',
+    displayName: 'Construction Costing',
+    description: 'Project, contract, and cost-center costing with planned vs actual profitability reporting',
+  },
   'pms.patients': {
     key: 'pms.patients',
     moduleKey: 'pms',
