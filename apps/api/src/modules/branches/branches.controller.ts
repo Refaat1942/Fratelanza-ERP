@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { BranchesService } from './branches.service';
-import { TenantId, RequirePermissions } from '../../common/decorators';
+import { TenantId, RequirePermissions, LicenseExempt } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class CreateBranchDto {
@@ -20,6 +20,7 @@ class UpdateBranchDto {
 
 @Controller('branches')
 @UseGuards(PermissionsGuard)
+@LicenseExempt()
 export class BranchesController {
   constructor(private branchesService: BranchesService) {}
 

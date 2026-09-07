@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createApiClient, resolveApiBaseUrl } from '../lib/api';
 import { useAppStore, useAuthStore } from '../stores';
+import { PageState } from './PageState';
 
 interface Column<T> {
   key: keyof T | string;
@@ -50,14 +51,35 @@ export function DataTable<T extends { id: string }>({
     void load();
   }, [load, refreshKey]);
 
-  if (loading) return <p>{t('common.loading')}</p>;
-  if (error) return <p className="form-error">{error}</p>;
+  if (loading) {
+    return <PageState variant="loading" />;
+  }
+
+  if (error) {
+    return (
+      <PageState
+        variant="error"
+        message={error}
+        action={
+          <button type="button" className="btn btn-primary" onClick={() => void load()}>
+            {t('common.retry')}
+          </button>
+        }
+      />
+    );
+  }
+
   if (rows.length === 0) {
-    return <p>{emptyMessage ?? t('common.noData')}</p>;
+    return (
+      <PageState
+        variant="empty"
+        message={emptyMessage ?? t('common.noDataHint')}
+      />
+    );
   }
 
   return (
-    <div className="card" style={{ padding: 0, overflow: 'auto' }}>
+    <div className="card data-table" style={{ padding: 0, overflow: 'auto' }}>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>

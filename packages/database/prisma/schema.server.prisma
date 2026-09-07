@@ -27,6 +27,26 @@ model Tenant {
   auditLogs      AuditLog[]
   tenantModules  TenantModule[]
   numberSequences NumberSequence[]
+  pmsPatients         Patient[]
+  pmsPatientAccounts  PatientAccount[]
+  pmsServiceCategories ServiceCategory[]
+  pmsServices         Service[]
+  pmsEncounters       Encounter[]
+  pmsCharges          Charge[]
+  pmsPayments         Payment[]
+  pmsRefunds          Refund[]
+  pmsAdjustments      Adjustment[]
+  pmsLedgerEntries    LedgerEntry[]
+  parties             Party[]
+  projects            Project[]
+  costCenters         CostCenter[]
+  constructionProjectProfiles ConstructionProjectProfile[]
+  constructionCostEntries   ConstructionCostEntry[]
+  constructionContracts     ConstructionContract[]
+  constructionBoqs          ConstructionBoq[]
+  constructionBoqSections   ConstructionBoqSection[]
+  constructionBoqItems      ConstructionBoqItem[]
+  license             TenantLicense?
 
   @@map("tenants")
 }
@@ -55,6 +75,17 @@ model Branch {
   salesInvoices SalesInvoice[]
   purchaseOrders PurchaseOrder[]
   posShifts   PosShift[]
+  pmsPatients    Patient[]
+  pmsEncounters  Encounter[]
+  pmsCharges     Charge[]
+  pmsPayments    Payment[]
+  pmsRefunds     Refund[]
+  pmsAdjustments Adjustment[]
+  pmsLedgerEntries LedgerEntry[]
+  projects         Project[]
+  costCenters      CostCenter[]
+  constructionCostEntries ConstructionCostEntry[]
+  constructionContracts ConstructionContract[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -105,6 +136,13 @@ model User {
   role      Role       @relation(fields: [roleId], references: [id])
   sessions  Session[]
   auditLogs AuditLog[]
+  pmsEncountersAsProvider Encounter[] @relation("EncounterProvider")
+  managedProjects         Project[]   @relation("ProjectManager")
+  constructionProfilesCreated ConstructionProjectProfile[] @relation("ConstructionProfileCreator")
+  constructionCostEntriesCreated ConstructionCostEntry[] @relation("ConstructionCostEntryCreator")
+  constructionContractsCreated ConstructionContract[] @relation("ConstructionContractCreator")
+  constructionBoqsCreated ConstructionBoq[] @relation("ConstructionBoqCreator")
+  constructionBoqsApproved ConstructionBoq[] @relation("ConstructionBoqApprover")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -235,6 +273,98 @@ model TenantModule {
   @@map("tenant_modules")
 }
 
+enum LicenseStatus {
+  pending
+  active
+  grace
+  expired
+  suspended
+  revoked
+}
+
+enum LicenseType {
+  perpetual
+  time_limited
+}
+
+enum EntitlementTermType {
+  perpetual
+  time_limited
+}
+
+enum LicenseEdition {
+  starter
+  professional
+  business
+  enterprise
+}
+
+model TenantLicense {
+  id               String         @id @default(uuid()) @db.Uuid
+  tenantId         String         @unique @db.Uuid
+  licenseKey       String         @unique
+  licenseType      LicenseType    @default(perpetual)
+  edition          LicenseEdition @default(business)
+  status           LicenseStatus  @default(pending)
+  schemaVersion    Int            @default(1)
+  issuedAt         DateTime       @default(now())
+  activatedAt      DateTime?
+  expiresAt        DateTime?
+  graceEndsAt      DateTime?
+  maxUsers         Int            @default(25)
+  maxBranches      Int            @default(5)
+  maxDevices       Int            @default(10)
+  maxStorageMb     Int?
+  installationId   String?
+  payloadDigest    String?
+  payloadSignature String?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+
+  tenant   Tenant                      @relation(fields: [tenantId], references: [id])
+  modules  LicenseModuleEntitlement[]
+  features LicenseFeatureEntitlement[]
+
+  @@index([tenantId, status])
+  @@map("tenant_licenses")
+}
+
+model LicenseModuleEntitlement {
+  id        String              @id @default(uuid()) @db.Uuid
+  tenantId  String              @db.Uuid
+  licenseId String              @db.Uuid
+  moduleKey String
+  termType  EntitlementTermType @default(perpetual)
+  expiresAt DateTime?
+  isEnabled Boolean             @default(true)
+  enabledAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  license TenantLicense @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@unique([licenseId, moduleKey])
+  @@unique([tenantId, moduleKey])
+  @@index([tenantId, isEnabled])
+  @@map("license_module_entitlements")
+}
+
+model LicenseFeatureEntitlement {
+  id         String   @id @default(uuid()) @db.Uuid
+  tenantId   String   @db.Uuid
+  licenseId  String   @db.Uuid
+  featureKey String
+  isEnabled  Boolean  @default(true)
+  enabledAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  license TenantLicense @relation(fields: [licenseId], references: [id], onDelete: Cascade)
+
+  @@unique([licenseId, featureKey])
+  @@unique([tenantId, featureKey])
+  @@index([tenantId, isEnabled])
+  @@map("license_feature_entitlements")
+}
+
 model NumberSequence {
   id           String @id @default(uuid()) @db.Uuid
   tenantId     String @db.Uuid
@@ -263,6 +393,7 @@ model UnitOfMeasure {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   products  Product[]
+  constructionBoqItems ConstructionBoqItem[]
   @@unique([tenantId, code])
   @@index([tenantId])
   @@map("units_of_measure")
@@ -309,6 +440,7 @@ model Product {
   salesInvoiceLines  SalesInvoiceLine[]
   purchaseOrderLines PurchaseOrderLine[]
   posSaleLines   PosSaleLine[]
+  constructionBoqItems ConstructionBoqItem[]
   @@unique([tenantId, sku])
   @@index([tenantId, barcode])
   @@map("products")
@@ -318,6 +450,7 @@ model Customer {
   id               String    @id @default(uuid()) @db.Uuid
   tenantId         String    @db.Uuid
   branchId         String?   @db.Uuid
+  partyId          String?   @unique @db.Uuid
   code             String
   name             String
   email            String?
@@ -331,6 +464,7 @@ model Customer {
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
   branch           Branch?   @relation(fields: [branchId], references: [id])
+  party            Party?    @relation(fields: [partyId], references: [id])
   salesInvoices    SalesInvoice[]
   customerPayments CustomerPayment[]
   posSales         PosSale[]
@@ -342,6 +476,7 @@ model Customer {
 model Supplier {
   id               String    @id @default(uuid()) @db.Uuid
   tenantId         String    @db.Uuid
+  partyId          String?   @unique @db.Uuid
   code             String
   name             String
   email            String?
@@ -353,11 +488,447 @@ model Supplier {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
   deletedAt        DateTime?
+  party            Party?    @relation(fields: [partyId], references: [id])
   purchaseOrders   PurchaseOrder[]
   supplierPayments SupplierPayment[]
   @@unique([tenantId, code])
   @@index([tenantId, name])
   @@map("suppliers")
+}
+
+enum PartyType {
+  individual
+  organization
+}
+
+enum PartyStatus {
+  active
+  archived
+}
+
+enum PartyRoleType {
+  customer
+  supplier
+  contractor
+  subcontractor
+}
+
+enum PartyAddressType {
+  billing
+  shipping
+  office
+  home
+  other
+}
+
+enum PartyIdentifierType {
+  tax_id
+  vat
+  commercial_registration
+  national_id
+  other
+}
+
+model Party {
+  id          String      @id @default(uuid()) @db.Uuid
+  tenantId    String      @db.Uuid
+  type        PartyType
+  code        String
+  displayName String
+  legalName   String?
+  email       String?
+  phone       String?
+  website     String?
+  notes       String?
+  status      PartyStatus @default(active)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  deletedAt   DateTime?
+
+  tenant      Tenant            @relation(fields: [tenantId], references: [id])
+  roles       PartyRole[]
+  contacts    PartyContact[]
+  addresses   PartyAddress[]
+  identifiers PartyIdentifier[]
+  customer    Customer?
+  supplier    Supplier?
+  customerProjects Project[] @relation("ProjectCustomerParty")
+  constructionContracts ConstructionContract[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, displayName])
+  @@index([tenantId, status])
+  @@index([tenantId, type])
+  @@map("parties")
+}
+
+enum ProjectStatus {
+  draft
+  active
+  on_hold
+  completed
+  cancelled
+  archived
+}
+
+model Project {
+  id                String        @id @default(uuid()) @db.Uuid
+  tenantId          String        @db.Uuid
+  branchId          String?       @db.Uuid
+  code              String
+  name              String
+  description       String?
+  status            ProjectStatus @default(draft)
+  startDate         DateTime?     @db.Date
+  endDate           DateTime?     @db.Date
+  customerPartyId   String?       @db.Uuid
+  managerUserId     String?       @db.Uuid
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  deletedAt         DateTime?
+
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+  branch        Branch?     @relation(fields: [branchId], references: [id])
+  customerParty Party?      @relation("ProjectCustomerParty", fields: [customerPartyId], references: [id], onDelete: SetNull)
+  manager       User?       @relation("ProjectManager", fields: [managerUserId], references: [id], onDelete: SetNull)
+  costCenters   CostCenter[]
+  journalLines  JournalLine[]
+  constructionProfile ConstructionProjectProfile?
+  constructionCostEntries ConstructionCostEntry[]
+  constructionContracts ConstructionContract[]
+  constructionBoqs ConstructionBoq[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@index([tenantId, branchId])
+  @@map("projects")
+}
+
+model CostCenter {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  branchId    String?  @db.Uuid
+  parentId    String?  @db.Uuid
+  projectId   String?  @db.Uuid
+  code        String
+  name        String
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  deletedAt   DateTime?
+
+  tenant   Tenant       @relation(fields: [tenantId], references: [id])
+  branch   Branch?      @relation(fields: [branchId], references: [id])
+  parent   CostCenter?  @relation("CostCenterHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children CostCenter[] @relation("CostCenterHierarchy")
+  project  Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  journalLines JournalLine[]
+  constructionCostEntries ConstructionCostEntry[]
+  constructionBoqItems ConstructionBoqItem[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, projectId])
+  @@index([tenantId, parentId])
+  @@index([tenantId, isActive])
+  @@map("cost_centers")
+}
+
+enum ConstructionContractDirection {
+  customer
+  subcontractor
+}
+
+enum ConstructionContractPricingModel {
+  lump_sum
+  unit_price
+  cost_plus
+  mixed
+}
+
+enum ConstructionContractStatus {
+  draft
+  active
+  suspended
+  completed
+  cancelled
+  archived
+}
+
+enum ConstructionBoqStatus {
+  draft
+  approved
+  superseded
+  archived
+}
+
+enum ConstructionCostCategory {
+  material
+  labor
+  subcontract
+  equipment
+  other
+}
+
+model ConstructionProjectProfile {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  projectId   String   @unique @db.Uuid
+  notes       String?
+  createdById String?  @db.Uuid
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User?   @relation("ConstructionProfileCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, projectId])
+  @@index([tenantId])
+  @@map("construction_project_profiles")
+}
+
+model ConstructionCostEntry {
+  id           String                   @id @default(uuid()) @db.Uuid
+  tenantId     String                   @db.Uuid
+  projectId    String                   @db.Uuid
+  branchId     String                   @db.Uuid
+  costCenterId String?                  @db.Uuid
+  category     ConstructionCostCategory
+  amount       Decimal                  @db.Decimal(18, 4)
+  currency     String                   @default("EGP")
+  sourceModule String
+  sourceType   String
+  sourceId     String                   @db.Uuid
+  sourceEvent  String
+  description  String?
+  occurredAt   DateTime                 @db.Date
+  createdById  String?                  @db.Uuid
+  createdAt    DateTime                 @default(now())
+
+  tenant     Tenant      @relation(fields: [tenantId], references: [id])
+  project    Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch     Branch      @relation(fields: [branchId], references: [id])
+  costCenter CostCenter? @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  createdBy  User?       @relation("ConstructionCostEntryCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, sourceModule, sourceType, sourceId, sourceEvent])
+  @@index([tenantId, projectId, occurredAt])
+  @@index([tenantId, costCenterId])
+  @@map("construction_cost_entries")
+}
+
+model ConstructionContract {
+  id                  String                           @id @default(uuid()) @db.Uuid
+  tenantId            String                           @db.Uuid
+  projectId           String                           @db.Uuid
+  branchId            String                           @db.Uuid
+  number              String
+  title               String
+  description         String?
+  direction           ConstructionContractDirection
+  partyId             String                           @db.Uuid
+  pricingModel        ConstructionContractPricingModel
+  originalValue       Decimal                          @default(0) @db.Decimal(18, 4)
+  revisedValue        Decimal?                         @db.Decimal(18, 4)
+  originalValueLocked Boolean                          @default(false)
+  currency            String                           @default("EGP")
+  startDate           DateTime?                        @db.Date
+  endDate             DateTime?                        @db.Date
+  retentionPercent    Decimal?                         @db.Decimal(8, 4)
+  retentionCap        Decimal?                         @db.Decimal(18, 4)
+  advanceAmount       Decimal?                         @db.Decimal(18, 4)
+  advancePercent      Decimal?                         @db.Decimal(8, 4)
+  paymentTerms        String?
+  status              ConstructionContractStatus       @default(draft)
+  createdById         String?                          @db.Uuid
+  createdAt           DateTime                         @default(now())
+  updatedAt           DateTime                         @updatedAt
+
+  tenant    Tenant  @relation(fields: [tenantId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch    Branch  @relation(fields: [branchId], references: [id])
+  party     Party   @relation(fields: [partyId], references: [id])
+  createdBy User?   @relation("ConstructionContractCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  boqs      ConstructionBoq[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, projectId])
+  @@index([tenantId, status])
+  @@index([tenantId, partyId])
+  @@map("construction_contracts")
+}
+
+model ConstructionBoq {
+  id                  String                @id @default(uuid()) @db.Uuid
+  tenantId            String                @db.Uuid
+  projectId           String                @db.Uuid
+  contractId          String                @db.Uuid
+  number              String
+  revisionNumber      Int                   @default(1)
+  supersedesBoqId     String?               @db.Uuid
+  status              ConstructionBoqStatus @default(draft)
+  currency            String                @default("EGP")
+  totalOriginalAmount Decimal               @default(0) @db.Decimal(18, 4)
+  notes               String?
+  approvedAt          DateTime?
+  approvedById        String?               @db.Uuid
+  createdById         String?               @db.Uuid
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  contract    ConstructionContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  supersedes  ConstructionBoq?    @relation("ConstructionBoqRevisionChain", fields: [supersedesBoqId], references: [id], onDelete: SetNull)
+  supersededBy ConstructionBoq[]  @relation("ConstructionBoqRevisionChain")
+  approvedBy  User?               @relation("ConstructionBoqApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  createdBy   User?               @relation("ConstructionBoqCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  sections    ConstructionBoqSection[]
+  items       ConstructionBoqItem[]
+
+  @@unique([tenantId, contractId, revisionNumber])
+  @@index([tenantId, contractId, status])
+  @@index([tenantId, number])
+  @@map("construction_boqs")
+}
+
+model ConstructionBoqSection {
+  id              String   @id @default(uuid()) @db.Uuid
+  tenantId        String   @db.Uuid
+  boqId           String   @db.Uuid
+  parentSectionId String?  @db.Uuid
+  code            String
+  name            String
+  sequence        Int      @default(0)
+  description     String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  tenant       Tenant                  @relation(fields: [tenantId], references: [id])
+  boq          ConstructionBoq         @relation(fields: [boqId], references: [id], onDelete: Cascade)
+  parent       ConstructionBoqSection? @relation("ConstructionBoqSectionHierarchy", fields: [parentSectionId], references: [id], onDelete: SetNull)
+  children     ConstructionBoqSection[] @relation("ConstructionBoqSectionHierarchy")
+  items        ConstructionBoqItem[]
+
+  @@unique([tenantId, boqId, code])
+  @@index([tenantId, boqId, sequence])
+  @@map("construction_boq_sections")
+}
+
+model ConstructionBoqItem {
+  id              String                    @id @default(uuid()) @db.Uuid
+  tenantId        String                    @db.Uuid
+  boqId           String                    @db.Uuid
+  sectionId       String?                   @db.Uuid
+  lineNumber      Int                       @default(1)
+  itemCode        String?
+  description     String
+  unitId          String?                   @db.Uuid
+  unitCode        String?
+  plannedQuantity Decimal                   @db.Decimal(18, 4)
+  unitRate        Decimal                   @db.Decimal(18, 4)
+  originalAmount  Decimal                   @db.Decimal(18, 4)
+  costCode        String?
+  costCenterId    String?                   @db.Uuid
+  productId       String?                   @db.Uuid
+  category        ConstructionCostCategory?
+  notes           String?
+  createdAt       DateTime                  @default(now())
+  updatedAt       DateTime                  @updatedAt
+
+  tenant     Tenant                  @relation(fields: [tenantId], references: [id])
+  boq        ConstructionBoq         @relation(fields: [boqId], references: [id], onDelete: Cascade)
+  section    ConstructionBoqSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  unit       UnitOfMeasure?          @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  costCenter CostCenter?             @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  product    Product?                @relation(fields: [productId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, boqId, lineNumber])
+  @@index([tenantId, sectionId])
+  @@map("construction_boq_items")
+}
+
+model PartyRole {
+  id         String        @id @default(uuid()) @db.Uuid
+  tenantId   String        @db.Uuid
+  partyId    String        @db.Uuid
+  role       PartyRoleType
+  isActive   Boolean       @default(true)
+  assignedAt DateTime      @default(now())
+  removedAt  DateTime?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  party Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, partyId, role])
+  @@index([tenantId, role])
+  @@index([partyId])
+  @@map("party_roles")
+}
+
+model PartyContact {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @db.Uuid
+  partyId   String    @db.Uuid
+  name      String
+  title     String?
+  email     String?
+  phone     String?
+  mobile    String?
+  notes     String?
+  isPrimary Boolean   @default(false)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  party Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, partyId])
+  @@map("party_contacts")
+}
+
+model PartyAddress {
+  id         String           @id @default(uuid()) @db.Uuid
+  tenantId   String           @db.Uuid
+  partyId    String           @db.Uuid
+  type       PartyAddressType @default(office)
+  line1      String
+  line2      String?
+  city       String?
+  state      String?
+  postalCode String?
+  country    String?
+  isPrimary  Boolean          @default(false)
+  isActive   Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  deletedAt  DateTime?
+
+  party Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, partyId])
+  @@map("party_addresses")
+}
+
+model PartyIdentifier {
+  id        String              @id @default(uuid()) @db.Uuid
+  tenantId  String              @db.Uuid
+  partyId   String              @db.Uuid
+  type      PartyIdentifierType
+  value     String
+  country   String?
+  isPrimary Boolean             @default(false)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  party Party @relation(fields: [partyId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, type, value])
+  @@index([tenantId, partyId])
+  @@map("party_identifiers")
 }
 
 model StockBalance {
@@ -519,63 +1090,157 @@ model SupplierPayment {
 }
 
 model Account {
-  id           String    @id @default(uuid()) @db.Uuid
-  tenantId     String    @db.Uuid
-  code         String
-  name         String
-  type         String
-  parentId     String?   @db.Uuid
-  isActive     Boolean   @default(true)
-  isSystem     Boolean   @default(false)
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  journalLines JournalLine[]
+  id            String                @id @default(uuid()) @db.Uuid
+  tenantId      String                @db.Uuid
+  code          String
+  name          String
+  type          String
+  parentId      String?               @db.Uuid
+  normalBalance AccountNormalBalance?
+  isPosting     Boolean               @default(true)
+  isActive      Boolean               @default(true)
+  isSystem      Boolean               @default(false)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  journalLines  JournalLine[]
+  roleMappings  AccountRoleMapping[]
+
   @@unique([tenantId, code])
   @@index([tenantId, type])
   @@map("accounts")
 }
 
 model JournalEntry {
-  id            String    @id @default(uuid()) @db.Uuid
-  tenantId      String    @db.Uuid
-  branchId      String?   @db.Uuid
-  number        String
-  entryDate     DateTime  @default(now())
-  description   String?
-  referenceType String?
-  referenceId   String?
-  status        String    @default("posted")
-  createdAt     DateTime  @default(now())
-  lines         JournalLine[]
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @db.Uuid
+  branchId       String?       @db.Uuid
+  fiscalPeriodId String?       @db.Uuid
+  number         String
+  entryDate      DateTime      @default(now())
+  description    String?
+  referenceType  String?
+  referenceId    String?
+  sourceModule   String?
+  sourceType     String?
+  sourceId       String?
+  sourceEvent    String?
+  idempotencyKey String?
+  status         String        @default("posted")
+  postedAt       DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+  lines          JournalLine[]
+  fiscalPeriod   FiscalPeriod? @relation(fields: [fiscalPeriodId], references: [id])
+
   @@unique([tenantId, number])
+  @@unique([tenantId, idempotencyKey])
+  @@unique([tenantId, sourceModule, sourceType, sourceId, sourceEvent])
   @@index([tenantId, entryDate])
+  @@index([tenantId, sourceModule, sourceType, sourceId])
   @@map("journal_entries")
 }
 
 model JournalLine {
-  id          String  @id @default(uuid()) @db.Uuid
-  entryId     String  @db.Uuid
-  accountId   String  @db.Uuid
-  debit       Decimal @default(0) @db.Decimal(18, 4)
-  credit      Decimal @default(0) @db.Decimal(18, 4)
-  description String?
-  entry       JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  account     Account      @relation(fields: [accountId], references: [id])
+  id           String  @id @default(uuid()) @db.Uuid
+  entryId      String  @db.Uuid
+  accountId    String  @db.Uuid
+  branchId     String? @db.Uuid
+  projectId    String? @db.Uuid
+  costCenterId String? @db.Uuid
+  department   String?
+  debit        Decimal @default(0) @db.Decimal(18, 4)
+  credit       Decimal @default(0) @db.Decimal(18, 4)
+  description  String?
+  entry        JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  account      Account      @relation(fields: [accountId], references: [id])
+  project      Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  costCenter   CostCenter?  @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+
   @@index([entryId])
   @@index([accountId])
+  @@index([branchId])
+  @@index([projectId])
+  @@index([costCenterId])
   @@map("journal_lines")
 }
 
 model FiscalPeriod {
+  id             String             @id @default(uuid()) @db.Uuid
+  tenantId       String             @db.Uuid
+  name           String
+  startDate      DateTime           @db.Date
+  endDate        DateTime           @db.Date
+  status         FiscalPeriodStatus @default(open)
+  isClosed       Boolean            @default(false)
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  journalEntries JournalEntry[]
+
+  @@index([tenantId, startDate])
+  @@index([tenantId, status])
+  @@map("fiscal_periods")
+}
+
+model AccountRoleMapping {
   id        String   @id @default(uuid()) @db.Uuid
   tenantId  String   @db.Uuid
-  name      String
-  startDate DateTime
-  endDate   DateTime
-  isClosed  Boolean  @default(false)
+  role      String
+  accountId String   @db.Uuid
   createdAt DateTime @default(now())
-  @@index([tenantId, startDate])
-  @@map("fiscal_periods")
+  updatedAt DateTime @updatedAt
+
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@unique([tenantId, role])
+  @@index([tenantId, accountId])
+  @@map("finance_account_role_mappings")
+}
+
+model PostingRule {
+  id           String   @id @default(uuid()) @db.Uuid
+  tenantId     String   @db.Uuid
+  sourceModule String
+  sourceType   String
+  event        String
+  description  String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  lines        PostingRuleLine[]
+
+  @@unique([tenantId, sourceModule, sourceType, event])
+  @@index([tenantId, isActive])
+  @@map("finance_posting_rules")
+}
+
+model PostingRuleLine {
+  id           String      @id @default(uuid()) @db.Uuid
+  ruleId       String      @db.Uuid
+  sequence     Int
+  accountRole  String
+  side         PostingSide
+  amountSource String
+  description  String?
+
+  rule PostingRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+
+  @@unique([ruleId, sequence])
+  @@map("finance_posting_rule_lines")
+}
+
+enum AccountNormalBalance {
+  debit
+  credit
+}
+
+enum FiscalPeriodStatus {
+  open
+  closed
+  locked
+}
+
+enum PostingSide {
+  debit
+  credit
 }
 
 model PosShift {
@@ -641,6 +1306,484 @@ model PosPayment {
   sale   PosSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
   @@index([saleId])
   @@map("pos_payments")
+}
+
+// ─── PMS Domain (Patient Management & Accounting) ─────────────────
+// See docs/PMS_DOMAIN_DESIGN.md — separate from frozen ERP domain.
+
+enum PatientStatus {
+  active
+  inactive
+  deceased
+}
+
+enum PatientGender {
+  male
+  female
+  other
+  unknown
+}
+
+enum EncounterStatus {
+  scheduled
+  in_progress
+  completed
+  cancelled
+  no_show
+}
+
+enum ChargeStatus {
+  draft
+  posted
+  partially_paid
+  paid
+  voided
+}
+
+enum PaymentStatus {
+  posted
+  voided
+  refunded
+  partially_refunded
+}
+
+enum PaymentMethod {
+  cash
+  card
+  bank_transfer
+  other
+}
+
+enum RefundStatus {
+  posted
+  voided
+}
+
+enum AdjustmentStatus {
+  posted
+  voided
+}
+
+enum AdjustmentType {
+  opening_balance
+  credit
+  debit
+  write_off
+}
+
+enum AdjustmentDirection {
+  increase_balance
+  decrease_balance
+}
+
+enum LedgerEntryType {
+  opening_balance
+  charge
+  discount
+  payment
+  refund
+  adjustment
+  reversal
+}
+
+enum LedgerDirection {
+  debit
+  credit
+}
+
+enum PatientAccountStatus {
+  open
+  closed
+  on_hold
+}
+
+enum PatientNoteType {
+  general
+  billing
+  administrative
+}
+
+model Patient {
+  id           String         @id @default(uuid()) @db.Uuid
+  tenantId     String         @db.Uuid
+  branchId     String?        @db.Uuid
+  code         String
+  firstName    String
+  lastName     String
+  fullName     String
+  phone        String?
+  email        String?
+  address      String?
+  dateOfBirth  DateTime?      @db.Date
+  gender       PatientGender?
+  status       PatientStatus  @default(active)
+  registeredAt DateTime       @default(now())
+  notes        String?
+  createdById  String?        @db.Uuid
+  updatedById  String?        @db.Uuid
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  deletedAt    DateTime?
+
+  tenant     Tenant          @relation(fields: [tenantId], references: [id])
+  branch     Branch?         @relation(fields: [branchId], references: [id])
+  profile    PatientProfile?
+  account    PatientAccount?
+  encounters Encounter[]
+  charges    Charge[]
+  payments   Payment[]
+  refunds    Refund[]
+  adjustments Adjustment[]
+  patientNotes PatientNote[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@index([tenantId, lastName, firstName])
+  @@index([tenantId, branchId])
+  @@map("pms_patients")
+}
+
+model PatientProfile {
+  id                   String  @id @default(uuid()) @db.Uuid
+  patientId            String  @unique @db.Uuid
+  preferredLocale      String?
+  referralSource       String?
+  emergencyContactName String?
+  emergencyContactPhone String?
+  metadata             Json    @default("{}")
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@map("pms_patient_profiles")
+}
+
+model PatientNote {
+  id          String          @id @default(uuid()) @db.Uuid
+  tenantId    String          @db.Uuid
+  patientId   String          @db.Uuid
+  content     String
+  noteType    PatientNoteType @default(general)
+  createdById String?         @db.Uuid
+  createdAt   DateTime        @default(now())
+  deletedAt   DateTime?
+
+  patient Patient @relation(fields: [patientId], references: [id])
+
+  @@index([tenantId, patientId, createdAt])
+  @@map("pms_patient_notes")
+}
+
+model PatientAccount {
+  id            String               @id @default(uuid()) @db.Uuid
+  tenantId      String               @db.Uuid
+  patientId     String               @unique @db.Uuid
+  cachedBalance Decimal              @default(0) @db.Decimal(18, 4)
+  balanceAsOf   DateTime             @default(now())
+  currency      String               @default("EGP")
+  status        PatientAccountStatus @default(open)
+  openedAt      DateTime             @default(now())
+  createdAt     DateTime             @default(now())
+  updatedAt     DateTime             @updatedAt
+
+  tenant        Tenant        @relation(fields: [tenantId], references: [id])
+  patient       Patient       @relation(fields: [patientId], references: [id])
+  ledgerEntries LedgerEntry[]
+  charges       Charge[]
+  payments      Payment[]
+  refunds       Refund[]
+  adjustments   Adjustment[]
+
+  @@unique([tenantId, patientId])
+  @@index([tenantId, status])
+  @@map("pms_patient_accounts")
+}
+
+model ServiceCategory {
+  id        String    @id @default(uuid()) @db.Uuid
+  tenantId  String    @db.Uuid
+  name      String
+  code      String
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  services Service[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive])
+  @@map("pms_service_categories")
+}
+
+model Service {
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String    @db.Uuid
+  categoryId      String?   @db.Uuid
+  code            String
+  name            String
+  description     String?
+  defaultPrice    Decimal   @default(0) @db.Decimal(18, 4)
+  department      String?
+  durationMinutes Int?
+  isActive        Boolean   @default(true)
+  createdById     String?   @db.Uuid
+  updatedById     String?   @db.Uuid
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
+
+  tenant     Tenant           @relation(fields: [tenantId], references: [id])
+  category   ServiceCategory? @relation(fields: [categoryId], references: [id])
+  chargeLines ChargeLine[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive])
+  @@index([tenantId, categoryId])
+  @@map("pms_services")
+}
+
+model Encounter {
+  id            String          @id @default(uuid()) @db.Uuid
+  tenantId      String          @db.Uuid
+  branchId      String          @db.Uuid
+  patientId     String          @db.Uuid
+  number        String
+  encounterDate DateTime        @db.Date
+  startedAt     DateTime?
+  endedAt       DateTime?
+  status        EncounterStatus @default(scheduled)
+  providerId    String?         @db.Uuid
+  department    String?
+  notes         String?
+  createdById   String?         @db.Uuid
+  updatedById   String?         @db.Uuid
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  deletedAt     DateTime?
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  branch   Branch   @relation(fields: [branchId], references: [id])
+  patient  Patient  @relation(fields: [patientId], references: [id])
+  provider User?    @relation("EncounterProvider", fields: [providerId], references: [id])
+  charges  Charge[]
+  payments Payment[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, patientId, encounterDate])
+  @@index([tenantId, branchId, status])
+  @@map("pms_encounters")
+}
+
+model Charge {
+  id              String       @id @default(uuid()) @db.Uuid
+  tenantId        String       @db.Uuid
+  branchId        String       @db.Uuid
+  patientId       String       @db.Uuid
+  accountId       String       @db.Uuid
+  encounterId     String?      @db.Uuid
+  number          String
+  status          ChargeStatus @default(draft)
+  chargeDate      DateTime     @db.Date
+  subtotal        Decimal      @default(0) @db.Decimal(18, 4)
+  discountTotal   Decimal      @default(0) @db.Decimal(18, 4)
+  headerDiscount  Decimal      @default(0) @db.Decimal(18, 4)
+  total           Decimal      @default(0) @db.Decimal(18, 4)
+  paidAmount      Decimal      @default(0) @db.Decimal(18, 4)
+  notes           String?
+  postedAt        DateTime?
+  postedById      String?      @db.Uuid
+  voidedAt        DateTime?
+  voidedById      String?      @db.Uuid
+  voidReason      String?
+  createdById     String?      @db.Uuid
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id])
+  branch     Branch              @relation(fields: [branchId], references: [id])
+  patient    Patient             @relation(fields: [patientId], references: [id])
+  account    PatientAccount      @relation(fields: [accountId], references: [id])
+  encounter  Encounter?          @relation(fields: [encounterId], references: [id])
+  lines      ChargeLine[]
+  allocations PaymentAllocation[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, patientId, status])
+  @@index([tenantId, branchId, chargeDate])
+  @@index([tenantId, accountId])
+  @@map("pms_charges")
+}
+
+model ChargeLine {
+  id              String  @id @default(uuid()) @db.Uuid
+  chargeId        String  @db.Uuid
+  serviceId       String? @db.Uuid
+  serviceCode     String
+  serviceName     String
+  description     String?
+  quantity        Decimal @default(1) @db.Decimal(18, 4)
+  unitPrice       Decimal @db.Decimal(18, 4)
+  lineSubtotal    Decimal @default(0) @db.Decimal(18, 4)
+  discountAmount  Decimal @default(0) @db.Decimal(18, 4)
+  discountPercent Decimal @default(0) @db.Decimal(8, 4)
+  lineTotal       Decimal @default(0) @db.Decimal(18, 4)
+  sortOrder       Int     @default(0)
+
+  charge  Charge   @relation(fields: [chargeId], references: [id], onDelete: Cascade)
+  service Service? @relation(fields: [serviceId], references: [id])
+
+  @@index([chargeId])
+  @@map("pms_charge_lines")
+}
+
+model Payment {
+  id             String        @id @default(uuid()) @db.Uuid
+  tenantId       String        @db.Uuid
+  branchId       String        @db.Uuid
+  patientId      String        @db.Uuid
+  accountId      String        @db.Uuid
+  encounterId    String?       @db.Uuid
+  number         String
+  amount         Decimal       @db.Decimal(18, 4)
+  method         PaymentMethod @default(cash)
+  reference      String?
+  notes          String?
+  paymentDate    DateTime      @db.Date
+  status         PaymentStatus @default(posted)
+  idempotencyKey String
+  postedAt       DateTime      @default(now())
+  postedById     String?       @db.Uuid
+  voidedAt       DateTime?
+  voidedById     String?       @db.Uuid
+  voidReason     String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  branch      Branch              @relation(fields: [branchId], references: [id])
+  patient     Patient             @relation(fields: [patientId], references: [id])
+  account     PatientAccount      @relation(fields: [accountId], references: [id])
+  encounter   Encounter?          @relation(fields: [encounterId], references: [id])
+  allocations PaymentAllocation[]
+  refunds     Refund[]
+
+  @@unique([tenantId, number])
+  @@unique([tenantId, idempotencyKey])
+  @@index([tenantId, patientId, paymentDate])
+  @@index([tenantId, branchId, paymentDate])
+  @@index([tenantId, accountId])
+  @@map("pms_payments")
+}
+
+model PaymentAllocation {
+  id        String  @id @default(uuid()) @db.Uuid
+  paymentId String  @db.Uuid
+  chargeId  String  @db.Uuid
+  amount    Decimal @db.Decimal(18, 4)
+  createdAt DateTime @default(now())
+
+  payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+  charge  Charge  @relation(fields: [chargeId], references: [id])
+
+  @@unique([paymentId, chargeId])
+  @@index([chargeId])
+  @@map("pms_payment_allocations")
+}
+
+model Refund {
+  id          String       @id @default(uuid()) @db.Uuid
+  tenantId    String       @db.Uuid
+  branchId    String       @db.Uuid
+  patientId   String       @db.Uuid
+  accountId   String       @db.Uuid
+  paymentId   String       @db.Uuid
+  number      String
+  amount      Decimal      @db.Decimal(18, 4)
+  reason      String
+  method      PaymentMethod @default(cash)
+  status      RefundStatus @default(posted)
+  refundDate  DateTime     @db.Date
+  postedAt    DateTime     @default(now())
+  postedById  String?      @db.Uuid
+  voidedAt    DateTime?
+  voidedById  String?      @db.Uuid
+  createdAt   DateTime     @default(now())
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id])
+  branch  Branch         @relation(fields: [branchId], references: [id])
+  patient Patient        @relation(fields: [patientId], references: [id])
+  account PatientAccount @relation(fields: [accountId], references: [id])
+  payment Payment        @relation(fields: [paymentId], references: [id])
+
+  @@unique([tenantId, number])
+  @@index([tenantId, paymentId])
+  @@index([tenantId, patientId, refundDate])
+  @@map("pms_refunds")
+}
+
+model Adjustment {
+  id             String              @id @default(uuid()) @db.Uuid
+  tenantId       String              @db.Uuid
+  branchId       String              @db.Uuid
+  patientId      String              @db.Uuid
+  accountId      String              @db.Uuid
+  number         String
+  adjustmentType AdjustmentType
+  direction      AdjustmentDirection
+  amount         Decimal             @db.Decimal(18, 4)
+  reason         String
+  status         AdjustmentStatus    @default(posted)
+  adjustmentDate DateTime            @db.Date
+  approvedById   String?             @db.Uuid
+  postedAt       DateTime            @default(now())
+  postedById     String?             @db.Uuid
+  voidedAt       DateTime?
+  voidedById     String?             @db.Uuid
+  createdAt      DateTime            @default(now())
+
+  tenant  Tenant         @relation(fields: [tenantId], references: [id])
+  branch  Branch         @relation(fields: [branchId], references: [id])
+  patient Patient        @relation(fields: [patientId], references: [id])
+  account PatientAccount @relation(fields: [accountId], references: [id])
+
+  @@unique([tenantId, number])
+  @@index([tenantId, patientId, adjustmentDate])
+  @@index([tenantId, accountId])
+  @@map("pms_adjustments")
+}
+
+model LedgerEntry {
+  id             String          @id @default(uuid()) @db.Uuid
+  tenantId       String          @db.Uuid
+  branchId       String          @db.Uuid
+  accountId      String          @db.Uuid
+  entryType      LedgerEntryType
+  direction      LedgerDirection
+  amount         Decimal         @db.Decimal(18, 4)
+  currency       String
+  entryDate      DateTime        @db.Date
+  postedAt       DateTime        @default(now())
+  referenceType  String
+  referenceId    String          @db.Uuid
+  reversalOfId   String?         @db.Uuid
+  description    String?
+  runningBalance Decimal         @db.Decimal(18, 4)
+  createdById    String?         @db.Uuid
+  createdAt      DateTime        @default(now())
+
+  tenant     Tenant         @relation(fields: [tenantId], references: [id])
+  branch     Branch         @relation(fields: [branchId], references: [id])
+  account    PatientAccount @relation(fields: [accountId], references: [id])
+  reversalOf LedgerEntry?   @relation("LedgerReversal", fields: [reversalOfId], references: [id])
+  reversals  LedgerEntry[]  @relation("LedgerReversal")
+
+  @@index([accountId, postedAt])
+  @@index([tenantId, referenceType, referenceId])
+  @@index([tenantId, branchId, entryDate])
+  @@map("pms_ledger_entries")
 }
 
 // ─── Synchronization ───────────────────────────────────────────────

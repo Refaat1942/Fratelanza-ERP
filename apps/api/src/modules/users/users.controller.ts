@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { IsEmail, IsString, IsOptional, IsBoolean, MinLength } from 'class-validator';
 import { UsersService } from './users.service';
-import { TenantId, RequirePermissions } from '../../common/decorators';
+import { TenantId, RequirePermissions, LicenseExempt } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class CreateUserDto {
@@ -28,6 +28,7 @@ class UpdateUserDto {
 
 @Controller('users')
 @UseGuards(PermissionsGuard)
+@LicenseExempt()
 export class UsersController {
   constructor(private usersService: UsersService) {}
 

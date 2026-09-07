@@ -36,8 +36,10 @@ function Root() {
         const info = await window.desktopApi.getDeviceInfo();
         useAppStore.getState().setDeviceFingerprint(info.fingerprint);
         useAppStore.getState().setDeviceId(info.deviceId);
-        const apiUrl = await window.desktopApi.getApiUrl();
+        const storedUrl = useAppStore.getState().apiUrl;
+        const apiUrl = storedUrl || await window.desktopApi.getApiUrl();
         useAppStore.getState().setApiUrl(apiUrl);
+        await window.desktopApi.setApiUrl(apiUrl);
       }
     }
     void initDevice();
@@ -46,7 +48,11 @@ function Root() {
   useEffect(() => {
     async function checkConnection() {
       if (window.desktopApi) {
-        const online = await window.desktopApi.checkConnectivity();
+        const apiUrl = useAppStore.getState().apiUrl;
+        if (apiUrl) {
+          await window.desktopApi.setApiUrl(apiUrl);
+        }
+        const online = await window.desktopApi.checkConnectivity(apiUrl);
         useAppStore.getState().setConnectivity(
           online ? ConnectivityStatus.ONLINE : ConnectivityStatus.OFFLINE,
         );

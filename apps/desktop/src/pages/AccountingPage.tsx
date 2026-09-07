@@ -38,9 +38,10 @@ export function AccountingPage() {
           { key: 'debit', label: t('accounting.debit'), render: (r) => Number(r.debit).toFixed(2) },
           { key: 'credit', label: t('accounting.credit'), render: (r) => Number(r.credit).toFixed(2) },
         ]}
-        fetchData={async (c) =>
-          (await c.getTrialBalance()).map((row) => ({ ...row, id: row.code }))
-        }
+        fetchData={async (c) => {
+          const result = await c.getTrialBalance();
+          return result.accounts.map((row) => ({ ...row, id: row.code }));
+        }}
       />
     </div>
   );

@@ -3,7 +3,7 @@ import {
 } from '@nestjs/common';
 import { IsString, IsOptional, IsBoolean, IsEmail } from 'class-validator';
 import { SuppliersService } from './suppliers.service';
-import { TenantId, RequirePermissions } from '../../common/decorators';
+import { TenantId, RequirePermissions, RequireModule } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class CreateSupplierDto {
@@ -26,6 +26,7 @@ class UpdateSupplierDto {
 
 @Controller('suppliers')
 @UseGuards(PermissionsGuard)
+@RequireModule('suppliers')
 export class SuppliersController {
   constructor(private suppliersService: SuppliersService) {}
 

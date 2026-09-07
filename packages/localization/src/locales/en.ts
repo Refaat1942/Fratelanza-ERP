@@ -22,6 +22,20 @@ export const en = {
     active: 'Active',
     inactive: 'Inactive',
     refresh: 'Refresh',
+    retry: 'Try again',
+    noDataHint: 'Nothing here yet. Create your first record to get started.',
+    select: 'Select...',
+  },
+  boot: {
+    loading: 'Starting application...',
+  },
+  connection: {
+    serverUrl: 'Clinic server address',
+    saveServer: 'Save and test connection',
+    serverReachable: 'Connected to clinic server.',
+    serverUnreachable: 'Unable to connect to the clinic server.',
+    serverNotConfigured: 'Server not configured',
+    lanHint: 'Enter the LAN address of the clinic server PC, for example http://192.168.1.10:3000',
   },
   auth: {
     login: 'Sign In',
@@ -45,6 +59,7 @@ export const en = {
     settings: 'Settings',
     auditLogs: 'Audit Logs',
     products: 'Products',
+    parties: 'Parties',
     customers: 'Customers',
     suppliers: 'Suppliers',
     inventory: 'Inventory',
@@ -52,6 +67,28 @@ export const en = {
     purchasing: 'Purchasing',
     accounting: 'Accounting',
     pos: 'POS',
+    projects: 'Projects',
+    costCenters: 'Cost Centers',
+    constructionContracts: 'Construction Contracts',
+  },
+  construction: {
+    createContract: 'Create Contract',
+    contractNumber: 'Contract Number',
+    contractTitle: 'Contract Title',
+    direction: 'Direction',
+    customer: 'Customer',
+    subcontractor: 'Subcontractor',
+    boq: 'BOQ',
+    manageBoq: 'Manage BOQ',
+    boqEditor: 'BOQ Editor',
+    createBoq: 'Create BOQ',
+    approveBoq: 'Approve BOQ',
+    reviseBoq: 'Revise BOQ',
+    total: 'Total',
+    itemDescription: 'Item Description',
+    quantity: 'Quantity',
+    unitRate: 'Unit Rate',
+    addItem: 'Add Item',
   },
   dashboard: {
     title: 'Dashboard',
@@ -124,6 +161,8 @@ export const en = {
     network: 'Network error. Check your connection.',
     unauthorized: 'You are not authorized to perform this action.',
     notFound: 'The requested resource was not found.',
+    loadFailed: 'Could not load data',
+    apiUnreachable: 'Cannot reach the server. Make sure the API is running on port 3000.',
   },
   products: {
     name: 'Product Name',
@@ -141,6 +180,32 @@ export const en = {
     create: 'New Customer',
     edit: 'Edit Customer',
   },
+  parties: {
+    code: 'Code',
+    displayName: 'Display Name',
+    legalName: 'Legal Name',
+    type: 'Type',
+    email: 'Email',
+    phone: 'Phone',
+    roles: 'Roles',
+    search: 'Search parties...',
+    create: 'New Party',
+    edit: 'Edit Party',
+    archive: 'Archive',
+    individual: 'Individual',
+    organization: 'Organization',
+    addCustomerRole: 'Add Customer Role',
+    addSupplierRole: 'Add Supplier Role',
+    linkedCustomer: 'Linked Customer',
+    linkedSupplier: 'Linked Supplier',
+    customerId: 'Customer ID',
+    supplierId: 'Supplier ID',
+    linkCustomer: 'Link Customer',
+    unlinkCustomer: 'Unlink Customer',
+    linkSupplier: 'Link Supplier',
+    unlinkSupplier: 'Unlink Supplier',
+    notLinked: 'Not linked',
+  },
   suppliers: {
     code: 'Code',
     name: 'Name',
@@ -154,6 +219,20 @@ export const en = {
     adjusted: 'Stock adjusted successfully',
     notes: 'Notes',
     requiredFields: 'Select warehouse and product',
+  },
+  projects: {
+    code: 'Code',
+    name: 'Name',
+    description: 'Description',
+    create: 'New Project',
+    search: 'Search projects...',
+  },
+  costCenters: {
+    code: 'Code',
+    name: 'Name',
+    parent: 'Parent',
+    create: 'New Cost Center',
+    search: 'Search cost centers...',
   },
   warehouses: {
     code: 'Code',
@@ -169,6 +248,7 @@ export const en = {
     posted: 'Invoice posted successfully',
     create: 'New Sales Invoice',
     created: 'Invoice created',
+    buyerMode: 'Buyer source',
   },
   purchasing: {
     number: 'PO #',
@@ -177,6 +257,7 @@ export const en = {
     create: 'New Purchase Order',
     created: 'Purchase order created',
     requiredFields: 'Select supplier and warehouse',
+    supplierMode: 'Supplier source',
   },
   accounting: {
     trialBalance: 'Trial Balance',
@@ -207,6 +288,8 @@ export const en = {
 
 export type TranslationSchema = {
   common: Record<string, string>;
+  boot: Record<string, string>;
+  connection: Record<string, string>;
   auth: Record<string, string>;
   nav: Record<string, string>;
   dashboard: Record<string, string>;
@@ -219,8 +302,11 @@ export type TranslationSchema = {
   errors: Record<string, string>;
   products: Record<string, string>;
   customers: Record<string, string>;
+  parties: Record<string, string>;
   suppliers: Record<string, string>;
   inventory: Record<string, string>;
+  projects: Record<string, string>;
+  costCenters: Record<string, string>;
   warehouses: Record<string, string>;
   sales: Record<string, string>;
   purchasing: Record<string, string>;

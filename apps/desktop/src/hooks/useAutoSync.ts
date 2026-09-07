@@ -7,14 +7,20 @@ export function useAutoSync() {
   const setConnectivity = useAppStore((s) => s.setConnectivity);
   const accessToken = useAuthStore((s) => s.accessToken);
   const prevConnectivity = useRef(connectivity);
+  const bootstrapped = useRef(false);
 
   useEffect(() => {
-    const wasOffline =
-      prevConnectivity.current === ConnectivityStatus.OFFLINE ||
-      prevConnectivity.current === ConnectivityStatus.SYNC_ERROR;
-    const isOnline = connectivity === ConnectivityStatus.ONLINE;
+    if (!bootstrapped.current) {
+      bootstrapped.current = true;
+      prevConnectivity.current = connectivity;
+      return;
+    }
 
-    if (wasOffline && isOnline && accessToken && window.desktopApi) {
+    const reconnected =
+      prevConnectivity.current === ConnectivityStatus.OFFLINE &&
+      connectivity === ConnectivityStatus.ONLINE;
+
+    if (reconnected && accessToken && window.desktopApi) {
       setConnectivity(ConnectivityStatus.SYNCING);
       void window.desktopApi
         .runSync()

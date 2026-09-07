@@ -6,6 +6,11 @@ import { PrismaService } from '../../database/prisma.service';
 import { DocumentNumberService } from '../../common/services/document-number.service';
 import { InventoryLedgerService } from '../../common/services/inventory-ledger.service';
 import { AccountingEngineService } from '../../common/services/accounting-engine.service';
+import { getAppConfig } from '../../config/app-config';
+import { FinancialPostingService } from '../finance/posting/financial-posting.service';
+import type { PostingDimensions } from '../finance/posting/posting.types';
+import { AuditService } from '../audit/audit.service';
+import { PartyLegacyAdapterService } from '../parties/party-legacy-adapter.service';
 
 interface PoLineInput {
   productId: string;
@@ -22,6 +27,9 @@ export class PurchasingService {
     private documentNumbers: DocumentNumberService,
     private inventoryLedger: InventoryLedgerService,
     private accounting: AccountingEngineService,
+    private financialPosting: FinancialPostingService,
+    private partyLegacy: PartyLegacyAdapterService,
+    private audit: AuditService,
   ) {}
 
   async findAll(tenantId: string) {
@@ -65,9 +73,19 @@ export class PurchasingService {
       throw new BadRequestException('Purchase order must have at least one line');
     }
 
-    const number = await this.documentNumbers.nextNumber(
-      tenantId, 'PO', 'PO', data.branchId,
-    );
+    const supplier = await this.prisma.supplier.findFirst({
+      where: { id: data.supplierId, tenantId, deletedAt: null },
+    });
+    if (!supplier) {
+      throw new BadRequestException('Supplier not found');
+    }
+
+    const warehouse = await this.prisma.warehouse.findFirst({
+      where: { id: data.warehouseId, tenantId, deletedAt: null },
+    });
+    if (!warehouse) {
+      throw new BadRequestException('Warehouse not found');
+    }
 
     let subtotal = new Prisma.Decimal(0);
     let taxAmount = new Prisma.Decimal(0);
@@ -93,33 +111,84 @@ export class PurchasingService {
 
     const total = subtotal.add(taxAmount);
 
-    return this.prisma.purchaseOrder.create({
-      data: {
-        tenantId,
-        branchId: data.branchId,
-        supplierId: data.supplierId,
-        warehouseId: data.warehouseId,
-        number,
-        status: 'draft',
-        orderDate: data.orderDate ? new Date(data.orderDate) : new Date(),
-        expectedDate: data.expectedDate ? new Date(data.expectedDate) : undefined,
-        notes: data.notes,
-        subtotal,
-        taxAmount,
-        total,
-        lines: { create: lineData },
-      },
-      include: { lines: true, supplier: true, warehouse: true },
+    return this.prisma.$transaction(async (tx) => {
+      const number = await this.documentNumbers.nextNumber(
+        tenantId, 'PO', 'PO', data.branchId, tx,
+      );
+
+      return tx.purchaseOrder.create({
+        data: {
+          tenantId,
+          branchId: data.branchId,
+          supplierId: data.supplierId,
+          warehouseId: data.warehouseId,
+          number,
+          status: 'draft',
+          orderDate: data.orderDate ? new Date(data.orderDate) : new Date(),
+          expectedDate: data.expectedDate ? new Date(data.expectedDate) : undefined,
+          notes: data.notes,
+          subtotal,
+          taxAmount,
+          total,
+          lines: { create: lineData },
+        },
+        include: { lines: true, supplier: true, warehouse: true },
+      });
     });
   }
 
-  async receiveOrder(tenantId: string, id: string) {
+  async createOrderFromParty(
+    tenantId: string,
+    data: {
+      partyId: string;
+      branchId: string;
+      warehouseId: string;
+      orderDate?: string;
+      expectedDate?: string;
+      notes?: string;
+      lines: PoLineInput[];
+      createdById?: string;
+    },
+  ) {
+    const supplier = await this.partyLegacy.resolveLinkedSupplierForPurchasing(
+      tenantId,
+      data.partyId,
+    );
+
+    const order = await this.createOrder(tenantId, {
+      branchId: data.branchId,
+      supplierId: supplier.id,
+      warehouseId: data.warehouseId,
+      orderDate: data.orderDate,
+      expectedDate: data.expectedDate,
+      notes: data.notes,
+      lines: data.lines,
+    });
+
+    await this.audit.log({
+      tenantId,
+      userId: data.createdById,
+      entity: 'purchase_order',
+      entityId: order.id,
+      action: 'purchasing.order.created_from_party',
+      newValue: { partyId: data.partyId, supplierId: supplier.id },
+    });
+
+    return order;
+  }
+
+  async receiveOrder(
+    tenantId: string,
+    id: string,
+    dimensions?: PostingDimensions,
+  ) {
     const order = await this.findById(tenantId, id);
     if (order.status === 'received') {
       throw new BadRequestException('Purchase order already received');
     }
 
     const totalNum = Number(order.total);
+    const useUniversalFinancePilot = getAppConfig().universalFinancePilotEnabled;
 
     return this.prisma.$transaction(async (tx) => {
       for (const line of order.lines) {
@@ -147,18 +216,37 @@ export class PurchasingService {
         });
       }
 
-      await this.accounting.createEntry(
-        tenantId,
-        order.branchId,
-        `Purchase order ${order.number}`,
-        [
-          { accountCode: '1200', debit: totalNum, credit: 0, description: 'Inventory' },
-          { accountCode: '2000', debit: 0, credit: totalNum, description: 'AP' },
-        ],
-        'purchase_order',
-        order.id,
-        tx,
-      );
+      if (useUniversalFinancePilot) {
+        await this.financialPosting.post(
+          {
+            mode: 'rule',
+            tenantId,
+            branchId: order.branchId,
+            postingDate: new Date(),
+            description: `Purchase order ${order.number}`,
+            sourceModule: 'purchasing',
+            sourceType: 'order',
+            sourceId: order.id,
+            sourceEvent: 'receive',
+            amounts: { total: order.total.toString() },
+            dimensions,
+          },
+          tx,
+        );
+      } else {
+        await this.accounting.createEntry(
+          tenantId,
+          order.branchId,
+          `Purchase order ${order.number}`,
+          [
+            { accountCode: '1200', debit: totalNum, credit: 0, description: 'Inventory' },
+            { accountCode: '2000', debit: 0, credit: totalNum, description: 'AP' },
+          ],
+          'purchase_order',
+          order.id,
+          tx,
+        );
+      }
 
       await tx.supplier.update({
         where: { id: order.supplierId },

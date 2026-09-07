@@ -4,12 +4,15 @@ import {
   ArgumentsHost,
   HttpException,
   HttpStatus,
+  Logger,
 } from '@nestjs/common';
 import type { Response } from 'express';
 import type { ApiResponse } from '@fratelanza/types';
 
 @Catch()
 export class GlobalExceptionFilter implements ExceptionFilter {
+  private readonly logger = new Logger(GlobalExceptionFilter.name);
+
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
@@ -33,6 +36,10 @@ export class GlobalExceptionFilter implements ExceptionFilter {
         code = (obj.error as string) ?? code;
         details = obj.details;
       }
+    } else {
+      this.logger.error(
+        exception instanceof Error ? exception.stack : String(exception),
+      );
     }
 
     const body: ApiResponse = {

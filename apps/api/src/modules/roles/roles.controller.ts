@@ -2,7 +2,7 @@ import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
 import { IsString, IsOptional, IsArray } from 'class-validator';
 import { RolesService } from './roles.service';
 import { PrismaService } from '../../database/prisma.service';
-import { TenantId, RequirePermissions } from '../../common/decorators';
+import { TenantId, RequirePermissions, LicenseExempt } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class CreateRoleDto {
@@ -14,6 +14,7 @@ class CreateRoleDto {
 
 @Controller('roles')
 @UseGuards(PermissionsGuard)
+@LicenseExempt()
 export class RolesController {
   constructor(
     private rolesService: RolesService,

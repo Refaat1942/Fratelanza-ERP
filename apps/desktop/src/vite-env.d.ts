@@ -8,7 +8,8 @@ interface DesktopApi {
     os: string;
     appVersion: string;
   }>;
-  checkConnectivity: () => Promise<boolean>;
+  checkConnectivity: (apiUrl?: string) => Promise<boolean>;
+  setApiUrl: (apiUrl: string) => Promise<string>;
   getApiUrl: () => Promise<string>;
   setAccessToken: (token: string | null) => Promise<void>;
   runSync: () => Promise<{

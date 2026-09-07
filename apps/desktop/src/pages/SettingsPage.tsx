@@ -1,68 +1,71 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ConnectivityStatus } from '@fratelanza/types';
 import { LOCALE_LABELS, SUPPORTED_LOCALES } from '@fratelanza/localization';
 import type { Locale, ThemeMode } from '@fratelanza/types';
-import { createApiClient, resolveApiBaseUrl, type SyncConflictRow } from '../lib/api';
-import { useAppStore, useAuthStore } from '../stores';
+import { createApiClient, resolveApiBaseUrl, type LicenseAdminView } from '../lib/api';
+import { useAppStore, useAuthStore, useEntitlementStore } from '../stores';
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation();
   const locale = useAppStore((s) => s.locale);
   const theme = useAppStore((s) => s.theme);
-  const connectivity = useAppStore((s) => s.connectivity);
   const apiUrl = useAppStore((s) => s.apiUrl);
-  const deviceId = useAppStore((s) => s.deviceId);
-  const setDeviceId = useAppStore((s) => s.setDeviceId);
+  const setApiUrl = useAppStore((s) => s.setApiUrl);
+  const connectivity = useAppStore((s) => s.connectivity);
+  const setConnectivity = useAppStore((s) => s.setConnectivity);
   const setLocale = useAppStore((s) => s.setLocale);
   const setTheme = useAppStore((s) => s.setTheme);
   const accessToken = useAuthStore((s) => s.accessToken);
-  const [conflicts, setConflicts] = useState<SyncConflictRow[]>([]);
-  const [conflictError, setConflictError] = useState('');
-  const [conflictLoading, setConflictLoading] = useState(false);
+  const user = useAuthStore((s) => s.user);
+  const edition = useEntitlementStore((s) => s.edition);
+  const status = useEntitlementStore((s) => s.status);
+  const modules = useEntitlementStore((s) => s.modules);
+  const [serverUrl, setServerUrl] = useState(apiUrl);
+  const [serverMessage, setServerMessage] = useState('');
+  const [licenseView, setLicenseView] = useState<LicenseAdminView | null>(null);
+
+  const canReadLicense = user?.permissions.includes('core:license:read') ?? false;
 
   function handleLocaleChange(newLocale: Locale) {
     setLocale(newLocale);
     void i18n.changeLanguage(newLocale);
   }
 
-  const loadConflicts = useCallback(async () => {
-    if (connectivity === ConnectivityStatus.OFFLINE) return;
-    setConflictLoading(true);
-    setConflictError('');
-    try {
-      let id = deviceId;
-      if (!id && window.desktopApi) {
-        const info = await window.desktopApi.getDeviceInfo();
-        id = info.deviceId;
-        setDeviceId(info.deviceId);
-      }
-      if (!id) return;
-
-      const client = createApiClient(() => resolveApiBaseUrl(apiUrl), () => accessToken);
-      const rows = await client.getSyncConflicts(id);
-      setConflicts(rows);
-    } catch (err) {
-      setConflictError(err instanceof Error ? err.message : t('errors.generic'));
-    } finally {
-      setConflictLoading(false);
+  async function saveServerUrl() {
+    setServerMessage('');
+    const normalized = serverUrl.trim() || 'http://localhost:3000';
+    setApiUrl(normalized);
+    if (window.desktopApi) {
+      await window.desktopApi.setApiUrl(normalized);
+      const online = await window.desktopApi.checkConnectivity(normalized);
+      setConnectivity(online ? ConnectivityStatus.ONLINE : ConnectivityStatus.OFFLINE);
+      setServerMessage(
+        online ? t('connection.serverReachable') : t('connection.serverUnreachable'),
+      );
+      return;
     }
-  }, [accessToken, apiUrl, connectivity, deviceId, setDeviceId, t]);
 
-  useEffect(() => {
-    void loadConflicts();
-  }, [loadConflicts]);
-
-  async function resolveConflict(id: string, resolution: 'dismiss' | 'server_wins' | 'retry_local') {
-    setConflictError('');
     try {
-      const client = createApiClient(() => resolveApiBaseUrl(apiUrl), () => accessToken);
-      await client.resolveSyncConflict(id, resolution);
-      setConflicts((prev) => prev.filter((c) => c.id !== id));
-    } catch (err) {
-      setConflictError(err instanceof Error ? err.message : t('errors.generic'));
+      const client = createApiClient(() => resolveApiBaseUrl(normalized), () => accessToken);
+      await client.getSettings();
+      setConnectivity(ConnectivityStatus.ONLINE);
+      setServerMessage(t('connection.serverReachable'));
+    } catch {
+      setConnectivity(ConnectivityStatus.OFFLINE);
+      setServerMessage(t('connection.serverUnreachable'));
     }
   }
+
+  useEffect(() => {
+    setServerUrl(apiUrl);
+  }, [apiUrl]);
+
+  useEffect(() => {
+    if (!canReadLicense || !accessToken) return;
+    const client = createApiClient(() => resolveApiBaseUrl(apiUrl), () => accessToken);
+    void client.getLicenseAdminView().then(setLicenseView).catch(() => setLicenseView(null));
+  }, [canReadLicense, accessToken, apiUrl]);
 
   return (
     <div>
@@ -71,6 +74,25 @@ export function SettingsPage() {
       </div>
 
       <div className="card">
+        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
+          <span>{t('connection.serverUrl')}</span>
+          <input
+            className="form-input"
+            value={serverUrl}
+            onChange={(e) => setServerUrl(e.target.value)}
+            placeholder="http://192.168.1.10:3000"
+          />
+          <button type="button" className="btn btn-primary" onClick={() => void saveServerUrl()}>
+            {t('connection.saveServer')}
+          </button>
+          {serverMessage && (
+            <p className={connectivity === ConnectivityStatus.ONLINE ? 'form-success' : 'form-error'}>
+              {serverMessage}
+            </p>
+          )}
+          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>{t('connection.lanHint')}</p>
+        </div>
+
         <div className="settings-row">
           <span>{t('settings.language')}</span>
           <select
@@ -101,61 +123,40 @@ export function SettingsPage() {
       </div>
 
       <div className="card" style={{ marginTop: 16 }}>
-        <div className="page-header" style={{ marginBottom: 12 }}>
-          <h2 style={{ fontSize: '1.1rem', margin: 0 }}>{t('sync.conflictsTitle')}</h2>
-          <button
-            type="button"
-            className="btn btn-ghost"
-            onClick={() => void loadConflicts()}
-            disabled={conflictLoading || connectivity === ConnectivityStatus.OFFLINE}
-          >
-            {t('common.refresh')}
-          </button>
+        <h2 style={{ marginTop: 0 }}>License</h2>
+        <div className="settings-row">
+          <span>Edition</span>
+          <span>{edition ?? licenseView?.license.edition ?? '—'}</span>
         </div>
-
-        {conflictLoading && <p>{t('common.loading')}</p>}
-        {conflictError && <p className="form-error">{conflictError}</p>}
-        {!conflictLoading && conflicts.length === 0 && (
-          <p style={{ color: 'var(--color-text-secondary)' }}>{t('sync.noConflicts')}</p>
-        )}
-
-        {conflicts.map((conflict) => (
-          <div
-            key={conflict.id}
-            className="settings-row"
-            style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8, padding: '12px 0', borderTop: '1px solid var(--color-border)' }}
-          >
-            <div>
-              <strong>{conflict.entityType}</strong>
-              <span style={{ marginLeft: 8, color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
-                {conflict.entityId}
+        <div className="settings-row">
+          <span>Status</span>
+          <span>{status ?? licenseView?.license.status ?? '—'}</span>
+        </div>
+        {licenseView && (
+          <>
+            <div className="settings-row">
+              <span>License key</span>
+              <span>{licenseView.license.licenseKey}</span>
+            </div>
+            <div className="settings-row">
+              <span>Usage</span>
+              <span>
+                Users {licenseView.entitlements.usage.users}/{licenseView.entitlements.limits.maxUsers ?? '—'}
+                {' · '}
+                Branches {licenseView.entitlements.usage.branches}/{licenseView.entitlements.limits.maxBranches ?? '—'}
               </span>
             </div>
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => void resolveConflict(conflict.id, 'retry_local')}
-              >
-                {t('sync.retryLocal')}
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => void resolveConflict(conflict.id, 'server_wins')}
-              >
-                {t('sync.keepServer')}
-              </button>
-              <button
-                type="button"
-                className="btn btn-ghost"
-                onClick={() => void resolveConflict(conflict.id, 'dismiss')}
-              >
-                {t('sync.dismiss')}
-              </button>
-            </div>
-          </div>
-        ))}
+          </>
+        )}
+        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
+          <span>Enabled modules</span>
+          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+            {(licenseView?.entitlements.modules ?? modules)
+              .filter((m) => m.enabled)
+              .map((m) => m.displayName)
+              .join(', ') || '—'}
+          </span>
+        </div>
       </div>
     </div>
   );

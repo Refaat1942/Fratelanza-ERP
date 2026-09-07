@@ -6,7 +6,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PosService } from './pos.service';
-import { TenantId, CurrentUser, RequirePermissions } from '../../common/decorators';
+import { TenantId, CurrentUser, RequirePermissions, RequireModule } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 
@@ -46,6 +46,7 @@ class CreateSaleDto {
 
 @Controller('pos')
 @UseGuards(PermissionsGuard)
+@RequireModule('pos')
 export class PosController {
   constructor(private posService: PosService) {}
 

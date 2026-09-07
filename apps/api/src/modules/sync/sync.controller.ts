@@ -6,8 +6,9 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SyncService } from './sync.service';
-import { TenantId, RequirePermissions } from '../../common/decorators';
+import { TenantId, RequirePermissions, RequireModule } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
+import { SyncEnabledGuard } from './sync-enabled.guard';
 
 class SyncItemDto {
   @IsString() entityType!: string;
@@ -30,7 +31,8 @@ class ResolveConflictDto {
 }
 
 @Controller('sync')
-@UseGuards(PermissionsGuard)
+@UseGuards(SyncEnabledGuard, PermissionsGuard)
+@RequireModule('sync')
 export class SyncController {
   constructor(private syncService: SyncService) {}
 

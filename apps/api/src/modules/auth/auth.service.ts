@@ -158,6 +158,13 @@ export class AuthService {
       throw new ForbiddenException('Account is inactive');
     }
 
+    const newRefreshToken = randomUUID();
+
+    await this.prisma.session.update({
+      where: { id: session.id },
+      data: { refreshToken: newRefreshToken },
+    });
+
     const accessPayload: JwtPayload = {
       sub: session.userId,
       email: session.user.email,
@@ -171,7 +178,21 @@ export class AuthService {
       expiresIn: 900,
     });
 
-    return { accessToken, expiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m' };
+    return {
+      accessToken,
+      refreshToken: newRefreshToken,
+      expiresIn: process.env.JWT_ACCESS_EXPIRES_IN ?? '15m',
+    };
+  }
+
+  async assertSessionActive(sessionId: string, userId: string): Promise<void> {
+    const session = await this.prisma.session.findFirst({
+      where: { id: sessionId, userId },
+    });
+
+    if (!session || session.revokedAt || session.expiresAt < new Date()) {
+      throw new UnauthorizedException('Session is no longer active');
+    }
   }
 
   async logout(sessionId: string, userId: string) {

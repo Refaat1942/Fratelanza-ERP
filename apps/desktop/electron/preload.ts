@@ -8,7 +8,8 @@ export interface DesktopApi {
     os: string;
     appVersion: string;
   }>;
-  checkConnectivity: () => Promise<boolean>;
+  checkConnectivity: (apiUrl?: string) => Promise<boolean>;
+  setApiUrl: (apiUrl: string) => Promise<string>;
   getApiUrl: () => Promise<string>;
   setAccessToken: (token: string | null) => Promise<void>;
   runSync: () => Promise<{
@@ -82,7 +83,8 @@ export interface DesktopApi {
 
 const desktopApi: DesktopApi = {
   getDeviceInfo: () => ipcRenderer.invoke('app:getDeviceInfo'),
-  checkConnectivity: () => ipcRenderer.invoke('app:checkConnectivity'),
+  checkConnectivity: (apiUrl?: string) => ipcRenderer.invoke('app:checkConnectivity', apiUrl),
+  setApiUrl: (apiUrl) => ipcRenderer.invoke('app:setApiUrl', apiUrl),
   getApiUrl: () => ipcRenderer.invoke('app:getApiUrl'),
   setAccessToken: (token) => ipcRenderer.invoke('auth:setAccessToken', token),
   runSync: () => ipcRenderer.invoke('sync:run'),

@@ -2,12 +2,19 @@ import {
   Controller, Get, Post, Param, Body, UseGuards,
 } from '@nestjs/common';
 import {
-  IsString, IsOptional, IsArray, ValidateNested, IsNumber, Min,
+  IsString, IsOptional, IsArray, ValidateNested, IsNumber, Min, IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SalesService } from './sales.service';
-import { TenantId, CurrentUser, RequirePermissions } from '../../common/decorators';
+import {
+  TenantId,
+  CurrentUser,
+  RequirePermissions,
+  RequireModule,
+  RequireFeature,
+} from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
+import { PartyLegacyRoutingGuard } from './guards/party-legacy-routing.guard';
 import type { JwtPayload } from '@fratelanza/types';
 
 class InvoiceLineDto {
@@ -30,6 +37,17 @@ class CreateInvoiceDto {
   lines!: InvoiceLineDto[];
 }
 
+class CreateInvoiceFromPartyDto {
+  @IsUUID() partyId!: string;
+  @IsString() branchId!: string;
+  @IsOptional() @IsString() warehouseId?: string;
+  @IsOptional() @IsString() invoiceDate?: string;
+  @IsOptional() @IsString() dueDate?: string;
+  @IsOptional() @IsString() notes?: string;
+  @IsArray() @ValidateNested({ each: true }) @Type(() => InvoiceLineDto)
+  lines!: InvoiceLineDto[];
+}
+
 class RecordPaymentDto {
   @IsString() branchId!: string;
   @IsString() customerId!: string;
@@ -40,12 +58,36 @@ class RecordPaymentDto {
   @IsOptional() @IsString() reference?: string;
 }
 
+class RecordPaymentFromPartyDto {
+  @IsUUID() partyId!: string;
+  @IsString() branchId!: string;
+  @IsOptional() @IsString() invoiceId?: string;
+  @IsNumber() @Min(0.01) amount!: number;
+  @IsOptional() @IsString() method?: string;
+  @IsOptional() @IsString() paymentDate?: string;
+  @IsOptional() @IsString() reference?: string;
+}
+
+class PostInvoiceDimensionsDto {
+  @IsOptional() @IsUUID() projectId?: string;
+  @IsOptional() @IsUUID() costCenterId?: string;
+}
+
+class PostSalesInvoiceDto {
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PostInvoiceDimensionsDto)
+  dimensions?: PostInvoiceDimensionsDto;
+}
+
 @Controller('sales')
 @UseGuards(PermissionsGuard)
+@RequireModule('sales')
 export class SalesController {
   constructor(private salesService: SalesService) {}
 
   @Get('invoices')
+  @RequireFeature('sales.invoices')
   @RequirePermissions('sales:invoices:read')
   async listInvoices(@TenantId() tenantId: string) {
     const data = await this.salesService.findAll(tenantId);
@@ -53,6 +95,7 @@ export class SalesController {
   }
 
   @Get('invoices/:id')
+  @RequireFeature('sales.invoices')
   @RequirePermissions('sales:invoices:read')
   async getInvoice(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.salesService.findById(tenantId, id);
@@ -60,6 +103,7 @@ export class SalesController {
   }
 
   @Post('invoices')
+  @RequireFeature('sales.invoices')
   @RequirePermissions('sales:invoices:create')
   async createInvoice(
     @TenantId() tenantId: string,
@@ -73,10 +117,41 @@ export class SalesController {
     return { success: true, data };
   }
 
+  @Post('invoices/from-party')
+  @UseGuards(PartyLegacyRoutingGuard)
+  @RequireFeature('sales.invoices')
+  @RequirePermissions('sales:invoices:create')
+  async createInvoiceFromParty(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreateInvoiceFromPartyDto,
+  ) {
+    const data = await this.salesService.createInvoiceFromParty(tenantId, {
+      ...dto,
+      createdById: user.sub,
+    });
+    return { success: true, data };
+  }
+
   @Post('invoices/:id/post')
+  @RequireFeature('sales.invoices')
   @RequirePermissions('sales:invoices:post')
-  async postInvoice(@TenantId() tenantId: string, @Param('id') id: string) {
-    const data = await this.salesService.postInvoice(tenantId, id);
+  async postInvoice(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto?: PostSalesInvoiceDto,
+  ) {
+    const dimensions = dto?.dimensions
+      ? {
+          ...(dto.dimensions.projectId ? { projectId: dto.dimensions.projectId } : {}),
+          ...(dto.dimensions.costCenterId ? { costCenterId: dto.dimensions.costCenterId } : {}),
+        }
+      : undefined;
+    const data = await this.salesService.postInvoice(
+      tenantId,
+      id,
+      dimensions && Object.keys(dimensions).length > 0 ? dimensions : undefined,
+    );
     return { success: true, data };
   }
 
@@ -84,6 +159,21 @@ export class SalesController {
   @RequirePermissions('sales:payments:create')
   async recordPayment(@TenantId() tenantId: string, @Body() dto: RecordPaymentDto) {
     const data = await this.salesService.recordPayment(tenantId, dto);
+    return { success: true, data };
+  }
+
+  @Post('payments/from-party')
+  @UseGuards(PartyLegacyRoutingGuard)
+  @RequirePermissions('sales:payments:create')
+  async recordPaymentFromParty(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: RecordPaymentFromPartyDto,
+  ) {
+    const data = await this.salesService.recordPaymentFromParty(tenantId, {
+      ...dto,
+      actorUserId: user.sub,
+    });
     return { success: true, data };
   }
 }

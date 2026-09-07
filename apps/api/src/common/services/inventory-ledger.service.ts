@@ -21,71 +21,72 @@ export class InventoryLedgerService {
   constructor(private prisma: PrismaService) {}
 
   async applyMovement(input: StockMovementInput, tx?: Prisma.TransactionClient) {
-    const db = tx ?? this.prisma;
-    const qty = new Prisma.Decimal(input.quantity);
-    const cost = new Prisma.Decimal(input.unitCost ?? 0);
+    const run = async (db: Prisma.TransactionClient) => {
+      const qty = new Prisma.Decimal(input.quantity);
+      const cost = new Prisma.Decimal(input.unitCost ?? 0);
 
-    if (qty.isZero()) {
-      throw new BadRequestException('Movement quantity cannot be zero');
-    }
+      if (qty.isZero()) {
+        throw new BadRequestException('Movement quantity cannot be zero');
+      }
 
-    const movement = await db.inventoryMovement.create({
-      data: {
-        tenantId: input.tenantId,
-        branchId: input.branchId,
-        warehouseId: input.warehouseId,
-        productId: input.productId,
-        movementType: input.movementType,
-        quantity: qty,
-        unitCost: cost,
-        referenceType: input.referenceType,
-        referenceId: input.referenceId,
-        notes: input.notes,
-        createdById: input.createdById,
-      },
-    });
-
-    const existing = await db.stockBalance.findUnique({
-      where: {
-        tenantId_warehouseId_productId: {
+      const movement = await db.inventoryMovement.create({
+        data: {
           tenantId: input.tenantId,
+          branchId: input.branchId,
           warehouseId: input.warehouseId,
           productId: input.productId,
+          movementType: input.movementType,
+          quantity: qty,
+          unitCost: cost,
+          referenceType: input.referenceType,
+          referenceId: input.referenceId,
+          notes: input.notes,
+          createdById: input.createdById,
         },
-      },
-    });
+      });
 
-    const currentQty = existing?.quantity ?? new Prisma.Decimal(0);
-    const newQty = currentQty.add(qty);
+      const updated = await db.$queryRaw<Array<{ quantity: Prisma.Decimal; avgCost: Prisma.Decimal }>>`
+        INSERT INTO stock_balances (
+          id, "tenantId", "warehouseId", "productId", quantity, "avgCost", "updatedAt"
+        )
+        VALUES (
+          gen_random_uuid(),
+          ${input.tenantId}::uuid,
+          ${input.warehouseId}::uuid,
+          ${input.productId}::uuid,
+          ${qty},
+          ${cost},
+          NOW()
+        )
+        ON CONFLICT ("tenantId", "warehouseId", "productId")
+        DO UPDATE SET
+          quantity = stock_balances.quantity + ${qty},
+          "avgCost" = CASE
+            WHEN ${qty} > 0 AND ${cost} <> 0 THEN
+              CASE
+                WHEN stock_balances.quantity + ${qty} = 0 THEN 0
+                ELSE (
+                  (stock_balances.quantity * stock_balances."avgCost") + (${qty} * ${cost})
+                ) / (stock_balances.quantity + ${qty})
+              END
+            ELSE stock_balances."avgCost"
+          END,
+          "updatedAt" = NOW()
+        RETURNING quantity, "avgCost"
+      `;
 
-    if (newQty.lessThan(0)) {
-      throw new BadRequestException('Insufficient stock for this movement');
+      const balance = updated[0];
+      if (!balance || new Prisma.Decimal(balance.quantity).lessThan(0)) {
+        throw new BadRequestException('Insufficient stock for this movement');
+      }
+
+      return movement;
+    };
+
+    if (tx) {
+      return run(tx);
     }
 
-    let newAvgCost = existing?.avgCost ?? new Prisma.Decimal(0);
-    if (qty.greaterThan(0) && !cost.isZero()) {
-      const totalValue = currentQty.mul(newAvgCost).add(qty.mul(cost));
-      newAvgCost = newQty.isZero() ? new Prisma.Decimal(0) : totalValue.div(newQty);
-    }
-
-    await db.stockBalance.upsert({
-      where: {
-        tenantId_warehouseId_productId: {
-          tenantId: input.tenantId,
-          warehouseId: input.warehouseId,
-          productId: input.productId,
-        },
-      },
-      update: { quantity: newQty, avgCost: newAvgCost },
-      create: {
-        tenantId: input.tenantId,
-        warehouseId: input.warehouseId,
-        productId: input.productId,
-        quantity: newQty,
-        avgCost: newAvgCost,
-      },
-    });
-
-    return movement;
+    return this.prisma.$transaction(run);
   }
 }

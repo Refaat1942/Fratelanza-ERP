@@ -2,12 +2,20 @@ import {
   Controller, Get, Post, Param, Body, UseGuards,
 } from '@nestjs/common';
 import {
-  IsString, IsOptional, IsArray, ValidateNested, IsNumber, Min,
+  IsString, IsOptional, IsArray, ValidateNested, IsNumber, Min, IsUUID,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PurchasingService } from './purchasing.service';
-import { TenantId, RequirePermissions } from '../../common/decorators';
+import {
+  TenantId,
+  CurrentUser,
+  RequirePermissions,
+  RequireModule,
+  RequireFeature,
+} from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
+import { PurchasingPartyRoutingGuard } from './guards/purchasing-party-routing.guard';
+import type { JwtPayload } from '@fratelanza/types';
 
 class PoLineDto {
   @IsString() productId!: string;
@@ -28,12 +36,37 @@ class CreatePoDto {
   lines!: PoLineDto[];
 }
 
+class CreatePoFromPartyDto {
+  @IsUUID() partyId!: string;
+  @IsString() branchId!: string;
+  @IsString() warehouseId!: string;
+  @IsOptional() @IsString() orderDate?: string;
+  @IsOptional() @IsString() expectedDate?: string;
+  @IsOptional() @IsString() notes?: string;
+  @IsArray() @ValidateNested({ each: true }) @Type(() => PoLineDto)
+  lines!: PoLineDto[];
+}
+
+class ReceiveDimensionsDto {
+  @IsOptional() @IsUUID() projectId?: string;
+  @IsOptional() @IsUUID() costCenterId?: string;
+}
+
+class ReceivePurchaseOrderDto {
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ReceiveDimensionsDto)
+  dimensions?: ReceiveDimensionsDto;
+}
+
 @Controller('purchasing')
 @UseGuards(PermissionsGuard)
+@RequireModule('purchasing')
 export class PurchasingController {
   constructor(private purchasingService: PurchasingService) {}
 
   @Get('orders')
+  @RequireFeature('purchasing.orders')
   @RequirePermissions('purchasing:orders:read')
   async listOrders(@TenantId() tenantId: string) {
     const data = await this.purchasingService.findAll(tenantId);
@@ -41,6 +74,7 @@ export class PurchasingController {
   }
 
   @Get('orders/:id')
+  @RequireFeature('purchasing.orders')
   @RequirePermissions('purchasing:orders:read')
   async getOrder(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.purchasingService.findById(tenantId, id);
@@ -48,16 +82,48 @@ export class PurchasingController {
   }
 
   @Post('orders')
+  @RequireFeature('purchasing.orders')
   @RequirePermissions('purchasing:orders:create')
   async createOrder(@TenantId() tenantId: string, @Body() dto: CreatePoDto) {
     const data = await this.purchasingService.createOrder(tenantId, dto);
     return { success: true, data };
   }
 
+  @Post('orders/from-party')
+  @UseGuards(PurchasingPartyRoutingGuard)
+  @RequireFeature('purchasing.orders')
+  @RequirePermissions('purchasing:orders:create')
+  async createOrderFromParty(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreatePoFromPartyDto,
+  ) {
+    const data = await this.purchasingService.createOrderFromParty(tenantId, {
+      ...dto,
+      createdById: user.sub,
+    });
+    return { success: true, data };
+  }
+
   @Post('orders/:id/receive')
+  @RequireFeature('purchasing.orders')
   @RequirePermissions('purchasing:orders:receive')
-  async receiveOrder(@TenantId() tenantId: string, @Param('id') id: string) {
-    const data = await this.purchasingService.receiveOrder(tenantId, id);
+  async receiveOrder(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto?: ReceivePurchaseOrderDto,
+  ) {
+    const dimensions = dto?.dimensions
+      ? {
+          ...(dto.dimensions.projectId ? { projectId: dto.dimensions.projectId } : {}),
+          ...(dto.dimensions.costCenterId ? { costCenterId: dto.dimensions.costCenterId } : {}),
+        }
+      : undefined;
+    const data = await this.purchasingService.receiveOrder(
+      tenantId,
+      id,
+      dimensions && Object.keys(dimensions).length > 0 ? dimensions : undefined,
+    );
     return { success: true, data };
   }
 }

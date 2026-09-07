@@ -83,10 +83,6 @@ export class PosService {
     if (!data.lines.length) throw new BadRequestException('Sale must have lines');
     if (!data.payments.length) throw new BadRequestException('Sale must have payments');
 
-    const number = await this.documentNumbers.nextNumber(
-      tenantId, 'POS', 'POS', data.branchId,
-    );
-
     let subtotal = new Prisma.Decimal(0);
     const lineData = data.lines.map((line) => {
       const lineTotal = new Prisma.Decimal(line.quantity).mul(line.unitPrice);
@@ -104,6 +100,10 @@ export class PosService {
     const totalNum = Number(total);
 
     return this.prisma.$transaction(async (tx) => {
+      const number = await this.documentNumbers.nextNumber(
+        tenantId, 'POS', 'POS', data.branchId, tx,
+      );
+
       const sale = await tx.posSale.create({
         data: {
           tenantId,

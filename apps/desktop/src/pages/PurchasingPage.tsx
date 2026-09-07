@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTable, FormField, Modal, PageHeader, useApiClient } from '../components/DataTable';
 import { LineItemsEditor, type DocumentLineItem } from '../components/LineItemsEditor';
-import type { PurchaseOrderRow } from '../lib/api';
+import type { PartyRow, PurchaseOrderRow } from '../lib/api';
 import { useAuthStore } from '../stores';
+
+type SupplierMode = 'supplier' | 'party';
 
 export function PurchasingPage() {
   const { t } = useTranslation();
@@ -13,24 +15,39 @@ export function PurchasingPage() {
   const [message, setMessage] = useState('');
   const [open, setOpen] = useState(false);
   const [error, setError] = useState('');
+  const [supplierMode, setSupplierMode] = useState<SupplierMode>('supplier');
+  const [partyRoutingEnabled, setPartyRoutingEnabled] = useState(false);
   const [supplierId, setSupplierId] = useState('');
+  const [partyId, setPartyId] = useState('');
   const [warehouseId, setWarehouseId] = useState('');
   const [lines, setLines] = useState<DocumentLineItem[]>([]);
   const [products, setProducts] = useState<Array<{ id: string; name: string; salePrice: number; sku?: string }>>([]);
   const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string }>>([]);
+  const [parties, setParties] = useState<PartyRow[]>([]);
   const [warehouses, setWarehouses] = useState<Array<{ id: string; name: string }>>([]);
 
   async function openForm() {
     setError('');
-    const [productList, supplierList, warehouseList] = await Promise.all([
+    const [productList, supplierList, warehouseList, settings, partyList] = await Promise.all([
       client.getProducts(),
       client.getSuppliers(),
       client.getWarehouses(),
+      client.getSettings(),
+      client.listParties(),
     ]);
     setProducts(productList.filter((p) => p.isActive));
     setSuppliers(supplierList);
     setWarehouses(warehouseList.filter((w) => w.isActive));
+    setParties(partyList.filter((p) => p.roles?.some((r) => r.role === 'supplier')));
+    setPartyRoutingEnabled(
+      Boolean(
+        (settings as { deploymentFlags?: { purchasingPartyRoutingEnabled?: boolean } })
+          ?.deploymentFlags?.purchasingPartyRoutingEnabled,
+      ),
+    );
+    setSupplierMode('supplier');
     setSupplierId(supplierList[0]?.id ?? '');
+    setPartyId(partyList[0]?.id ?? '');
     setWarehouseId(warehouseList[0]?.id ?? '');
     setLines([{ productId: '', description: '', quantity: 1, unitPrice: 0 }]);
     setOpen(true);
@@ -42,7 +59,7 @@ export function PurchasingPage() {
       setError(t('pos.noBranch'));
       return;
     }
-    if (!supplierId || !warehouseId) {
+    if (!warehouseId) {
       setError(t('purchasing.requiredFields'));
       return;
     }
@@ -52,12 +69,20 @@ export function PurchasingPage() {
       return;
     }
     try {
-      const order = await client.createPurchaseOrder({
-        branchId: user.branchId,
-        supplierId,
-        warehouseId,
-        lines: validLines.map((l) => ({ ...l, productId: l.productId })),
-      });
+      const order =
+        supplierMode === 'party' && partyRoutingEnabled
+          ? await client.createPurchaseOrderFromParty({
+              partyId,
+              branchId: user.branchId,
+              warehouseId,
+              lines: validLines.map((l) => ({ ...l, productId: l.productId })),
+            })
+          : await client.createPurchaseOrder({
+              branchId: user.branchId,
+              supplierId,
+              warehouseId,
+              lines: validLines.map((l) => ({ ...l, productId: l.productId })),
+            });
       setOpen(false);
       setMessage(`${t('purchasing.created')} (${order.number})`);
       setRefreshKey((k) => k + 1);
@@ -109,13 +134,35 @@ export function PurchasingPage() {
       />
       <Modal open={open} title={t('purchasing.create')} onClose={() => setOpen(false)}>
         <form onSubmit={(e) => void handleCreate(e)}>
-          <FormField label={t('nav.suppliers')}>
-            <select className="select-input" value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required>
-              {suppliers.map((s) => (
-                <option key={s.id} value={s.id}>{s.name}</option>
-              ))}
-            </select>
-          </FormField>
+          {partyRoutingEnabled && (
+            <FormField label={t('purchasing.supplierMode')}>
+              <select
+                className="select-input"
+                value={supplierMode}
+                onChange={(e) => setSupplierMode(e.target.value as SupplierMode)}
+              >
+                <option value="supplier">{t('nav.suppliers')}</option>
+                <option value="party">{t('nav.parties')}</option>
+              </select>
+            </FormField>
+          )}
+          {supplierMode === 'party' && partyRoutingEnabled ? (
+            <FormField label={t('nav.parties')}>
+              <select className="select-input" value={partyId} onChange={(e) => setPartyId(e.target.value)} required>
+                {parties.map((p) => (
+                  <option key={p.id} value={p.id}>{p.displayName}</option>
+                ))}
+              </select>
+            </FormField>
+          ) : (
+            <FormField label={t('nav.suppliers')}>
+              <select className="select-input" value={supplierId} onChange={(e) => setSupplierId(e.target.value)} required>
+                {suppliers.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </FormField>
+          )}
           <FormField label={t('nav.warehouses')}>
             <select className="select-input" value={warehouseId} onChange={(e) => setWarehouseId(e.target.value)} required>
               {warehouses.map((w) => (

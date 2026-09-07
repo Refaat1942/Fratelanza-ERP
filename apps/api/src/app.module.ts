@@ -25,6 +25,12 @@ import { AccountingModule } from './modules/accounting/accounting.module';
 import { PosModule } from './modules/pos/pos.module';
 import { SyncModule } from './modules/sync/sync.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { PmsModule } from './modules/pms/pms.module';
+import { FinanceModule } from './modules/finance/finance.module';
+import { PartiesModule } from './modules/parties/parties.module';
+import { LicenseModule } from './modules/license/license.module';
+import { ProjectsModule } from './modules/projects/projects.module';
+import { ConstructionModule } from './modules/construction/construction.module';
 
 @Module({
   imports: [
@@ -44,6 +50,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     SettingsModule,
     HealthModule,
     AuditModule,
+    // ── Legacy ERP modules (frozen — see docs/LEGACY_ERP.md) ──
     ProductsModule,
     CustomersModule,
     SuppliersModule,
@@ -55,6 +62,18 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     PosModule,
     SyncModule,
     DashboardModule,
+    // ── PMS domain (see docs/PMS_DOMAIN_DESIGN.md) ──
+    PmsModule,
+    // ── Universal Finance (Phase 2) ──
+    FinanceModule,
+    // ── Universal Party / Contacts (Phase 3) ──
+    PartiesModule,
+    // ── Commercial Licensing (Phase 4.5) ──
+    LicenseModule,
+    // ── Universal Projects (Phase 8) ──
+    ProjectsModule,
+    // ── Construction Vertical (Phase 9) ──
+    ConstructionModule,
   ],
   providers: [
     {

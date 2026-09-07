@@ -2,11 +2,20 @@ import { app, BrowserWindow, ipcMain, net } from 'electron';
 import path from 'path';
 import { registerSyncHandlers } from './sync-service';
 import { getOrCreateDeviceId } from './device-store';
-import { initLocalDatabase } from './local-db';
 
-const API_URL = process.env.API_URL ?? 'http://localhost:3000';
+const DEFAULT_API_URL = process.env.API_URL ?? 'http://localhost:3000';
+let configuredApiUrl = DEFAULT_API_URL;
 let mainWindow: BrowserWindow | null = null;
 let currentAccessToken: string | null = null;
+
+function normalizeApiUrl(url: string): string {
+  return url.replace(/\/+$/, '');
+}
+
+function getHealthUrl(baseUrl?: string): string {
+  const base = normalizeApiUrl(baseUrl ?? configuredApiUrl);
+  return `${base}/api/v1/health`;
+}
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -25,7 +34,9 @@ function createWindow() {
 
   if (process.env.VITE_DEV_SERVER_URL) {
     void mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
-    mainWindow.webContents.openDevTools({ mode: 'detach' });
+    if (process.env.ELECTRON_OPEN_DEVTOOLS === '1') {
+      mainWindow.webContents.openDevTools({ mode: 'detach' });
+    }
   } else {
     void mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
   }
@@ -49,9 +60,10 @@ ipcMain.handle('app:getDeviceInfo', () => ({
   appVersion: app.getVersion(),
 }));
 
-ipcMain.handle('app:checkConnectivity', async () => {
+ipcMain.handle('app:checkConnectivity', async (_event, apiUrl?: string) => {
+  const targetUrl = getHealthUrl(apiUrl ?? configuredApiUrl);
   return new Promise<boolean>((resolve) => {
-    const request = net.request(`${API_URL}/api/v1/health`);
+    const request = net.request(targetUrl);
     request.on('response', (response) => {
       resolve(response.statusCode === 200);
     });
@@ -60,17 +72,19 @@ ipcMain.handle('app:checkConnectivity', async () => {
   });
 });
 
-ipcMain.handle('app:getApiUrl', () => API_URL);
+ipcMain.handle('app:getApiUrl', () => configuredApiUrl);
+
+ipcMain.handle('app:setApiUrl', (_event, apiUrl: string) => {
+  configuredApiUrl = normalizeApiUrl(apiUrl || DEFAULT_API_URL);
+  return configuredApiUrl;
+});
 
 ipcMain.handle('auth:setAccessToken', (_event, token: string | null) => {
   currentAccessToken = token;
 });
 
 app.whenReady().then(() => {
-  registerSyncHandlers(() => currentAccessToken);
-  void initLocalDatabase().catch(() => {
-    // Local DB optional until first sync; errors surfaced in sync UI.
-  });
+  registerSyncHandlers(() => currentAccessToken, () => configuredApiUrl);
   createWindow();
 
   app.on('activate', () => {

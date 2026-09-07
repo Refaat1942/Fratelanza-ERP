@@ -30,14 +30,23 @@ import {
   getLocalProductsList,
 } from './offline-mutations';
 
-const API_URL = process.env.API_URL ?? 'http://localhost:3000';
+const LAN_MVP_MODE = process.env.LAN_MVP_MODE !== 'false';
 
 function str(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
 }
 
-export function registerSyncHandlers(getAccessToken: () => string | null) {
+export function registerSyncHandlers(
+  getAccessToken: () => string | null,
+  getApiUrl: () => string = () => process.env.API_URL ?? 'http://localhost:3000',
+) {
   ipcMain.handle('sync:initLocalDb', async () => {
+    if (LAN_MVP_MODE) {
+      return {
+        success: false,
+        message: 'Local SQLite is disabled in LAN MVP mode.',
+      };
+    }
     try {
       await initLocalDatabase();
       return { success: true, path: getLocalDatabasePath() };
@@ -200,10 +209,18 @@ export function registerSyncHandlers(getAccessToken: () => string | null) {
   });
 
   ipcMain.handle('sync:run', async () => {
+    if (LAN_MVP_MODE) {
+      return {
+        success: false,
+        message: 'Offline sync is disabled in LAN MVP mode. Use the central clinic server.',
+      };
+    }
+
     const token = getAccessToken();
     if (!token) return { success: false, message: 'Not authenticated' };
 
     const deviceId = getOrCreateDeviceId();
+    const API_URL = getApiUrl().replace(/\/+$/, '');
 
     try {
       await initLocalDatabase();

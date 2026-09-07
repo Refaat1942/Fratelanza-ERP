@@ -36,7 +36,9 @@ export class AccountingEngineService {
       );
     }
 
-    const number = await this.documentNumbers.nextNumber(tenantId, 'JE', 'JE', branchId);
+    const number = await this.documentNumbers.nextNumber(
+      tenantId, 'JE', 'JE', branchId, tx,
+    );
 
     const accounts = await db.account.findMany({
       where: {

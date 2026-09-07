@@ -55,7 +55,13 @@ export function SyncStatusBadge() {
     try {
       if (window.desktopApi) {
         const result = await window.desktopApi.runSync();
-        if (!result.success) throw new Error(result.message ?? 'Sync failed');
+        if (!result.success) {
+          if (result.message?.includes('Not authenticated')) {
+            setConnectivity(ConnectivityStatus.ONLINE);
+            return;
+          }
+          throw new Error(result.message ?? 'Sync failed');
+        }
         const processed = result.data?.processedCount ?? 0;
         const pending = result.data?.pendingCount ?? 0;
         const localCount = result.data?.localProductCount ?? 0;

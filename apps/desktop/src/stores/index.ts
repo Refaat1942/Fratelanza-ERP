@@ -22,6 +22,8 @@ interface AuthState {
   refreshToken: string | null;
   user: AuthUser | null;
   setAuth: (accessToken: string, refreshToken: string, user: AuthUser) => void;
+  updateAccessToken: (accessToken: string) => void;
+  updateTokens: (accessToken: string, refreshToken: string) => void;
   clearAuth: () => void;
 }
 
@@ -33,9 +35,13 @@ export const useAuthStore = create<AuthState>()(
       user: null,
       setAuth: (accessToken, refreshToken, user) =>
         set({ accessToken, refreshToken, user }),
+      updateAccessToken: (accessToken) => set({ accessToken }),
+      updateTokens: (accessToken, refreshToken) => set({ accessToken, refreshToken }),
       clearAuth: () => set({ accessToken: null, refreshToken: null, user: null }),
     }),
-    { name: 'fratelanza-auth' },
+    {
+      name: 'fratelanza-auth',
+    },
   ),
 );
 
@@ -73,3 +79,56 @@ export const useAppStore = create<AppState>()(
     { name: 'fratelanza-app' },
   ),
 );
+
+export interface EntitlementModule {
+  key: string;
+  enabled: boolean;
+  displayName: string;
+}
+
+interface EntitlementState {
+  loaded: boolean;
+  edition: string | null;
+  status: string | null;
+  isOperational: boolean;
+  modules: EntitlementModule[];
+  features: Array<{ key: string; enabled: boolean; displayName: string }>;
+  setEntitlements: (payload: {
+    edition: string;
+    status: string;
+    isOperational: boolean;
+    modules: EntitlementModule[];
+    features: Array<{ key: string; enabled: boolean; displayName: string }>;
+  }) => void;
+  clearEntitlements: () => void;
+  isModuleEnabled: (moduleKey: string) => boolean;
+  isFeatureEnabled: (featureKey: string) => boolean;
+}
+
+export const useEntitlementStore = create<EntitlementState>()((set, get) => ({
+  loaded: false,
+  edition: null,
+  status: null,
+  isOperational: false,
+  modules: [],
+  features: [],
+  setEntitlements: ({ edition, status, isOperational, modules, features }) =>
+    set({ loaded: true, edition, status, isOperational, modules, features }),
+  clearEntitlements: () =>
+    set({
+      loaded: false,
+      edition: null,
+      status: null,
+      isOperational: false,
+      modules: [],
+      features: [],
+    }),
+  isModuleEnabled: (moduleKey) => {
+    const mod = get().modules.find((m) => m.key === moduleKey);
+    return get().isOperational && (mod?.enabled ?? moduleKey === 'core');
+  },
+  isFeatureEnabled: (featureKey) => {
+    const feature = get().features.find((f) => f.key === featureKey);
+    return get().isOperational && (feature?.enabled ?? false);
+  },
+}));

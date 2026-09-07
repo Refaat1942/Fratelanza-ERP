@@ -3,7 +3,7 @@ import {
 } from '@nestjs/common';
 import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { CategoriesService } from './categories.service';
-import { TenantId, RequirePermissions } from '../../common/decorators';
+import { TenantId, RequirePermissions, RequireModule } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class CreateCategoryDto {
@@ -20,6 +20,7 @@ class UpdateCategoryDto {
 
 @Controller('product-categories')
 @UseGuards(PermissionsGuard)
+@RequireModule('products')
 export class CategoriesController {
   constructor(private categoriesService: CategoriesService) {}
 

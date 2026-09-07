@@ -3,7 +3,7 @@ import {
 } from '@nestjs/common';
 import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { WarehousesService } from './warehouses.service';
-import { TenantId, RequirePermissions } from '../../common/decorators';
+import { TenantId, RequirePermissions, RequireModule } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class CreateWarehouseDto {
@@ -21,6 +21,7 @@ class UpdateWarehouseDto {
 
 @Controller('warehouses')
 @UseGuards(PermissionsGuard)
+@RequireModule('warehouses')
 export class WarehousesController {
   constructor(private warehousesService: WarehousesService) {}
 

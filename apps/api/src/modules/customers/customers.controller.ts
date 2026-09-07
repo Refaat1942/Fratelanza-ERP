@@ -5,7 +5,7 @@ import {
   IsString, IsOptional, IsBoolean, IsNumber, Min, IsEmail,
 } from 'class-validator';
 import { CustomersService } from './customers.service';
-import { TenantId, RequirePermissions } from '../../common/decorators';
+import { TenantId, RequirePermissions, RequireModule } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class CreateCustomerDto {
@@ -32,6 +32,7 @@ class UpdateCustomerDto {
 
 @Controller('customers')
 @UseGuards(PermissionsGuard)
+@RequireModule('customers')
 export class CustomersController {
   constructor(private customersService: CustomersService) {}
 

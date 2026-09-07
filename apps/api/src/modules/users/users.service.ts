@@ -1,10 +1,14 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../database/prisma.service';
+import { EntitlementService } from '../license/entitlement.service';
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private entitlementService: EntitlementService,
+  ) {}
 
   async findAll(tenantId: string) {
     return this.prisma.user.findMany({
@@ -62,6 +66,11 @@ export class UsersService {
       where: { tenantId, email: data.email, deletedAt: null },
     });
     if (existing) throw new ConflictException('Email already in use');
+
+    const activeUsers = await this.prisma.user.count({
+      where: { tenantId, deletedAt: null, isActive: true },
+    });
+    await this.entitlementService.assertLimit(tenantId, 'maxUsers', activeUsers + 1);
 
     const passwordHash = await bcrypt.hash(data.password, 12);
     return this.prisma.user.create({

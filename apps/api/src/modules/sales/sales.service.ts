@@ -6,6 +6,11 @@ import { PrismaService } from '../../database/prisma.service';
 import { DocumentNumberService } from '../../common/services/document-number.service';
 import { InventoryLedgerService } from '../../common/services/inventory-ledger.service';
 import { AccountingEngineService } from '../../common/services/accounting-engine.service';
+import { getAppConfig } from '../../config/app-config';
+import { FinancialPostingService } from '../finance/posting/financial-posting.service';
+import type { PostingDimensions } from '../finance/posting/posting.types';
+import { AuditService } from '../audit/audit.service';
+import { PartyLegacyAdapterService } from '../parties/party-legacy-adapter.service';
 
 interface InvoiceLineInput {
   productId?: string;
@@ -23,6 +28,9 @@ export class SalesService {
     private documentNumbers: DocumentNumberService,
     private inventoryLedger: InventoryLedgerService,
     private accounting: AccountingEngineService,
+    private financialPosting: FinancialPostingService,
+    private partyLegacy: PartyLegacyAdapterService,
+    private audit: AuditService,
   ) {}
 
   async findAll(tenantId: string) {
@@ -77,10 +85,6 @@ export class SalesService {
       throw new BadRequestException('Invoice must have at least one line');
     }
 
-    const number = await this.documentNumbers.nextNumber(
-      tenantId, 'INV', 'INV', data.branchId,
-    );
-
     let subtotal = new Prisma.Decimal(0);
     let taxAmount = new Prisma.Decimal(0);
 
@@ -102,28 +106,137 @@ export class SalesService {
 
     const total = subtotal.add(taxAmount);
 
-    return this.prisma.salesInvoice.create({
-      data: {
-        tenantId,
-        branchId: data.branchId,
-        customerId: data.customerId,
-        warehouseId: data.warehouseId,
-        number,
-        status: 'draft',
-        invoiceDate: data.invoiceDate ? new Date(data.invoiceDate) : new Date(),
-        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-        notes: data.notes,
-        subtotal,
-        taxAmount,
-        total,
-        createdById: data.createdById,
-        lines: { create: lineData },
-      },
-      include: { lines: true, customer: true },
+    if (data.customerId) {
+      const customer = await this.prisma.customer.findFirst({
+        where: { id: data.customerId, tenantId, deletedAt: null },
+      });
+      if (!customer) {
+        throw new BadRequestException('Customer not found');
+      }
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const number = await this.documentNumbers.nextNumber(
+        tenantId, 'INV', 'INV', data.branchId, tx,
+      );
+
+      return tx.salesInvoice.create({
+        data: {
+          tenantId,
+          branchId: data.branchId,
+          customerId: data.customerId,
+          warehouseId: data.warehouseId,
+          number,
+          status: 'draft',
+          invoiceDate: data.invoiceDate ? new Date(data.invoiceDate) : new Date(),
+          dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
+          notes: data.notes,
+          subtotal,
+          taxAmount,
+          total,
+          createdById: data.createdById,
+          lines: { create: lineData },
+        },
+        include: { lines: true, customer: true },
+      });
     });
   }
 
-  async postInvoice(tenantId: string, id: string) {
+  async createInvoiceFromParty(
+    tenantId: string,
+    data: {
+      partyId: string;
+      branchId: string;
+      warehouseId?: string;
+      invoiceDate?: string;
+      dueDate?: string;
+      notes?: string;
+      lines: InvoiceLineInput[];
+      createdById?: string;
+    },
+  ) {
+    const customer = await this.partyLegacy.resolveLinkedCustomerForSales(
+      tenantId,
+      data.partyId,
+    );
+
+    const invoice = await this.createInvoice(tenantId, {
+      branchId: data.branchId,
+      customerId: customer.id,
+      warehouseId: data.warehouseId,
+      invoiceDate: data.invoiceDate,
+      dueDate: data.dueDate,
+      notes: data.notes,
+      lines: data.lines,
+      createdById: data.createdById,
+    });
+
+    await this.audit.log({
+      tenantId,
+      userId: data.createdById,
+      entity: 'sales_invoice',
+      entityId: invoice.id,
+      action: 'sales.invoice.created_from_party',
+      newValue: { partyId: data.partyId, customerId: customer.id },
+    });
+
+    return invoice;
+  }
+
+  async recordPaymentFromParty(
+    tenantId: string,
+    data: {
+      partyId: string;
+      branchId: string;
+      invoiceId?: string;
+      amount: number;
+      method?: string;
+      paymentDate?: string;
+      reference?: string;
+      actorUserId?: string;
+    },
+  ) {
+    const customer = await this.partyLegacy.resolveLinkedCustomerForSales(
+      tenantId,
+      data.partyId,
+    );
+
+    if (data.invoiceId) {
+      const invoice = await this.prisma.salesInvoice.findFirst({
+        where: { id: data.invoiceId, tenantId, deletedAt: null },
+      });
+      if (!invoice) {
+        throw new NotFoundException('Invoice not found');
+      }
+    }
+
+    const payment = await this.recordPayment(tenantId, {
+      branchId: data.branchId,
+      customerId: customer.id,
+      invoiceId: data.invoiceId,
+      amount: data.amount,
+      method: data.method,
+      paymentDate: data.paymentDate,
+      reference: data.reference,
+    });
+
+    await this.audit.log({
+      tenantId,
+      userId: data.actorUserId,
+      entity: 'customer_payment',
+      entityId: payment.id,
+      action: 'sales.payment.recorded_from_party',
+      newValue: { partyId: data.partyId, customerId: customer.id },
+    });
+
+    return payment;
+  }
+
+  async postInvoice(
+    tenantId: string,
+    id: string,
+    dimensions?: PostingDimensions,
+  ) {
     const invoice = await this.findById(tenantId, id);
     if (invoice.status !== 'draft') {
       throw new BadRequestException('Only draft invoices can be posted');
@@ -133,7 +246,8 @@ export class SalesService {
     }
 
     const totalNum = Number(invoice.total);
-    let cogsTotal = 0;
+    let cogsTotal = new Prisma.Decimal(0);
+    const useSalesFinancePilot = getAppConfig().universalFinanceSalesPilotEnabled;
 
     return this.prisma.$transaction(async (tx) => {
       for (const line of invoice.lines) {
@@ -153,7 +267,9 @@ export class SalesService {
           },
         });
         const unitCost = balance ? Number(balance.avgCost) : Number(product.costPrice);
-        cogsTotal += unitCost * Number(line.quantity);
+        cogsTotal = cogsTotal.add(
+          new Prisma.Decimal(unitCost).mul(line.quantity),
+        );
 
         await this.inventoryLedger.applyMovement(
           {
@@ -171,24 +287,47 @@ export class SalesService {
         );
       }
 
-      await this.accounting.createEntry(
-        tenantId,
-        invoice.branchId,
-        `Sales invoice ${invoice.number}`,
-        [
-          { accountCode: '1100', debit: totalNum, credit: 0, description: 'AR' },
-          { accountCode: '4000', debit: 0, credit: totalNum, description: 'Revenue' },
-          ...(cogsTotal > 0
-            ? [
-                { accountCode: '5000', debit: cogsTotal, credit: 0, description: 'COGS' },
-                { accountCode: '1200', debit: 0, credit: cogsTotal, description: 'Inventory' },
-              ]
-            : []),
-        ],
-        'sales_invoice',
-        invoice.id,
-        tx,
-      );
+      if (useSalesFinancePilot) {
+        await this.financialPosting.post(
+          {
+            mode: 'rule',
+            tenantId,
+            branchId: invoice.branchId,
+            postingDate: new Date(),
+            description: `Sales invoice ${invoice.number}`,
+            sourceModule: 'sales',
+            sourceType: 'invoice',
+            sourceId: invoice.id,
+            sourceEvent: 'post',
+            amounts: {
+              total: invoice.total.toString(),
+              cogs: cogsTotal.toString(),
+            },
+            dimensions,
+          },
+          tx,
+        );
+      } else {
+        const cogsNum = Number(cogsTotal);
+        await this.accounting.createEntry(
+          tenantId,
+          invoice.branchId,
+          `Sales invoice ${invoice.number}`,
+          [
+            { accountCode: '1100', debit: totalNum, credit: 0, description: 'AR' },
+            { accountCode: '4000', debit: 0, credit: totalNum, description: 'Revenue' },
+            ...(cogsNum > 0
+              ? [
+                  { accountCode: '5000', debit: cogsNum, credit: 0, description: 'COGS' },
+                  { accountCode: '1200', debit: 0, credit: cogsNum, description: 'Inventory' },
+                ]
+              : []),
+          ],
+          'sales_invoice',
+          invoice.id,
+          tx,
+        );
+      }
 
       if (invoice.customerId) {
         await tx.customer.update({
@@ -217,11 +356,18 @@ export class SalesService {
       reference?: string;
     },
   ) {
-    const number = await this.documentNumbers.nextNumber(
-      tenantId, 'RCP', 'RCP', data.branchId,
-    );
+    const customer = await this.prisma.customer.findFirst({
+      where: { id: data.customerId, tenantId, deletedAt: null },
+    });
+    if (!customer) {
+      throw new BadRequestException('Customer not found');
+    }
 
     return this.prisma.$transaction(async (tx) => {
+      const number = await this.documentNumbers.nextNumber(
+        tenantId, 'RCP', 'RCP', data.branchId, tx,
+      );
+
       const payment = await tx.customerPayment.create({
         data: {
           tenantId,

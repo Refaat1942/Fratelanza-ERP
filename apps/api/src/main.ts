@@ -1,9 +1,11 @@
 import { config } from 'dotenv';
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { getRootEnvPath } from './config/env-path';
+import { bootstrapAppConfig } from './config/app-config';
+import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 
 const envPath = getRootEnvPath();
 const result = config({ path: envPath });
@@ -15,16 +17,19 @@ if (result.error && !process.env.DATABASE_URL) {
 }
 
 async function bootstrap() {
+  const appConfig = bootstrapAppConfig();
+  const logger = new Logger('Bootstrap');
+
   const app = await NestFactory.create(AppModule);
 
   app.use(helmet());
   app.enableCors({
-    origin: (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173').split(','),
+    origin: appConfig.api.corsOrigins,
     credentials: true,
   });
 
   app.setGlobalPrefix('api/v1');
-
+  app.useGlobalFilters(new GlobalExceptionFilter());
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -34,11 +39,9 @@ async function bootstrap() {
     }),
   );
 
-  const port = parseInt(process.env.API_PORT ?? '3000', 10);
-  const host = process.env.API_HOST ?? '0.0.0.0';
-
-  await app.listen(port, host);
-  console.log(`Fratelanza ERP API running on http://${host}:${port}/api/v1`);
+  await app.listen(appConfig.api.port, appConfig.api.host);
+  logger.log(`API running on http://${appConfig.api.host}:${appConfig.api.port}/api/v1`);
+  logger.log(`Sync engine: ${appConfig.syncEnabled ? 'enabled' : 'disabled (LAN MVP mode)'}`);
 }
 
 void bootstrap();
