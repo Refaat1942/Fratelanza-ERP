@@ -19,6 +19,7 @@ import {
 } from './construction-progress-lifecycle';
 import { ConstructionBoqService } from './construction-boq.service';
 import { ConstructionContractService } from './construction-contract.service';
+import { ConstructionVariationService } from './construction-variation.service';
 import {
   multiplyProgressAmount,
   sumBoqAmounts,
@@ -49,6 +50,7 @@ export class ConstructionProgressService {
     private audit: AuditService,
     private contracts: ConstructionContractService,
     private boqs: ConstructionBoqService,
+    private variations: ConstructionVariationService,
   ) {}
 
   async list(tenantId: string, query: ListConstructionProgressQueryDto) {
@@ -227,9 +229,15 @@ export class ConstructionProgressService {
       previousCumulativeQuantity.add(currentPeriodQuantity),
     );
 
-    if (cumulativeQuantity.gt(boqItem.plannedQuantity)) {
+    const effectiveLimit = await this.variations.getEffectiveQuantityLimit(
+      tenantId,
+      progress.boqId,
+      dto.boqItemId,
+    );
+
+    if (cumulativeQuantity.gt(effectiveLimit)) {
       throw new BadRequestException(
-        'Cumulative quantity exceeds BOQ planned quantity',
+        'Cumulative quantity exceeds effective allowed quantity',
       );
     }
 
@@ -304,9 +312,15 @@ export class ConstructionProgressService {
       previousCumulativeQuantity.add(currentPeriodQuantity),
     );
 
-    if (cumulativeQuantity.gt(boqItem.plannedQuantity)) {
+    const effectiveLimit = await this.variations.getEffectiveQuantityLimit(
+      tenantId,
+      progress.boqId,
+      existing.boqItemId,
+    );
+
+    if (cumulativeQuantity.gt(effectiveLimit)) {
       throw new BadRequestException(
-        'Cumulative quantity exceeds BOQ planned quantity',
+        'Cumulative quantity exceeds effective allowed quantity',
       );
     }
 
@@ -584,9 +598,15 @@ export class ConstructionProgressService {
       if (!item.cumulativeQuantity.eq(expectedCumulative)) {
         throw new BadRequestException('Progress item cumulative quantity is inconsistent');
       }
-      if (item.cumulativeQuantity.gt(boqItem.plannedQuantity)) {
+      if (item.cumulativeQuantity.gt(
+        await this.variations.getEffectiveQuantityLimit(
+          tenantId,
+          progress.boqId,
+          item.boqItemId,
+        ),
+      )) {
         throw new BadRequestException(
-          'Cumulative quantity exceeds BOQ planned quantity',
+          'Cumulative quantity exceeds effective allowed quantity',
         );
       }
     }

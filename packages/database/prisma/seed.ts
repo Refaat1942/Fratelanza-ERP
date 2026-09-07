@@ -158,6 +158,9 @@ const CONSTRUCTION_PERMISSIONS = [
   { module: 'construction', feature: 'progress', action: 'manage' },
   { module: 'construction', feature: 'progress', action: 'submit' },
   { module: 'construction', feature: 'progress', action: 'approve' },
+  { module: 'construction', feature: 'variations', action: 'read' },
+  { module: 'construction', feature: 'variations', action: 'manage' },
+  { module: 'construction', feature: 'variations', action: 'approve' },
 ];
 
 const ALL_PERMISSIONS = [

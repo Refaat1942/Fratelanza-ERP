@@ -41,6 +41,7 @@ export function featuresWithConstruction() {
     'construction.contracts',
     'construction.boq',
     'construction.progress',
+    'construction.variations',
   ];
 }
 

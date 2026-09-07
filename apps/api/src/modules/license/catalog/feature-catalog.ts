@@ -84,6 +84,12 @@ export const FEATURE_CATALOG: Record<string, FeatureCatalogEntry> = {
     displayName: 'Construction Progress',
     description: 'Measured work progress against approved BOQ revisions',
   },
+  'construction.variations': {
+    key: 'construction.variations',
+    moduleKey: 'construction',
+    displayName: 'Construction Variations',
+    description: 'Approved change orders against BOQ revisions without mutating history',
+  },
   'pms.patients': {
     key: 'pms.patients',
     moduleKey: 'pms',

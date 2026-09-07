@@ -48,6 +48,8 @@ model Tenant {
   constructionBoqItems      ConstructionBoqItem[]
   constructionProgress      ConstructionProgress[]
   constructionProgressItems ConstructionProgressItem[]
+  constructionVariations    ConstructionVariation[]
+  constructionVariationItems ConstructionVariationItem[]
   license             TenantLicense?
 
   @@map("tenants")
@@ -89,6 +91,7 @@ model Branch {
   constructionCostEntries ConstructionCostEntry[]
   constructionContracts ConstructionContract[]
   constructionProgress ConstructionProgress[]
+  constructionVariations ConstructionVariation[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -150,6 +153,10 @@ model User {
   constructionProgressSubmitted ConstructionProgress[] @relation("ConstructionProgressSubmitter")
   constructionProgressApproved ConstructionProgress[] @relation("ConstructionProgressApprover")
   constructionProgressRejected ConstructionProgress[] @relation("ConstructionProgressRejecter")
+  constructionVariationsCreated ConstructionVariation[] @relation("ConstructionVariationCreator")
+  constructionVariationsSubmitted ConstructionVariation[] @relation("ConstructionVariationSubmitter")
+  constructionVariationsApproved ConstructionVariation[] @relation("ConstructionVariationApprover")
+  constructionVariationsRejected ConstructionVariation[] @relation("ConstructionVariationRejecter")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -605,6 +612,7 @@ model Project {
   constructionContracts ConstructionContract[]
   constructionBoqs ConstructionBoq[]
   constructionProgress ConstructionProgress[]
+  constructionVariations ConstructionVariation[]
 
   @@unique([tenantId, code])
   @@index([tenantId, status])
@@ -635,6 +643,7 @@ model CostCenter {
   constructionCostEntries ConstructionCostEntry[]
   constructionBoqItems ConstructionBoqItem[]
   constructionProgressItems ConstructionProgressItem[]
+  constructionVariationItems ConstructionVariationItem[]
 
   @@unique([tenantId, code])
   @@index([tenantId, projectId])
@@ -761,6 +770,7 @@ model ConstructionContract {
   createdBy User?   @relation("ConstructionContractCreator", fields: [createdById], references: [id], onDelete: SetNull)
   boqs      ConstructionBoq[]
   progress  ConstructionProgress[]
+  variations ConstructionVariation[]
 
   @@unique([tenantId, number])
   @@index([tenantId, projectId])
@@ -797,6 +807,7 @@ model ConstructionBoq {
   sections    ConstructionBoqSection[]
   items       ConstructionBoqItem[]
   progress    ConstructionProgress[]
+  variations  ConstructionVariation[]
 
   @@unique([tenantId, contractId, revisionNumber])
   @@index([tenantId, contractId, status])
@@ -855,6 +866,7 @@ model ConstructionBoqItem {
   costCenter CostCenter?             @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
   product    Product?                @relation(fields: [productId], references: [id], onDelete: SetNull)
   progressItems ConstructionProgressItem[]
+  variationItems ConstructionVariationItem[]
 
   @@index([tenantId, boqId, lineNumber])
   @@index([tenantId, sectionId])
@@ -939,6 +951,92 @@ model ConstructionProgressItem {
   @@unique([tenantId, progressId, boqItemId])
   @@index([tenantId, boqItemId])
   @@map("construction_progress_items")
+}
+
+enum ConstructionVariationType {
+  quantity_change
+  rate_change
+  omission
+  addition
+  lump_sum
+}
+
+enum ConstructionVariationStatus {
+  draft
+  submitted
+  approved
+  rejected
+  archived
+}
+
+model ConstructionVariation {
+  id               String                      @id @default(uuid()) @db.Uuid
+  tenantId         String                      @db.Uuid
+  projectId        String                      @db.Uuid
+  branchId         String                      @db.Uuid
+  contractId       String                      @db.Uuid
+  boqId            String                      @db.Uuid
+  number           String
+  title            String
+  description      String?
+  status           ConstructionVariationStatus @default(draft)
+  currency         String                      @default("EGP")
+  totalAmountDelta Decimal                     @default(0) @db.Decimal(18, 4)
+  notes            String?
+  submittedAt      DateTime?
+  submittedById    String?                     @db.Uuid
+  approvedAt       DateTime?
+  approvedById     String?                     @db.Uuid
+  rejectedAt       DateTime?
+  rejectedById     String?                     @db.Uuid
+  rejectionReason  String?
+  createdById      String?                     @db.Uuid
+  createdAt        DateTime                    @default(now())
+  updatedAt        DateTime                    @updatedAt
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch      Branch               @relation(fields: [branchId], references: [id])
+  contract    ConstructionContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  boq         ConstructionBoq      @relation(fields: [boqId], references: [id], onDelete: Cascade)
+  submittedBy User?                @relation("ConstructionVariationSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
+  approvedBy  User?                @relation("ConstructionVariationApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  rejectedBy  User?                @relation("ConstructionVariationRejecter", fields: [rejectedById], references: [id], onDelete: SetNull)
+  createdBy   User?                @relation("ConstructionVariationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  items       ConstructionVariationItem[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, contractId, status])
+  @@index([tenantId, boqId])
+  @@map("construction_variations")
+}
+
+model ConstructionVariationItem {
+  id            String                    @id @default(uuid()) @db.Uuid
+  tenantId      String                    @db.Uuid
+  variationId   String                    @db.Uuid
+  lineNumber    Int                       @default(1)
+  variationType ConstructionVariationType
+  boqItemId     String?                   @db.Uuid
+  description   String?
+  quantityDelta Decimal?                  @db.Decimal(18, 4)
+  rateDelta     Decimal?                  @db.Decimal(18, 4)
+  lumpSumAmount Decimal?                  @db.Decimal(18, 4)
+  amountDelta   Decimal                   @db.Decimal(18, 4)
+  costCenterId  String?                   @db.Uuid
+  costCode      String?
+  notes         String?
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+
+  tenant     Tenant                 @relation(fields: [tenantId], references: [id])
+  variation  ConstructionVariation  @relation(fields: [variationId], references: [id], onDelete: Cascade)
+  boqItem    ConstructionBoqItem?   @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
+  costCenter CostCenter?            @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, variationId, lineNumber])
+  @@index([tenantId, boqItemId])
+  @@map("construction_variation_items")
 }
 
 model PartyRole {

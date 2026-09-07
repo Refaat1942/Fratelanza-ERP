@@ -332,7 +332,9 @@ describe('Construction progress (Phase 9.2)', () => {
       const created = await createProgress();
       expect(created.status).toBe(201);
 
-      const list = await api().get('/api/v1/construction/progress');
+      const list = await api().get(
+        `/api/v1/construction/progress?contractId=${contractId}&limit=100`,
+      );
       expect(list.status).toBe(200);
       expect(list.body.data.some((row: { id: string }) => row.id === created.body.data.id)).toBe(
         true,
