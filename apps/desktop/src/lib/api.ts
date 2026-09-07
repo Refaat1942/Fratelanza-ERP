@@ -58,6 +58,27 @@ export type ConstructionBoqDetail = ConstructionBoqRow & {
     originalAmount: string;
   }>;
 };
+export type ConstructionProgressRow = {
+  id: string;
+  number: string;
+  status: string;
+  periodFrom: string;
+  periodTo: string;
+  totalCurrentAmount: string;
+  totalCumulativeAmount: string;
+  contract?: { id: string; number: string };
+  boq?: { id: string; number: string; revisionNumber: number };
+};
+export type ConstructionProgressDetail = ConstructionProgressRow & {
+  items?: Array<{
+    id: string;
+    boqItemId: string;
+    currentPeriodQuantity: string;
+    cumulativeQuantity: string;
+    currentPeriodAmount: string;
+    cumulativeAmount: string;
+  }>;
+};
 export type TrialBalanceRow = { code: string; name: string; debit: number; credit: number; balance?: number };
 export type TrialBalanceResult = {
   accounts: TrialBalanceRow[];
@@ -672,6 +693,46 @@ export class ApiClient {
 
   reviseConstructionBoq(id: string) {
     return this.request(`/construction/boqs/${id}/revise`, { method: 'POST' });
+  }
+
+  getConstructionProgress(contractId?: string) {
+    const query = contractId ? `?contractId=${encodeURIComponent(contractId)}` : '';
+    return this.request<ConstructionProgressRow[]>(`/construction/progress${query}`);
+  }
+
+  createConstructionProgress(payload: {
+    contractId: string;
+    boqId: string;
+    periodFrom: string;
+    periodTo: string;
+    notes?: string;
+  }) {
+    return this.request('/construction/progress', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  getConstructionProgressDetail(id: string) {
+    return this.request<ConstructionProgressDetail>(`/construction/progress/${id}`);
+  }
+
+  createConstructionProgressItem(progressId: string, payload: {
+    boqItemId: string;
+    currentPeriodQuantity: string;
+  }) {
+    return this.request(`/construction/progress/${progressId}/items`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  submitConstructionProgress(id: string) {
+    return this.request(`/construction/progress/${id}/submit`, { method: 'POST' });
+  }
+
+  approveConstructionProgress(id: string) {
+    return this.request(`/construction/progress/${id}/approve`, { method: 'POST' });
   }
 }
 

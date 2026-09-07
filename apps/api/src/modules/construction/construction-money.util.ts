@@ -43,3 +43,42 @@ export function sumBoqAmounts(amounts: Prisma.Decimal[]): Prisma.Decimal {
     )
     .toDecimalPlaces(AMOUNT_SCALE);
 }
+
+export function toProgressQuantity(
+  value: Prisma.Decimal | string | number,
+  fieldName = 'currentPeriodQuantity',
+): Prisma.Decimal {
+  const qty = toBoqDecimal(value, fieldName);
+  if (qty.isZero() || qty.isNegative()) {
+    throw new BadRequestException(`${fieldName} must be greater than zero`);
+  }
+  return qty;
+}
+
+export function toCumulativeQuantity(
+  value: Prisma.Decimal | string | number,
+  fieldName = 'cumulativeQuantity',
+): Prisma.Decimal {
+  const qty = toBoqDecimal(value, fieldName);
+  if (qty.isNegative()) {
+    throw new BadRequestException(`${fieldName} cannot be negative`);
+  }
+  return qty;
+}
+
+export function multiplyProgressAmount(
+  quantity: Prisma.Decimal | string | number,
+  unitRate: Prisma.Decimal | string | number,
+): Prisma.Decimal {
+  const qty = quantity instanceof Prisma.Decimal
+    ? quantity
+    : toBoqDecimal(quantity, 'quantity');
+  const rate = toBoqDecimal(unitRate, 'unitRateSnapshot');
+  if (qty.isNegative()) {
+    throw new BadRequestException('quantity cannot be negative');
+  }
+  if (rate.isNegative()) {
+    throw new BadRequestException('unitRateSnapshot cannot be negative');
+  }
+  return qty.mul(rate).toDecimalPlaces(AMOUNT_SCALE);
+}

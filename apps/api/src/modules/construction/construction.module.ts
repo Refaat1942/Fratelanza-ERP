@@ -9,6 +9,8 @@ import { ConstructionContractsController } from './construction-contracts.contro
 import { ConstructionContractService } from './construction-contract.service';
 import { ConstructionController } from './construction.controller';
 import { ConstructionCostEntryService } from './construction-cost-entry.service';
+import { ConstructionProgressController } from './construction-progress.controller';
+import { ConstructionProgressService } from './construction-progress.service';
 import { ConstructionProjectProfileService } from './construction-project-profile.service';
 
 @Module({
@@ -17,18 +19,21 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionController,
     ConstructionContractsController,
     ConstructionBoqController,
+    ConstructionProgressController,
   ],
   providers: [
     ConstructionProjectProfileService,
     ConstructionCostEntryService,
     ConstructionContractService,
     ConstructionBoqService,
+    ConstructionProgressService,
   ],
   exports: [
     ConstructionProjectProfileService,
     ConstructionCostEntryService,
     ConstructionContractService,
     ConstructionBoqService,
+    ConstructionProgressService,
   ],
 })
 export class ConstructionModule {}

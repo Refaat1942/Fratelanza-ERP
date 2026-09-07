@@ -46,6 +46,8 @@ model Tenant {
   constructionBoqs          ConstructionBoq[]
   constructionBoqSections   ConstructionBoqSection[]
   constructionBoqItems      ConstructionBoqItem[]
+  constructionProgress      ConstructionProgress[]
+  constructionProgressItems ConstructionProgressItem[]
   license             TenantLicense?
 
   @@map("tenants")
@@ -86,6 +88,7 @@ model Branch {
   costCenters      CostCenter[]
   constructionCostEntries ConstructionCostEntry[]
   constructionContracts ConstructionContract[]
+  constructionProgress ConstructionProgress[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -143,6 +146,10 @@ model User {
   constructionContractsCreated ConstructionContract[] @relation("ConstructionContractCreator")
   constructionBoqsCreated ConstructionBoq[] @relation("ConstructionBoqCreator")
   constructionBoqsApproved ConstructionBoq[] @relation("ConstructionBoqApprover")
+  constructionProgressCreated ConstructionProgress[] @relation("ConstructionProgressCreator")
+  constructionProgressSubmitted ConstructionProgress[] @relation("ConstructionProgressSubmitter")
+  constructionProgressApproved ConstructionProgress[] @relation("ConstructionProgressApprover")
+  constructionProgressRejected ConstructionProgress[] @relation("ConstructionProgressRejecter")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -597,6 +604,7 @@ model Project {
   constructionCostEntries ConstructionCostEntry[]
   constructionContracts ConstructionContract[]
   constructionBoqs ConstructionBoq[]
+  constructionProgress ConstructionProgress[]
 
   @@unique([tenantId, code])
   @@index([tenantId, status])
@@ -626,6 +634,7 @@ model CostCenter {
   journalLines JournalLine[]
   constructionCostEntries ConstructionCostEntry[]
   constructionBoqItems ConstructionBoqItem[]
+  constructionProgressItems ConstructionProgressItem[]
 
   @@unique([tenantId, code])
   @@index([tenantId, projectId])
@@ -751,6 +760,7 @@ model ConstructionContract {
   party     Party   @relation(fields: [partyId], references: [id])
   createdBy User?   @relation("ConstructionContractCreator", fields: [createdById], references: [id], onDelete: SetNull)
   boqs      ConstructionBoq[]
+  progress  ConstructionProgress[]
 
   @@unique([tenantId, number])
   @@index([tenantId, projectId])
@@ -786,6 +796,7 @@ model ConstructionBoq {
   createdBy   User?               @relation("ConstructionBoqCreator", fields: [createdById], references: [id], onDelete: SetNull)
   sections    ConstructionBoqSection[]
   items       ConstructionBoqItem[]
+  progress    ConstructionProgress[]
 
   @@unique([tenantId, contractId, revisionNumber])
   @@index([tenantId, contractId, status])
@@ -843,10 +854,91 @@ model ConstructionBoqItem {
   unit       UnitOfMeasure?          @relation(fields: [unitId], references: [id], onDelete: SetNull)
   costCenter CostCenter?             @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
   product    Product?                @relation(fields: [productId], references: [id], onDelete: SetNull)
+  progressItems ConstructionProgressItem[]
 
   @@index([tenantId, boqId, lineNumber])
   @@index([tenantId, sectionId])
   @@map("construction_boq_items")
+}
+
+enum ConstructionProgressStatus {
+  draft
+  submitted
+  approved
+  rejected
+  archived
+}
+
+model ConstructionProgress {
+  id                    String                     @id @default(uuid()) @db.Uuid
+  tenantId              String                     @db.Uuid
+  projectId             String                     @db.Uuid
+  branchId              String                     @db.Uuid
+  contractId            String                     @db.Uuid
+  boqId                 String                     @db.Uuid
+  number                String
+  periodFrom            DateTime                   @db.Date
+  periodTo              DateTime                   @db.Date
+  status                ConstructionProgressStatus @default(draft)
+  currency              String                     @default("EGP")
+  totalCurrentAmount    Decimal                    @default(0) @db.Decimal(18, 4)
+  totalCumulativeAmount Decimal                    @default(0) @db.Decimal(18, 4)
+  notes                 String?
+  submittedAt           DateTime?
+  submittedById         String?                    @db.Uuid
+  approvedAt            DateTime?
+  approvedById          String?                    @db.Uuid
+  rejectedAt            DateTime?
+  rejectedById          String?                    @db.Uuid
+  rejectionReason       String?
+  createdById           String?                    @db.Uuid
+  createdAt             DateTime                   @default(now())
+  updatedAt             DateTime                   @updatedAt
+
+  tenant      Tenant               @relation(fields: [tenantId], references: [id])
+  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch      Branch               @relation(fields: [branchId], references: [id])
+  contract    ConstructionContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  boq         ConstructionBoq      @relation(fields: [boqId], references: [id], onDelete: Cascade)
+  submittedBy User?                @relation("ConstructionProgressSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
+  approvedBy  User?                @relation("ConstructionProgressApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  rejectedBy  User?                @relation("ConstructionProgressRejecter", fields: [rejectedById], references: [id], onDelete: SetNull)
+  createdBy   User?                @relation("ConstructionProgressCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  items       ConstructionProgressItem[]
+
+  @@unique([tenantId, contractId, boqId, periodFrom, periodTo])
+  @@index([tenantId, projectId])
+  @@index([tenantId, contractId, status])
+  @@index([tenantId, boqId])
+  @@map("construction_progress")
+}
+
+model ConstructionProgressItem {
+  id                         String   @id @default(uuid()) @db.Uuid
+  tenantId                   String   @db.Uuid
+  progressId                 String   @db.Uuid
+  boqItemId                  String   @db.Uuid
+  lineNumber                 Int      @default(1)
+  currentPeriodQuantity      Decimal  @db.Decimal(18, 4)
+  previousCumulativeQuantity Decimal  @db.Decimal(18, 4)
+  cumulativeQuantity         Decimal  @db.Decimal(18, 4)
+  unitRateSnapshot           Decimal  @db.Decimal(18, 4)
+  currentPeriodAmount        Decimal  @db.Decimal(18, 4)
+  cumulativeAmount             Decimal  @db.Decimal(18, 4)
+  costCenterId               String?  @db.Uuid
+  costCode                   String?
+  notes                      String?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id])
+  progress   ConstructionProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
+  boqItem    ConstructionBoqItem @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
+  costCenter CostCenter?         @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, progressId, boqItemId])
+  @@index([tenantId, boqItemId])
+  @@map("construction_progress_items")
 }
 
 model PartyRole {

@@ -70,6 +70,7 @@ export const en = {
     projects: 'Projects',
     costCenters: 'Cost Centers',
     constructionContracts: 'Construction Contracts',
+    constructionProgress: 'Construction Progress',
   },
   construction: {
     createContract: 'Create Contract',
@@ -89,6 +90,12 @@ export const en = {
     quantity: 'Quantity',
     unitRate: 'Unit Rate',
     addItem: 'Add Item',
+    createProgress: 'Create Progress',
+    addProgressItem: 'Add Progress Line',
+    submitProgress: 'Submit Progress',
+    approveProgress: 'Approve Progress',
+    periodFrom: 'Period From',
+    periodTo: 'Period To',
   },
   dashboard: {
     title: 'Dashboard',
@@ -312,6 +319,7 @@ export type TranslationSchema = {
   purchasing: Record<string, string>;
   accounting: Record<string, string>;
   pos: Record<string, string>;
+  construction: Record<string, string>;
   lineItems: Record<string, string>;
 };
 

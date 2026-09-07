@@ -78,6 +78,12 @@ export const FEATURE_CATALOG: Record<string, FeatureCatalogEntry> = {
     displayName: 'Bill of Quantities',
     description: 'BOQ headers, sections, items, and revisions',
   },
+  'construction.progress': {
+    key: 'construction.progress',
+    moduleKey: 'construction',
+    displayName: 'Construction Progress',
+    description: 'Measured work progress against approved BOQ revisions',
+  },
   'pms.patients': {
     key: 'pms.patients',
     moduleKey: 'pms',

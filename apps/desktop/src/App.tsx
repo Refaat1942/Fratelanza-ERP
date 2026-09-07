@@ -22,6 +22,7 @@ import { UsersPage } from './pages/UsersPage';
 import { BranchesPage } from './pages/BranchesPage';
 import { ConstructionContractsPage } from './pages/ConstructionContractsPage';
 import { ConstructionBoqPage } from './pages/ConstructionBoqPage';
+import { ConstructionProgressPage } from './pages/ConstructionProgressPage';
 import { AppLayout } from './components/AppLayout';
 
 function AuthBootstrap() {
@@ -76,6 +77,7 @@ function AppRoutes() {
         <Route path="cost-centers" element={<LicensedRoute moduleKey="projects" featureKey="projects.cost-centers"><CostCentersPage /></LicensedRoute>} />
         <Route path="construction/contracts" element={<LicensedRoute moduleKey="construction" featureKey="construction.contracts"><ConstructionContractsPage /></LicensedRoute>} />
         <Route path="construction/boq/:contractId" element={<LicensedRoute moduleKey="construction" featureKey="construction.boq"><ConstructionBoqPage /></LicensedRoute>} />
+        <Route path="construction/progress" element={<LicensedRoute moduleKey="construction" featureKey="construction.progress"><ConstructionProgressPage /></LicensedRoute>} />
         <Route path="accounting" element={<LicensedRoute moduleKey="accounting"><AccountingPage /></LicensedRoute>} />
         <Route path="pos" element={<LicensedRoute moduleKey="pos"><PosPage /></LicensedRoute>} />
         <Route path="users" element={<UsersPage />} />

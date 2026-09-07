@@ -72,6 +72,7 @@ export const ar: TranslationSchema = {
     projects: 'المشاريع',
     costCenters: 'مراكز التكلفة',
     constructionContracts: 'عقود المقاولات',
+    constructionProgress: 'تقدم الأعمال',
   },
   construction: {
     createContract: 'إنشاء عقد',
@@ -91,6 +92,12 @@ export const ar: TranslationSchema = {
     quantity: 'الكمية',
     unitRate: 'سعر الوحدة',
     addItem: 'إضافة بند',
+    createProgress: 'إنشاء تقدم',
+    addProgressItem: 'إضافة بند تقدم',
+    submitProgress: 'إرسال التقدم',
+    approveProgress: 'اعتماد التقدم',
+    periodFrom: 'من تاريخ',
+    periodTo: 'إلى تاريخ',
   },
   dashboard: {
     title: 'لوحة التحكم',
