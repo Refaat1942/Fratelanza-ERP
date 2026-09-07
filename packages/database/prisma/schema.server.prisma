@@ -50,6 +50,8 @@ model Tenant {
   constructionProgressItems ConstructionProgressItem[]
   constructionVariations    ConstructionVariation[]
   constructionVariationItems ConstructionVariationItem[]
+  constructionRetentionEntries ConstructionRetentionEntry[]
+  constructionAdvanceEntries ConstructionAdvanceEntry[]
   license             TenantLicense?
 
   @@map("tenants")
@@ -92,6 +94,8 @@ model Branch {
   constructionContracts ConstructionContract[]
   constructionProgress ConstructionProgress[]
   constructionVariations ConstructionVariation[]
+  constructionRetentionEntries ConstructionRetentionEntry[]
+  constructionAdvanceEntries ConstructionAdvanceEntry[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -157,6 +161,8 @@ model User {
   constructionVariationsSubmitted ConstructionVariation[] @relation("ConstructionVariationSubmitter")
   constructionVariationsApproved ConstructionVariation[] @relation("ConstructionVariationApprover")
   constructionVariationsRejected ConstructionVariation[] @relation("ConstructionVariationRejecter")
+  constructionRetentionEntriesCreated ConstructionRetentionEntry[] @relation("ConstructionRetentionEntryCreator")
+  constructionAdvanceEntriesCreated ConstructionAdvanceEntry[] @relation("ConstructionAdvanceEntryCreator")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -613,6 +619,8 @@ model Project {
   constructionBoqs ConstructionBoq[]
   constructionProgress ConstructionProgress[]
   constructionVariations ConstructionVariation[]
+  constructionRetentionEntries ConstructionRetentionEntry[]
+  constructionAdvanceEntries ConstructionAdvanceEntry[]
 
   @@unique([tenantId, code])
   @@index([tenantId, status])
@@ -771,6 +779,8 @@ model ConstructionContract {
   boqs      ConstructionBoq[]
   progress  ConstructionProgress[]
   variations ConstructionVariation[]
+  retentionEntries ConstructionRetentionEntry[]
+  advanceEntries ConstructionAdvanceEntry[]
 
   @@unique([tenantId, number])
   @@index([tenantId, projectId])
@@ -1037,6 +1047,87 @@ model ConstructionVariationItem {
   @@index([tenantId, variationId, lineNumber])
   @@index([tenantId, boqItemId])
   @@map("construction_variation_items")
+}
+
+enum ConstructionSubledgerPartyType {
+  customer
+  subcontractor
+}
+
+enum ConstructionRetentionDirection {
+  hold
+  release
+}
+
+enum ConstructionRetentionSourceEvent {
+  hold
+  release
+}
+
+enum ConstructionAdvanceEntryType {
+  received
+  recovered
+  adjustment
+}
+
+model ConstructionRetentionEntry {
+  id                       String                           @id @default(uuid()) @db.Uuid
+  tenantId                 String                           @db.Uuid
+  projectId                String                           @db.Uuid
+  branchId                 String                           @db.Uuid
+  contractId               String                           @db.Uuid
+  partyType                ConstructionSubledgerPartyType
+  direction                ConstructionRetentionDirection
+  sourceModule             String                           @default("construction")
+  sourceType               String
+  sourceId                 String?                          @db.Uuid
+  sourceEvent              ConstructionRetentionSourceEvent
+  grossBaseAmount          Decimal?                         @db.Decimal(18, 4)
+  retentionPercentSnapshot Decimal?                         @db.Decimal(8, 4)
+  amount                   Decimal                          @db.Decimal(18, 4)
+  balanceAfter             Decimal                          @db.Decimal(18, 4)
+  notes                    String?
+  createdById              String?                          @db.Uuid
+  createdAt                DateTime                         @default(now())
+
+  tenant    Tenant               @relation(fields: [tenantId], references: [id])
+  project   Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch    Branch               @relation(fields: [branchId], references: [id])
+  contract  ConstructionContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  createdBy User?                @relation("ConstructionRetentionEntryCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, sourceModule, sourceType, sourceId, sourceEvent, partyType])
+  @@index([tenantId, contractId, partyType, createdAt])
+  @@map("construction_retention_entries")
+}
+
+model ConstructionAdvanceEntry {
+  id           String                       @id @default(uuid()) @db.Uuid
+  tenantId     String                       @db.Uuid
+  projectId    String                       @db.Uuid
+  branchId     String                       @db.Uuid
+  contractId   String                       @db.Uuid
+  partyType    ConstructionSubledgerPartyType
+  entryType    ConstructionAdvanceEntryType
+  sourceModule String                       @default("construction")
+  sourceType   String
+  sourceId     String?                      @db.Uuid
+  sourceEvent  String
+  amount       Decimal                      @db.Decimal(18, 4)
+  balanceAfter Decimal                      @db.Decimal(18, 4)
+  notes        String?
+  createdById  String?                      @db.Uuid
+  createdAt    DateTime                     @default(now())
+
+  tenant    Tenant               @relation(fields: [tenantId], references: [id])
+  project   Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch    Branch               @relation(fields: [branchId], references: [id])
+  contract  ConstructionContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  createdBy User?                @relation("ConstructionAdvanceEntryCreator", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, sourceModule, sourceType, sourceId, sourceEvent, partyType])
+  @@index([tenantId, contractId, partyType, createdAt])
+  @@map("construction_advance_entries")
 }
 
 model PartyRole {

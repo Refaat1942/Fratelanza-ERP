@@ -90,6 +90,12 @@ export const FEATURE_CATALOG: Record<string, FeatureCatalogEntry> = {
     displayName: 'Construction Variations',
     description: 'Approved change orders against BOQ revisions without mutating history',
   },
+  'construction.retention': {
+    key: 'construction.retention',
+    moduleKey: 'construction',
+    displayName: 'Retention & Advances',
+    description: 'Operational retention holds/releases and advance mobilization tracking',
+  },
   'pms.patients': {
     key: 'pms.patients',
     moduleKey: 'pms',

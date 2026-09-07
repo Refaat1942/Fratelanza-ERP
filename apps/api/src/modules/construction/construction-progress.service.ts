@@ -6,8 +6,10 @@ import {
 } from '@nestjs/common';
 import {
   ConstructionBoqStatus,
+  ConstructionContractDirection,
   ConstructionContractStatus,
   ConstructionProgressStatus,
+  ConstructionSubledgerPartyType,
   Prisma,
 } from '../../../../../packages/database/generated/server';
 import { DocumentNumberService } from '../../common/services/document-number.service';
@@ -19,6 +21,7 @@ import {
 } from './construction-progress-lifecycle';
 import { ConstructionBoqService } from './construction-boq.service';
 import { ConstructionContractService } from './construction-contract.service';
+import { ConstructionRetentionService } from './construction-retention.service';
 import { ConstructionVariationService } from './construction-variation.service';
 import {
   multiplyProgressAmount,
@@ -51,6 +54,7 @@ export class ConstructionProgressService {
     private contracts: ConstructionContractService,
     private boqs: ConstructionBoqService,
     private variations: ConstructionVariationService,
+    private retention: ConstructionRetentionService,
   ) {}
 
   async list(tenantId: string, query: ListConstructionProgressQueryDto) {
@@ -441,6 +445,17 @@ export class ConstructionProgressService {
     }
 
     const progress = await this.findById(tenantId, id);
+
+    const partyType =
+      contract.direction === ConstructionContractDirection.customer
+        ? ConstructionSubledgerPartyType.customer
+        : ConstructionSubledgerPartyType.subcontractor;
+    await this.retention.recordHoldFromProgress(
+      tenantId,
+      userId,
+      progress.id,
+      partyType,
+    );
 
     await this.audit.log({
       tenantId,

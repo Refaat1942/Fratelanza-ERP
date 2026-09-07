@@ -333,6 +333,9 @@ async function ensureConstructionPermissions(app: INestApplication): Promise<voi
     { module: 'construction', feature: 'variations', action: 'read' },
     { module: 'construction', feature: 'variations', action: 'manage' },
     { module: 'construction', feature: 'variations', action: 'approve' },
+    { module: 'construction', feature: 'retention', action: 'read' },
+    { module: 'construction', feature: 'retention', action: 'manage' },
+    { module: 'construction', feature: 'retention', action: 'release' },
   ];
 
   for (const perm of constructionPermissions) {

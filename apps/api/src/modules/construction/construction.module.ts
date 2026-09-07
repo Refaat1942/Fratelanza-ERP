@@ -3,6 +3,8 @@ import { AuditModule } from '../audit/audit.module';
 import { FinanceModule } from '../finance/finance.module';
 import { PartiesModule } from '../parties/parties.module';
 import { ProjectsModule } from '../projects/projects.module';
+import { ConstructionAdvanceController } from './construction-advance.controller';
+import { ConstructionAdvanceService } from './construction-advance.service';
 import { ConstructionBoqController } from './construction-boq.controller';
 import { ConstructionBoqService } from './construction-boq.service';
 import { ConstructionContractsController } from './construction-contracts.controller';
@@ -11,6 +13,8 @@ import { ConstructionController } from './construction.controller';
 import { ConstructionCostEntryService } from './construction-cost-entry.service';
 import { ConstructionProgressController } from './construction-progress.controller';
 import { ConstructionProgressService } from './construction-progress.service';
+import { ConstructionRetentionController } from './construction-retention.controller';
+import { ConstructionRetentionService } from './construction-retention.service';
 import { ConstructionVariationController } from './construction-variation.controller';
 import { ConstructionVariationService } from './construction-variation.service';
 import { ConstructionProjectProfileService } from './construction-project-profile.service';
@@ -23,6 +27,8 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionBoqController,
     ConstructionProgressController,
     ConstructionVariationController,
+    ConstructionRetentionController,
+    ConstructionAdvanceController,
   ],
   providers: [
     ConstructionProjectProfileService,
@@ -31,6 +37,8 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionBoqService,
     ConstructionVariationService,
     ConstructionProgressService,
+    ConstructionRetentionService,
+    ConstructionAdvanceService,
   ],
   exports: [
     ConstructionProjectProfileService,
@@ -39,6 +47,8 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionBoqService,
     ConstructionVariationService,
     ConstructionProgressService,
+    ConstructionRetentionService,
+    ConstructionAdvanceService,
   ],
 })
 export class ConstructionModule {}

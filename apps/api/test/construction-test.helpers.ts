@@ -42,6 +42,7 @@ export function featuresWithConstruction() {
     'construction.boq',
     'construction.progress',
     'construction.variations',
+    'construction.retention',
   ];
 }
 
