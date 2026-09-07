@@ -114,6 +114,12 @@ export const FEATURE_CATALOG: Record<string, FeatureCatalogEntry> = {
     displayName: 'Construction Costing',
     description: 'Project, contract, and cost-center costing with planned vs actual profitability reporting',
   },
+  'construction.billing': {
+    key: 'construction.billing',
+    moduleKey: 'construction',
+    displayName: 'Construction Billing',
+    description: 'Progress-based client billing via Universal Sales and FinancialPostingService',
+  },
   'pms.patients': {
     key: 'pms.patients',
     moduleKey: 'pms',

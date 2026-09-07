@@ -56,6 +56,8 @@ model Tenant {
   constructionSubcontractorAssignments ConstructionSubcontractorAssignment[]
   constructionMaterialIssues ConstructionMaterialIssue[]
   constructionMaterialIssueLines ConstructionMaterialIssueLine[]
+  constructionBillings ConstructionBilling[]
+  constructionBillingLines ConstructionBillingLine[]
   license             TenantLicense?
 
   @@map("tenants")
@@ -101,6 +103,7 @@ model Branch {
   constructionRetentionEntries ConstructionRetentionEntry[]
   constructionAdvanceEntries ConstructionAdvanceEntry[]
   constructionMaterialIssues ConstructionMaterialIssue[]
+  constructionBillings ConstructionBilling[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -173,6 +176,10 @@ model User {
   constructionSubcontractorAssignmentsCreated ConstructionSubcontractorAssignment[] @relation("ConstructionSubcontractorAssignmentCreator")
   constructionMaterialIssuesCreated ConstructionMaterialIssue[] @relation("ConstructionMaterialIssueCreator")
   constructionMaterialIssuesIssued ConstructionMaterialIssue[] @relation("ConstructionMaterialIssueIssuer")
+  constructionBillingsCreated ConstructionBilling[] @relation("ConstructionBillingCreator")
+  constructionBillingsApproved ConstructionBilling[] @relation("ConstructionBillingApprover")
+  constructionBillingsPosted ConstructionBilling[] @relation("ConstructionBillingPoster")
+  constructionBillingsCancelled ConstructionBilling[] @relation("ConstructionBillingCanceller")
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -635,6 +642,7 @@ model Project {
   constructionAdvanceEntries ConstructionAdvanceEntry[]
   constructionSubcontractorAssignments ConstructionSubcontractorAssignment[]
   constructionMaterialIssues ConstructionMaterialIssue[]
+  constructionBillings ConstructionBilling[]
 
   @@unique([tenantId, code])
   @@index([tenantId, status])
@@ -668,6 +676,7 @@ model CostCenter {
   constructionVariationItems ConstructionVariationItem[]
   constructionMaterialIssues ConstructionMaterialIssue[]
   constructionMaterialIssueLines ConstructionMaterialIssueLine[]
+  constructionBillingLines ConstructionBillingLine[]
 
   @@unique([tenantId, code])
   @@index([tenantId, projectId])
@@ -798,6 +807,7 @@ model ConstructionContract {
   retentionEntries ConstructionRetentionEntry[]
   advanceEntries ConstructionAdvanceEntry[]
   subcontractorAssignments ConstructionSubcontractorAssignment[]
+  billings ConstructionBilling[]
 
   @@unique([tenantId, number])
   @@index([tenantId, projectId])
@@ -835,6 +845,7 @@ model ConstructionBoq {
   items       ConstructionBoqItem[]
   progress    ConstructionProgress[]
   variations  ConstructionVariation[]
+  billings    ConstructionBilling[]
 
   @@unique([tenantId, contractId, revisionNumber])
   @@index([tenantId, contractId, status])
@@ -895,6 +906,7 @@ model ConstructionBoqItem {
   progressItems ConstructionProgressItem[]
   variationItems ConstructionVariationItem[]
   materialIssues ConstructionMaterialIssue[]
+  billingLines ConstructionBillingLine[]
 
   @@index([tenantId, boqId, lineNumber])
   @@index([tenantId, sectionId])
@@ -945,6 +957,7 @@ model ConstructionProgress {
   rejectedBy  User?                @relation("ConstructionProgressRejecter", fields: [rejectedById], references: [id], onDelete: SetNull)
   createdBy   User?                @relation("ConstructionProgressCreator", fields: [createdById], references: [id], onDelete: SetNull)
   items       ConstructionProgressItem[]
+  billings    ConstructionBilling[]
 
   @@unique([tenantId, contractId, boqId, periodFrom, periodTo])
   @@index([tenantId, projectId])
@@ -975,6 +988,7 @@ model ConstructionProgressItem {
   progress   ConstructionProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
   boqItem    ConstructionBoqItem @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
   costCenter CostCenter?         @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  billingLines ConstructionBillingLine[]
 
   @@unique([tenantId, progressId, boqItemId])
   @@index([tenantId, boqItemId])
@@ -1032,6 +1046,7 @@ model ConstructionVariation {
   rejectedBy  User?                @relation("ConstructionVariationRejecter", fields: [rejectedById], references: [id], onDelete: SetNull)
   createdBy   User?                @relation("ConstructionVariationCreator", fields: [createdById], references: [id], onDelete: SetNull)
   items       ConstructionVariationItem[]
+  billingLines ConstructionBillingLine[]
 
   @@unique([tenantId, number])
   @@index([tenantId, contractId, status])
@@ -1279,6 +1294,98 @@ model ConstructionMaterialIssueLine {
   @@map("construction_material_issue_lines")
 }
 
+enum ConstructionBillingStatus {
+  draft
+  approved
+  posted
+  cancelled
+}
+
+model ConstructionBilling {
+  id                    String                    @id @default(uuid()) @db.Uuid
+  tenantId              String                    @db.Uuid
+  projectId             String                    @db.Uuid
+  branchId              String                    @db.Uuid
+  contractId            String                    @db.Uuid
+  progressId            String?                   @db.Uuid
+  boqId                 String?                   @db.Uuid
+  salesInvoiceId        String?                   @unique @db.Uuid
+  number                String
+  status                ConstructionBillingStatus @default(draft)
+  currency              String                    @default("EGP")
+  grossAmount           Decimal                   @default(0) @db.Decimal(18, 4)
+  retentionAmount       Decimal                   @default(0) @db.Decimal(18, 4)
+  advanceRecoveryAmount Decimal                   @default(0) @db.Decimal(18, 4)
+  netBillableAmount     Decimal                   @default(0) @db.Decimal(18, 4)
+  retentionPercent      Decimal?                  @db.Decimal(8, 4)
+  advanceRecoveryPercent Decimal?                 @db.Decimal(8, 4)
+  sourceModule          String                    @default("construction")
+  sourceType            String
+  sourceId              String                    @db.Uuid
+  sourceEvent           String                    @default("bill")
+  idempotencyKey        String?
+  notes                 String?
+  approvedAt            DateTime?
+  approvedById          String?                   @db.Uuid
+  postedAt              DateTime?
+  postedById            String?                   @db.Uuid
+  cancelledAt           DateTime?
+  cancelledById         String?                   @db.Uuid
+  createdById           String?                   @db.Uuid
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  tenant       Tenant                @relation(fields: [tenantId], references: [id])
+  project      Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch       Branch                @relation(fields: [branchId], references: [id])
+  contract     ConstructionContract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  progress     ConstructionProgress? @relation(fields: [progressId], references: [id], onDelete: SetNull)
+  boq          ConstructionBoq?      @relation(fields: [boqId], references: [id], onDelete: SetNull)
+  salesInvoice SalesInvoice?         @relation(fields: [salesInvoiceId], references: [id], onDelete: SetNull)
+  approvedBy   User?                 @relation("ConstructionBillingApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  postedBy     User?                 @relation("ConstructionBillingPoster", fields: [postedById], references: [id], onDelete: SetNull)
+  cancelledBy  User?                 @relation("ConstructionBillingCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
+  createdBy    User?                 @relation("ConstructionBillingCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  lines        ConstructionBillingLine[]
+
+  @@unique([tenantId, number])
+  @@unique([tenantId, sourceModule, sourceType, sourceId, sourceEvent])
+  @@index([tenantId, projectId])
+  @@index([tenantId, contractId, status])
+  @@index([tenantId, progressId])
+  @@map("construction_billings")
+}
+
+model ConstructionBillingLine {
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @db.Uuid
+  billingId             String   @db.Uuid
+  progressItemId        String?  @db.Uuid
+  boqItemId             String?  @db.Uuid
+  variationId           String?  @db.Uuid
+  lineNumber            Int      @default(1)
+  description           String
+  grossAmount           Decimal  @db.Decimal(18, 4)
+  retentionAmount       Decimal  @default(0) @db.Decimal(18, 4)
+  advanceRecoveryAmount Decimal  @default(0) @db.Decimal(18, 4)
+  netBillableAmount     Decimal  @db.Decimal(18, 4)
+  costCenterId          String?  @db.Uuid
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  tenant       Tenant                    @relation(fields: [tenantId], references: [id])
+  billing      ConstructionBilling       @relation(fields: [billingId], references: [id], onDelete: Cascade)
+  progressItem ConstructionProgressItem? @relation(fields: [progressItemId], references: [id], onDelete: SetNull)
+  boqItem      ConstructionBoqItem?      @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
+  variation    ConstructionVariation?    @relation(fields: [variationId], references: [id], onDelete: SetNull)
+  costCenter   CostCenter?               @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, billingId, progressItemId])
+  @@index([tenantId, billingId])
+  @@index([tenantId, progressItemId])
+  @@map("construction_billing_lines")
+}
+
 model PartyRole {
   id         String        @id @default(uuid()) @db.Uuid
   tenantId   String        @db.Uuid
@@ -1422,6 +1529,7 @@ model SalesInvoice {
   branch         Branch    @relation(fields: [branchId], references: [id])
   lines          SalesInvoiceLine[]
   payments       CustomerPayment[]
+  constructionBilling ConstructionBilling?
   @@unique([tenantId, number])
   @@index([tenantId, status, invoiceDate])
   @@map("sales_invoices")

@@ -34,6 +34,7 @@ async function ensureDocumentSequences(app: INestApplication): Promise<void> {
     { documentType: 'ADJ', prefix: 'ADJ', minNextNumber: 1 },
     { documentType: 'PTY', prefix: 'PTY', minNextNumber: 1 },
     { documentType: 'PRJ', prefix: 'PRJ', minNextNumber: 1 },
+    { documentType: 'BLG', prefix: 'BLG', minNextNumber: 1 },
   ];
 
   for (const seq of sequences) {
@@ -341,6 +342,9 @@ async function ensureConstructionPermissions(app: INestApplication): Promise<voi
     { module: 'construction', feature: 'materials', action: 'read' },
     { module: 'construction', feature: 'materials', action: 'issue' },
     { module: 'construction', feature: 'costing', action: 'read' },
+    { module: 'construction', feature: 'billing', action: 'read' },
+    { module: 'construction', feature: 'billing', action: 'create' },
+    { module: 'construction', feature: 'billing', action: 'manage' },
   ];
 
   for (const perm of constructionPermissions) {

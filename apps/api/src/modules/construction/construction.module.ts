@@ -3,8 +3,11 @@ import { AuditModule } from '../audit/audit.module';
 import { FinanceModule } from '../finance/finance.module';
 import { PartiesModule } from '../parties/parties.module';
 import { ProjectsModule } from '../projects/projects.module';
+import { SalesModule } from '../sales/sales.module';
 import { ConstructionAdvanceController } from './construction-advance.controller';
 import { ConstructionAdvanceService } from './construction-advance.service';
+import { ConstructionBillingController } from './construction-billing.controller';
+import { ConstructionBillingService } from './construction-billing.service';
 import { ConstructionBoqController } from './construction-boq.controller';
 import { ConstructionBoqService } from './construction-boq.service';
 import { ConstructionContractsController } from './construction-contracts.controller';
@@ -26,7 +29,7 @@ import { ConstructionVariationService } from './construction-variation.service';
 import { ConstructionProjectProfileService } from './construction-project-profile.service';
 
 @Module({
-  imports: [AuditModule, FinanceModule, ProjectsModule, PartiesModule],
+  imports: [AuditModule, FinanceModule, ProjectsModule, PartiesModule, SalesModule],
   controllers: [
     ConstructionController,
     ConstructionContractsController,
@@ -38,6 +41,7 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionSubcontractorController,
     ConstructionMaterialIssueController,
     ConstructionCostingController,
+    ConstructionBillingController,
   ],
   providers: [
     ConstructionProjectProfileService,
@@ -51,6 +55,7 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionSubcontractorService,
     ConstructionMaterialIssueService,
     ConstructionCostingService,
+    ConstructionBillingService,
   ],
   exports: [
     ConstructionProjectProfileService,
@@ -64,6 +69,7 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionSubcontractorService,
     ConstructionMaterialIssueService,
     ConstructionCostingService,
+    ConstructionBillingService,
   ],
 })
 export class ConstructionModule {}
