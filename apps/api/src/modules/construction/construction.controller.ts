@@ -7,13 +7,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import { ConstructionCostEntryService } from './construction-cost-entry.service';
@@ -27,9 +21,7 @@ import { ProjectsService } from '../projects/projects.service';
 import { PrismaService } from '../../database/prisma.service';
 
 @Controller('construction')
-@UseGuards(PermissionsGuard)
-@RequireModule('construction')
-export class ConstructionController {
+@UseGuards(PermissionsGuard)export class ConstructionController {
   constructor(
     private profiles: ConstructionProjectProfileService,
     private costEntries: ConstructionCostEntryService,
@@ -37,9 +29,7 @@ export class ConstructionController {
     private prisma: PrismaService,
   ) {}
 
-  @Post('projects/:projectId/profile')
-  @RequireFeature('construction.foundation')
-  @RequirePermissions('construction:foundation:manage')
+  @Post('projects/:projectId/profile')  @RequirePermissions('construction:foundation:manage')
   async createProfile(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -55,9 +45,7 @@ export class ConstructionController {
     return { success: true, data };
   }
 
-  @Get('projects/:projectId/profile')
-  @RequireFeature('construction.foundation')
-  @RequirePermissions('construction:foundation:read')
+  @Get('projects/:projectId/profile')  @RequirePermissions('construction:foundation:read')
   async getProfile(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -66,9 +54,7 @@ export class ConstructionController {
     return { success: true, data };
   }
 
-  @Get('projects/:projectId/cost-entries')
-  @RequireFeature('construction.foundation')
-  @RequirePermissions('construction:foundation:read')
+  @Get('projects/:projectId/cost-entries')  @RequirePermissions('construction:foundation:read')
   async listCostEntries(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -88,9 +74,7 @@ export class ConstructionController {
     };
   }
 
-  @Post('projects/:projectId/cost-entries')
-  @RequireFeature('construction.foundation')
-  @RequirePermissions('construction:foundation:manage')
+  @Post('projects/:projectId/cost-entries')  @RequirePermissions('construction:foundation:manage')
   async createCostEntry(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -127,9 +111,7 @@ export class ConstructionController {
     };
   }
 
-  @Get('cost-entries/:id')
-  @RequireFeature('construction.foundation')
-  @RequirePermissions('construction:foundation:read')
+  @Get('cost-entries/:id')  @RequirePermissions('construction:foundation:read')
   async getCostEntry(
     @TenantId() tenantId: string,
     @Param('id') id: string,

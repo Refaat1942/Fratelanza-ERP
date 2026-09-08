@@ -1,7 +1,7 @@
 import { Controller, Get, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { IsString, IsIn } from 'class-validator';
 import { DevicesService } from './devices.service';
-import { TenantId, RequirePermissions, LicenseExempt } from '../../common/decorators';
+import { TenantId, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class UpdateDeviceStatusDto {
@@ -11,9 +11,7 @@ class UpdateDeviceStatusDto {
 }
 
 @Controller('devices')
-@UseGuards(PermissionsGuard)
-@LicenseExempt()
-export class DevicesController {
+@UseGuards(PermissionsGuard)export class DevicesController {
   constructor(private devicesService: DevicesService) {}
 
   @Get()

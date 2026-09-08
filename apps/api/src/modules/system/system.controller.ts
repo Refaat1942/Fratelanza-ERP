@@ -1,5 +1,5 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
-import { LicenseExempt, Public, RequirePermissions, TenantId } from '../../common/decorators';
+import { Public, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import { SystemService } from './system.service';
 
@@ -16,8 +16,7 @@ export class SystemController {
   }
 
   @Get('diagnostics')
-  @LicenseExempt()
-  @RequirePermissions('core:license:read')
+  @RequirePermissions('core:settings:read')
   async getDiagnostics(@TenantId() tenantId: string) {
     const data = await this.systemService.getDiagnostics(tenantId);
     return { success: true, data };

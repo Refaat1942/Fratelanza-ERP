@@ -2,13 +2,11 @@ import { Controller, Post, Body, Req, UseGuards, HttpCode } from '@nestjs/common
 import type { Request } from 'express';
 import { AuthService } from './auth.service';
 import { LoginDto, RefreshTokenDto } from './dto/auth.dto';
-import { Public, CurrentUser, LicenseExempt } from '../../common/decorators';
+import { Public, CurrentUser } from '../../common/decorators';
 import { JwtAuthGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 
-@Controller('auth')
-@LicenseExempt()
-export class AuthController {
+@Controller('auth')export class AuthController {
   constructor(private authService: AuthService) {}
 
   @Public()

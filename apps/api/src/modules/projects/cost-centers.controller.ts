@@ -8,13 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import {
@@ -25,14 +19,10 @@ import {
 import { CostCentersService } from './cost-centers.service';
 
 @Controller('cost-centers')
-@UseGuards(PermissionsGuard)
-@RequireModule('projects')
-export class CostCentersController {
+@UseGuards(PermissionsGuard)export class CostCentersController {
   constructor(private costCentersService: CostCentersService) {}
 
-  @Get()
-  @RequireFeature('projects.cost-centers')
-  @RequirePermissions('projects:cost-centers:read')
+  @Get()  @RequirePermissions('projects:cost-centers:read')
   async list(
     @TenantId() tenantId: string,
     @Query() query: ListCostCentersQueryDto,
@@ -50,17 +40,13 @@ export class CostCentersController {
     };
   }
 
-  @Get(':id')
-  @RequireFeature('projects.cost-centers')
-  @RequirePermissions('projects:cost-centers:read')
+  @Get(':id')  @RequirePermissions('projects:cost-centers:read')
   async findOne(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.costCentersService.findById(tenantId, id);
     return { success: true, data };
   }
 
-  @Post()
-  @RequireFeature('projects.cost-centers')
-  @RequirePermissions('projects:cost-centers:manage')
+  @Post()  @RequirePermissions('projects:cost-centers:manage')
   async create(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -70,9 +56,7 @@ export class CostCentersController {
     return { success: true, data };
   }
 
-  @Patch(':id')
-  @RequireFeature('projects.cost-centers')
-  @RequirePermissions('projects:cost-centers:manage')
+  @Patch(':id')  @RequirePermissions('projects:cost-centers:manage')
   async update(
     @TenantId() tenantId: string,
     @Param('id') id: string,
@@ -83,9 +67,7 @@ export class CostCentersController {
     return { success: true, data };
   }
 
-  @Post(':id/archive')
-  @RequireFeature('projects.cost-centers')
-  @RequirePermissions('projects:cost-centers:manage')
+  @Post(':id/archive')  @RequirePermissions('projects:cost-centers:manage')
   async archive(
     @TenantId() tenantId: string,
     @Param('id') id: string,

@@ -1,12 +1,10 @@
 import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { AuditService } from './audit.service';
-import { TenantId, RequirePermissions, LicenseExempt } from '../../common/decorators';
+import { TenantId, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 @Controller('audit-logs')
-@UseGuards(PermissionsGuard)
-@LicenseExempt()
-export class AuditController {
+@UseGuards(PermissionsGuard)export class AuditController {
   constructor(private auditService: AuditService) {}
 
   @Get()

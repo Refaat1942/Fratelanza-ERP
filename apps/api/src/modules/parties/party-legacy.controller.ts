@@ -7,16 +7,14 @@ import {
   Post,
   UseGuards,
 } from '@nestjs/common';
-import { CurrentUser, RequirePermissions, TenantId, RequireModule } from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import { LinkLegacyCustomerDto, LinkLegacySupplierDto } from './dto/party-legacy.dto';
 import { PartyLegacyAdapterService } from './party-legacy-adapter.service';
 
 @Controller('parties')
-@UseGuards(PermissionsGuard)
-@RequireModule('party')
-export class PartyLegacyController {
+@UseGuards(PermissionsGuard)export class PartyLegacyController {
   constructor(private legacyAdapter: PartyLegacyAdapterService) {}
 
   @Get('legacy/customers/:customerId/party')

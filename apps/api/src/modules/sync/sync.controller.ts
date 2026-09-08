@@ -6,7 +6,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SyncService } from './sync.service';
-import { TenantId, RequirePermissions, RequireModule } from '../../common/decorators';
+import { TenantId, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import { SyncEnabledGuard } from './sync-enabled.guard';
 
@@ -31,9 +31,7 @@ class ResolveConflictDto {
 }
 
 @Controller('sync')
-@UseGuards(SyncEnabledGuard, PermissionsGuard)
-@RequireModule('sync')
-export class SyncController {
+@UseGuards(SyncEnabledGuard, PermissionsGuard)export class SyncController {
   constructor(private syncService: SyncService) {}
 
   @Post('push')

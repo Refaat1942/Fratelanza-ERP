@@ -1,23 +1,14 @@
 import { Controller, Get, Param, Query, UseGuards } from '@nestjs/common';
-import {
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import { ConstructionCostingService } from './construction-costing.service';
 import { ConstructionCostingQueryDto } from './dto/construction-costing.dto';
 
 @Controller('construction/costing')
-@UseGuards(PermissionsGuard)
-@RequireModule('construction')
-export class ConstructionCostingController {
+@UseGuards(PermissionsGuard)export class ConstructionCostingController {
   constructor(private costing: ConstructionCostingService) {}
 
-  @Get('projects/:projectId')
-  @RequireFeature('construction.costing')
-  @RequirePermissions('construction:costing:read')
+  @Get('projects/:projectId')  @RequirePermissions('construction:costing:read')
   async getProjectCosting(
     @TenantId() tenantId: string,
     @Param('projectId') projectId: string,
@@ -27,9 +18,7 @@ export class ConstructionCostingController {
     return { success: true, data };
   }
 
-  @Get('contracts/:contractId')
-  @RequireFeature('construction.costing')
-  @RequirePermissions('construction:costing:read')
+  @Get('contracts/:contractId')  @RequirePermissions('construction:costing:read')
   async getContractCosting(
     @TenantId() tenantId: string,
     @Param('contractId') contractId: string,
@@ -38,9 +27,7 @@ export class ConstructionCostingController {
     return { success: true, data };
   }
 
-  @Get('cost-centers/:costCenterId')
-  @RequireFeature('construction.costing')
-  @RequirePermissions('construction:costing:read')
+  @Get('cost-centers/:costCenterId')  @RequirePermissions('construction:costing:read')
   async getCostCenterCosting(
     @TenantId() tenantId: string,
     @Param('costCenterId') costCenterId: string,

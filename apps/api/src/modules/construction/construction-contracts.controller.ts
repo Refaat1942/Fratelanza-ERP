@@ -8,13 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import { ConstructionContractService } from './construction-contract.service';
@@ -26,14 +20,10 @@ import {
 } from './dto/construction-contract.dto';
 
 @Controller('construction/contracts')
-@UseGuards(PermissionsGuard)
-@RequireModule('construction')
-export class ConstructionContractsController {
+@UseGuards(PermissionsGuard)export class ConstructionContractsController {
   constructor(private contracts: ConstructionContractService) {}
 
-  @Get()
-  @RequireFeature('construction.contracts')
-  @RequirePermissions('construction:contracts:read')
+  @Get()  @RequirePermissions('construction:contracts:read')
   async list(
     @TenantId() tenantId: string,
     @Query() query: ListConstructionContractsQueryDto,
@@ -51,17 +41,13 @@ export class ConstructionContractsController {
     };
   }
 
-  @Get(':id')
-  @RequireFeature('construction.contracts')
-  @RequirePermissions('construction:contracts:read')
+  @Get(':id')  @RequirePermissions('construction:contracts:read')
   async getById(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.contracts.findById(tenantId, id);
     return { success: true, data };
   }
 
-  @Post()
-  @RequireFeature('construction.contracts')
-  @RequirePermissions('construction:contracts:manage')
+  @Post()  @RequirePermissions('construction:contracts:manage')
   async create(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -71,9 +57,7 @@ export class ConstructionContractsController {
     return { success: true, data };
   }
 
-  @Patch(':id')
-  @RequireFeature('construction.contracts')
-  @RequirePermissions('construction:contracts:manage')
+  @Patch(':id')  @RequirePermissions('construction:contracts:manage')
   async update(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -84,9 +68,7 @@ export class ConstructionContractsController {
     return { success: true, data };
   }
 
-  @Post(':id/status')
-  @RequireFeature('construction.contracts')
-  @RequirePermissions('construction:contracts:manage')
+  @Post(':id/status')  @RequirePermissions('construction:contracts:manage')
   async transitionStatus(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -102,9 +84,7 @@ export class ConstructionContractsController {
     return { success: true, data };
   }
 
-  @Post(':id/archive')
-  @RequireFeature('construction.contracts')
-  @RequirePermissions('construction:contracts:manage')
+  @Post(':id/archive')  @RequirePermissions('construction:contracts:manage')
   async archive(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,

@@ -7,13 +7,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import { ConstructionMaterialIssueService } from './construction-material-issue.service';
@@ -23,14 +17,10 @@ import {
 } from './dto/construction-material-issue.dto';
 
 @Controller('construction/material-issues')
-@UseGuards(PermissionsGuard)
-@RequireModule('construction')
-export class ConstructionMaterialIssueController {
+@UseGuards(PermissionsGuard)export class ConstructionMaterialIssueController {
   constructor(private materialIssues: ConstructionMaterialIssueService) {}
 
-  @Get()
-  @RequireFeature('construction.materials')
-  @RequirePermissions('construction:materials:read')
+  @Get()  @RequirePermissions('construction:materials:read')
   async list(
     @TenantId() tenantId: string,
     @Query() query: ListConstructionMaterialIssuesQueryDto,
@@ -48,17 +38,13 @@ export class ConstructionMaterialIssueController {
     };
   }
 
-  @Get(':id')
-  @RequireFeature('construction.materials')
-  @RequirePermissions('construction:materials:read')
+  @Get(':id')  @RequirePermissions('construction:materials:read')
   async getById(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.materialIssues.findById(tenantId, id);
     return { success: true, data };
   }
 
-  @Post()
-  @RequireFeature('construction.materials')
-  @RequirePermissions('construction:materials:issue')
+  @Post()  @RequirePermissions('construction:materials:issue')
   async create(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -72,9 +58,7 @@ export class ConstructionMaterialIssueController {
     };
   }
 
-  @Post(':id/issue')
-  @RequireFeature('construction.materials')
-  @RequirePermissions('construction:materials:issue')
+  @Post(':id/issue')  @RequirePermissions('construction:materials:issue')
   async issue(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -88,9 +72,7 @@ export class ConstructionMaterialIssueController {
     };
   }
 
-  @Post(':id/cancel')
-  @RequireFeature('construction.materials')
-  @RequirePermissions('construction:materials:issue')
+  @Post(':id/cancel')  @RequirePermissions('construction:materials:issue')
   async cancel(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,

@@ -1,13 +1,11 @@
 import { Controller, Get, UseGuards } from '@nestjs/common';
 import { getAppConfig } from '../../config/app-config';
 import { TenantsService } from '../tenants/tenants.service';
-import { TenantId, RequirePermissions, LicenseExempt } from '../../common/decorators';
+import { TenantId, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 @Controller('settings')
-@UseGuards(PermissionsGuard)
-@LicenseExempt()
-export class SettingsController {
+@UseGuards(PermissionsGuard)export class SettingsController {
   constructor(private tenantsService: TenantsService) {}
 
   @Get()
@@ -23,7 +21,6 @@ export class SettingsController {
           code: tenant.code,
           settings: tenant.settings,
         },
-        modules: tenant.tenantModules,
         deploymentFlags: {
           partyLegacyRoutingEnabled: getAppConfig().partyLegacyRoutingEnabled,
           purchasingPartyRoutingEnabled: getAppConfig().purchasingPartyRoutingEnabled,

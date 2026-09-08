@@ -5,7 +5,7 @@ import {
   IsString, IsOptional, IsBoolean, IsNumber, Min,
 } from 'class-validator';
 import { ProductsService } from './products.service';
-import { TenantId, RequirePermissions, RequireModule } from '../../common/decorators';
+import { TenantId, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class CreateProductDto {
@@ -36,9 +36,7 @@ class UpdateProductDto {
 }
 
 @Controller('products')
-@UseGuards(PermissionsGuard)
-@RequireModule('products')
-export class ProductsController {
+@UseGuards(PermissionsGuard)export class ProductsController {
   constructor(private productsService: ProductsService) {}
 
   @Get()

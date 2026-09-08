@@ -6,13 +6,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PurchasingService } from './purchasing.service';
-import {
-  TenantId,
-  CurrentUser,
-  RequirePermissions,
-  RequireModule,
-  RequireFeature,
-} from '../../common/decorators';
+import { TenantId, CurrentUser, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import { PurchasingPartyRoutingGuard } from './guards/purchasing-party-routing.guard';
 import type { JwtPayload } from '@fratelanza/types';
@@ -60,39 +54,29 @@ class ReceivePurchaseOrderDto {
 }
 
 @Controller('purchasing')
-@UseGuards(PermissionsGuard)
-@RequireModule('purchasing')
-export class PurchasingController {
+@UseGuards(PermissionsGuard)export class PurchasingController {
   constructor(private purchasingService: PurchasingService) {}
 
-  @Get('orders')
-  @RequireFeature('purchasing.orders')
-  @RequirePermissions('purchasing:orders:read')
+  @Get('orders')  @RequirePermissions('purchasing:orders:read')
   async listOrders(@TenantId() tenantId: string) {
     const data = await this.purchasingService.findAll(tenantId);
     return { success: true, data };
   }
 
-  @Get('orders/:id')
-  @RequireFeature('purchasing.orders')
-  @RequirePermissions('purchasing:orders:read')
+  @Get('orders/:id')  @RequirePermissions('purchasing:orders:read')
   async getOrder(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.purchasingService.findById(tenantId, id);
     return { success: true, data };
   }
 
-  @Post('orders')
-  @RequireFeature('purchasing.orders')
-  @RequirePermissions('purchasing:orders:create')
+  @Post('orders')  @RequirePermissions('purchasing:orders:create')
   async createOrder(@TenantId() tenantId: string, @Body() dto: CreatePoDto) {
     const data = await this.purchasingService.createOrder(tenantId, dto);
     return { success: true, data };
   }
 
   @Post('orders/from-party')
-  @UseGuards(PurchasingPartyRoutingGuard)
-  @RequireFeature('purchasing.orders')
-  @RequirePermissions('purchasing:orders:create')
+  @UseGuards(PurchasingPartyRoutingGuard)  @RequirePermissions('purchasing:orders:create')
   async createOrderFromParty(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -105,9 +89,7 @@ export class PurchasingController {
     return { success: true, data };
   }
 
-  @Post('orders/:id/receive')
-  @RequireFeature('purchasing.orders')
-  @RequirePermissions('purchasing:orders:receive')
+  @Post('orders/:id/receive')  @RequirePermissions('purchasing:orders:receive')
   async receiveOrder(
     @TenantId() tenantId: string,
     @Param('id') id: string,

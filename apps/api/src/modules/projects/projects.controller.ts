@@ -8,13 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import {
@@ -27,17 +21,13 @@ import { CostCentersService } from './cost-centers.service';
 import { ProjectsService } from './projects.service';
 
 @Controller('projects')
-@UseGuards(PermissionsGuard)
-@RequireModule('projects')
-export class ProjectsController {
+@UseGuards(PermissionsGuard)export class ProjectsController {
   constructor(
     private projectsService: ProjectsService,
     private costCentersService: CostCentersService,
   ) {}
 
-  @Get()
-  @RequireFeature('projects.projects')
-  @RequirePermissions('projects:projects:read')
+  @Get()  @RequirePermissions('projects:projects:read')
   async list(
     @TenantId() tenantId: string,
     @Query() query: ListProjectsQueryDto,
@@ -55,9 +45,7 @@ export class ProjectsController {
     };
   }
 
-  @Get(':id/cost-centers')
-  @RequireFeature('projects.cost-centers')
-  @RequirePermissions('projects:cost-centers:read')
+  @Get(':id/cost-centers')  @RequirePermissions('projects:cost-centers:read')
   async listCostCenters(
     @TenantId() tenantId: string,
     @Param('id') id: string,
@@ -80,17 +68,13 @@ export class ProjectsController {
     };
   }
 
-  @Get(':id')
-  @RequireFeature('projects.projects')
-  @RequirePermissions('projects:projects:read')
+  @Get(':id')  @RequirePermissions('projects:projects:read')
   async findOne(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.projectsService.findById(tenantId, id);
     return { success: true, data };
   }
 
-  @Post()
-  @RequireFeature('projects.projects')
-  @RequirePermissions('projects:projects:create')
+  @Post()  @RequirePermissions('projects:projects:create')
   async create(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -100,9 +84,7 @@ export class ProjectsController {
     return { success: true, data };
   }
 
-  @Patch(':id')
-  @RequireFeature('projects.projects')
-  @RequirePermissions('projects:projects:update')
+  @Patch(':id')  @RequirePermissions('projects:projects:update')
   async update(
     @TenantId() tenantId: string,
     @Param('id') id: string,
@@ -113,9 +95,7 @@ export class ProjectsController {
     return { success: true, data };
   }
 
-  @Post(':id/archive')
-  @RequireFeature('projects.projects')
-  @RequirePermissions('projects:projects:archive')
+  @Post(':id/archive')  @RequirePermissions('projects:projects:archive')
   async archive(
     @TenantId() tenantId: string,
     @Param('id') id: string,

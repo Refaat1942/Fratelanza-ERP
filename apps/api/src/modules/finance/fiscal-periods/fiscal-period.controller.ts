@@ -16,7 +16,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { TenantId, RequirePermissions, RequireModule } from '../../../common/decorators';
+import { TenantId, RequirePermissions } from '../../../common/decorators';
 import { PermissionsGuard } from '../../../common/guards';
 import { FiscalPeriodService } from './fiscal-period.service';
 import { FiscalPeriodStatus } from '../../../../../../packages/database/generated/server';
@@ -32,9 +32,7 @@ class UpdateFiscalPeriodStatusDto {
 }
 
 @Controller('finance/fiscal-periods')
-@UseGuards(PermissionsGuard)
-@RequireModule('finance')
-export class FiscalPeriodController {
+@UseGuards(PermissionsGuard)export class FiscalPeriodController {
   constructor(private fiscalPeriods: FiscalPeriodService) {}
 
   @Get()

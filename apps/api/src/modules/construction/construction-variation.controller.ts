@@ -8,13 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import { ConstructionVariationService } from './construction-variation.service';
@@ -28,14 +22,10 @@ import {
 } from './dto/construction-variation.dto';
 
 @Controller('construction/variations')
-@UseGuards(PermissionsGuard)
-@RequireModule('construction')
-export class ConstructionVariationController {
+@UseGuards(PermissionsGuard)export class ConstructionVariationController {
   constructor(private variations: ConstructionVariationService) {}
 
-  @Get()
-  @RequireFeature('construction.variations')
-  @RequirePermissions('construction:variations:read')
+  @Get()  @RequirePermissions('construction:variations:read')
   async list(
     @TenantId() tenantId: string,
     @Query() query: ListConstructionVariationsQueryDto,
@@ -53,9 +43,7 @@ export class ConstructionVariationController {
     };
   }
 
-  @Post()
-  @RequireFeature('construction.variations')
-  @RequirePermissions('construction:variations:manage')
+  @Post()  @RequirePermissions('construction:variations:manage')
   async create(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -65,17 +53,13 @@ export class ConstructionVariationController {
     return { success: true, data };
   }
 
-  @Get(':id')
-  @RequireFeature('construction.variations')
-  @RequirePermissions('construction:variations:read')
+  @Get(':id')  @RequirePermissions('construction:variations:read')
   async getById(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.variations.findById(tenantId, id);
     return { success: true, data };
   }
 
-  @Patch(':id')
-  @RequireFeature('construction.variations')
-  @RequirePermissions('construction:variations:manage')
+  @Patch(':id')  @RequirePermissions('construction:variations:manage')
   async update(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -86,9 +70,7 @@ export class ConstructionVariationController {
     return { success: true, data };
   }
 
-  @Post(':id/submit')
-  @RequireFeature('construction.variations')
-  @RequirePermissions('construction:variations:manage')
+  @Post(':id/submit')  @RequirePermissions('construction:variations:manage')
   async submit(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -98,9 +80,7 @@ export class ConstructionVariationController {
     return { success: true, data };
   }
 
-  @Post(':id/approve')
-  @RequireFeature('construction.variations')
-  @RequirePermissions('construction:variations:approve')
+  @Post(':id/approve')  @RequirePermissions('construction:variations:approve')
   async approve(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -110,9 +90,7 @@ export class ConstructionVariationController {
     return { success: true, data };
   }
 
-  @Post(':id/reject')
-  @RequireFeature('construction.variations')
-  @RequirePermissions('construction:variations:approve')
+  @Post(':id/reject')  @RequirePermissions('construction:variations:approve')
   async reject(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -123,9 +101,7 @@ export class ConstructionVariationController {
     return { success: true, data };
   }
 
-  @Post(':id/reopen')
-  @RequireFeature('construction.variations')
-  @RequirePermissions('construction:variations:manage')
+  @Post(':id/reopen')  @RequirePermissions('construction:variations:manage')
   async reopen(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -135,9 +111,7 @@ export class ConstructionVariationController {
     return { success: true, data };
   }
 
-  @Post(':id/archive')
-  @RequireFeature('construction.variations')
-  @RequirePermissions('construction:variations:manage')
+  @Post(':id/archive')  @RequirePermissions('construction:variations:manage')
   async archive(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -147,9 +121,7 @@ export class ConstructionVariationController {
     return { success: true, data };
   }
 
-  @Post(':variationId/items')
-  @RequireFeature('construction.variations')
-  @RequirePermissions('construction:variations:manage')
+  @Post(':variationId/items')  @RequirePermissions('construction:variations:manage')
   async createItem(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -165,9 +137,7 @@ export class ConstructionVariationController {
     return { success: true, data };
   }
 
-  @Patch('items/:itemId')
-  @RequireFeature('construction.variations')
-  @RequirePermissions('construction:variations:manage')
+  @Patch('items/:itemId')  @RequirePermissions('construction:variations:manage')
   async updateItem(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,

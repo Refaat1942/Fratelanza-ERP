@@ -6,13 +6,7 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SalesService } from './sales.service';
-import {
-  TenantId,
-  CurrentUser,
-  RequirePermissions,
-  RequireModule,
-  RequireFeature,
-} from '../../common/decorators';
+import { TenantId, CurrentUser, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import { PartyLegacyRoutingGuard } from './guards/party-legacy-routing.guard';
 import type { JwtPayload } from '@fratelanza/types';
@@ -81,30 +75,22 @@ class PostSalesInvoiceDto {
 }
 
 @Controller('sales')
-@UseGuards(PermissionsGuard)
-@RequireModule('sales')
-export class SalesController {
+@UseGuards(PermissionsGuard)export class SalesController {
   constructor(private salesService: SalesService) {}
 
-  @Get('invoices')
-  @RequireFeature('sales.invoices')
-  @RequirePermissions('sales:invoices:read')
+  @Get('invoices')  @RequirePermissions('sales:invoices:read')
   async listInvoices(@TenantId() tenantId: string) {
     const data = await this.salesService.findAll(tenantId);
     return { success: true, data };
   }
 
-  @Get('invoices/:id')
-  @RequireFeature('sales.invoices')
-  @RequirePermissions('sales:invoices:read')
+  @Get('invoices/:id')  @RequirePermissions('sales:invoices:read')
   async getInvoice(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.salesService.findById(tenantId, id);
     return { success: true, data };
   }
 
-  @Post('invoices')
-  @RequireFeature('sales.invoices')
-  @RequirePermissions('sales:invoices:create')
+  @Post('invoices')  @RequirePermissions('sales:invoices:create')
   async createInvoice(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -118,9 +104,7 @@ export class SalesController {
   }
 
   @Post('invoices/from-party')
-  @UseGuards(PartyLegacyRoutingGuard)
-  @RequireFeature('sales.invoices')
-  @RequirePermissions('sales:invoices:create')
+  @UseGuards(PartyLegacyRoutingGuard)  @RequirePermissions('sales:invoices:create')
   async createInvoiceFromParty(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -133,9 +117,7 @@ export class SalesController {
     return { success: true, data };
   }
 
-  @Post('invoices/:id/post')
-  @RequireFeature('sales.invoices')
-  @RequirePermissions('sales:invoices:post')
+  @Post('invoices/:id/post')  @RequirePermissions('sales:invoices:post')
   async postInvoice(
     @TenantId() tenantId: string,
     @Param('id') id: string,

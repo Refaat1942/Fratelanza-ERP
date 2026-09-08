@@ -29,7 +29,6 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
 import { PmsModule } from './modules/pms/pms.module';
 import { FinanceModule } from './modules/finance/finance.module';
 import { PartiesModule } from './modules/parties/parties.module';
-import { LicenseModule } from './modules/license/license.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { ConstructionModule } from './modules/construction/construction.module';
 
@@ -70,8 +69,6 @@ import { ConstructionModule } from './modules/construction/construction.module';
     FinanceModule,
     // ── Universal Party / Contacts (Phase 3) ──
     PartiesModule,
-    // ── Commercial Licensing (Phase 4.5) ──
-    LicenseModule,
     // ── Universal Projects (Phase 8) ──
     ProjectsModule,
     // ── Construction Vertical (Phase 9) ──

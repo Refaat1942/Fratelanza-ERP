@@ -1,12 +1,10 @@
 import { Controller, Get, Patch, Body, UseGuards } from '@nestjs/common';
 import { TenantsService } from './tenants.service';
-import { TenantId, RequirePermissions, LicenseExempt } from '../../common/decorators';
+import { TenantId, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 @Controller('tenants')
-@UseGuards(PermissionsGuard)
-@LicenseExempt()
-export class TenantsController {
+@UseGuards(PermissionsGuard)export class TenantsController {
   constructor(private tenantsService: TenantsService) {}
 
   @Get('current')

@@ -7,13 +7,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import { ConstructionBillingService } from './construction-billing.service';
@@ -25,14 +19,10 @@ import {
 } from './dto/construction-billing.dto';
 
 @Controller('construction/billing')
-@UseGuards(PermissionsGuard)
-@RequireModule('construction')
-export class ConstructionBillingController {
+@UseGuards(PermissionsGuard)export class ConstructionBillingController {
   constructor(private billing: ConstructionBillingService) {}
 
-  @Get()
-  @RequireFeature('construction.billing')
-  @RequirePermissions('construction:billing:read')
+  @Get()  @RequirePermissions('construction:billing:read')
   async list(
     @TenantId() tenantId: string,
     @Query() query: ListConstructionBillingQueryDto,
@@ -50,9 +40,7 @@ export class ConstructionBillingController {
     };
   }
 
-  @Get('candidates')
-  @RequireFeature('construction.billing')
-  @RequirePermissions('construction:billing:read')
+  @Get('candidates')  @RequirePermissions('construction:billing:read')
   async listCandidates(
     @TenantId() tenantId: string,
     @Query() query: ListBillingCandidatesQueryDto,
@@ -70,9 +58,7 @@ export class ConstructionBillingController {
     };
   }
 
-  @Post()
-  @RequireFeature('construction.billing')
-  @RequirePermissions('construction:billing:create')
+  @Post()  @RequirePermissions('construction:billing:create')
   async create(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -82,17 +68,13 @@ export class ConstructionBillingController {
     return { success: true, data };
   }
 
-  @Get(':id')
-  @RequireFeature('construction.billing')
-  @RequirePermissions('construction:billing:read')
+  @Get(':id')  @RequirePermissions('construction:billing:read')
   async getById(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.billing.findById(tenantId, id);
     return { success: true, data };
   }
 
-  @Post(':id/approve')
-  @RequireFeature('construction.billing')
-  @RequirePermissions('construction:billing:manage')
+  @Post(':id/approve')  @RequirePermissions('construction:billing:manage')
   async approve(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -102,9 +84,7 @@ export class ConstructionBillingController {
     return { success: true, data };
   }
 
-  @Post(':id/post')
-  @RequireFeature('construction.billing')
-  @RequirePermissions('construction:billing:manage')
+  @Post(':id/post')  @RequirePermissions('construction:billing:manage')
   async post(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -115,9 +95,7 @@ export class ConstructionBillingController {
     return { success: true, data };
   }
 
-  @Post(':id/cancel')
-  @RequireFeature('construction.billing')
-  @RequirePermissions('construction:billing:manage')
+  @Post(':id/cancel')  @RequirePermissions('construction:billing:manage')
   async cancel(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,

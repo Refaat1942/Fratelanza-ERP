@@ -7,13 +7,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import { ConstructionRetentionService } from './construction-retention.service';
@@ -25,14 +19,10 @@ import {
 } from './dto/construction-retention.dto';
 
 @Controller('construction/retention')
-@UseGuards(PermissionsGuard)
-@RequireModule('construction')
-export class ConstructionRetentionController {
+@UseGuards(PermissionsGuard)export class ConstructionRetentionController {
   constructor(private retention: ConstructionRetentionService) {}
 
-  @Get()
-  @RequireFeature('construction.retention')
-  @RequirePermissions('construction:retention:read')
+  @Get()  @RequirePermissions('construction:retention:read')
   async list(
     @TenantId() tenantId: string,
     @Query() query: ListConstructionRetentionQueryDto,
@@ -61,9 +51,7 @@ export class ConstructionRetentionController {
     };
   }
 
-  @Get('balance')
-  @RequireFeature('construction.retention')
-  @RequirePermissions('construction:retention:read')
+  @Get('balance')  @RequirePermissions('construction:retention:read')
   async getBalance(
     @TenantId() tenantId: string,
     @Query() query: GetRetentionBalanceQueryDto,
@@ -83,9 +71,7 @@ export class ConstructionRetentionController {
     };
   }
 
-  @Get('contract/:contractId')
-  @RequireFeature('construction.retention')
-  @RequirePermissions('construction:retention:read')
+  @Get('contract/:contractId')  @RequirePermissions('construction:retention:read')
   async listByContract(
     @TenantId() tenantId: string,
     @Param('contractId') contractId: string,
@@ -108,9 +94,7 @@ export class ConstructionRetentionController {
     };
   }
 
-  @Post('release')
-  @RequireFeature('construction.retention')
-  @RequirePermissions('construction:retention:release')
+  @Post('release')  @RequirePermissions('construction:retention:release')
   async release(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -120,9 +104,7 @@ export class ConstructionRetentionController {
     return { success: true, data };
   }
 
-  @Post('hold-from-progress')
-  @RequireFeature('construction.retention')
-  @RequirePermissions('construction:retention:manage')
+  @Post('hold-from-progress')  @RequirePermissions('construction:retention:manage')
   async holdFromProgress(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,

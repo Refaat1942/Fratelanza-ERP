@@ -1,14 +1,14 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../database/prisma.service';
-import { EntitlementService } from '../license/entitlement.service';
+import {
+  isValidUsername,
+  normalizeLoginIdentifier,
+} from '../../common/utils/login-identity.util';
 
 @Injectable()
 export class UsersService {
-  constructor(
-    private prisma: PrismaService,
-    private entitlementService: EntitlementService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   async findAll(tenantId: string) {
     return this.prisma.user.findMany({
@@ -53,7 +53,7 @@ export class UsersService {
   }
 
   async create(tenantId: string, data: {
-    email: string;
+    username: string;
     password: string;
     firstName: string;
     lastName: string;
@@ -62,21 +62,21 @@ export class UsersService {
     phone?: string;
     locale?: string;
   }) {
-    const existing = await this.prisma.user.findFirst({
-      where: { tenantId, email: data.email, deletedAt: null },
-    });
-    if (existing) throw new ConflictException('Email already in use');
+    if (!isValidUsername(data.username)) {
+      throw new BadRequestException('Invalid username');
+    }
 
-    const activeUsers = await this.prisma.user.count({
-      where: { tenantId, deletedAt: null, isActive: true },
+    const email = normalizeLoginIdentifier(data.username);
+    const existing = await this.prisma.user.findFirst({
+      where: { tenantId, email, deletedAt: null },
     });
-    await this.entitlementService.assertLimit(tenantId, 'maxUsers', activeUsers + 1);
+    if (existing) throw new ConflictException('Username already in use');
 
     const passwordHash = await bcrypt.hash(data.password, 12);
     return this.prisma.user.create({
       data: {
         tenantId,
-        email: data.email,
+        email,
         passwordHash,
         firstName: data.firstName,
         lastName: data.lastName,
@@ -96,6 +96,7 @@ export class UsersService {
   }
 
   async update(tenantId: string, id: string, data: Partial<{
+    username: string;
     firstName: string;
     lastName: string;
     phone: string;
@@ -107,6 +108,20 @@ export class UsersService {
   }>) {
     await this.findById(tenantId, id);
     const updateData: Record<string, unknown> = { ...data };
+
+    if (data.username !== undefined) {
+      if (!isValidUsername(data.username)) {
+        throw new BadRequestException('Invalid username');
+      }
+      const email = normalizeLoginIdentifier(data.username);
+      const existing = await this.prisma.user.findFirst({
+        where: { tenantId, email, deletedAt: null, NOT: { id } },
+      });
+      if (existing) throw new ConflictException('Username already in use');
+      updateData.email = email;
+      delete updateData.username;
+    }
+
     if (data.password) {
       updateData.passwordHash = await bcrypt.hash(data.password, 12);
       delete updateData.password;

@@ -7,13 +7,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import { ConstructionAdvanceService } from './construction-advance.service';
@@ -28,17 +22,13 @@ import {
 } from './dto/construction-advance.dto';
 
 @Controller('construction/advances')
-@UseGuards(PermissionsGuard)
-@RequireModule('construction')
-export class ConstructionAdvanceController {
+@UseGuards(PermissionsGuard)export class ConstructionAdvanceController {
   constructor(
     private advances: ConstructionAdvanceService,
     private contracts: ConstructionContractService,
   ) {}
 
-  @Get()
-  @RequireFeature('construction.retention')
-  @RequirePermissions('construction:retention:read')
+  @Get()  @RequirePermissions('construction:retention:read')
   async list(
     @TenantId() tenantId: string,
     @Query() query: ListConstructionAdvanceQueryDto,
@@ -67,9 +57,7 @@ export class ConstructionAdvanceController {
     };
   }
 
-  @Get('balance')
-  @RequireFeature('construction.retention')
-  @RequirePermissions('construction:retention:read')
+  @Get('balance')  @RequirePermissions('construction:retention:read')
   async getBalance(
     @TenantId() tenantId: string,
     @Query() query: GetAdvanceBalanceQueryDto,
@@ -89,9 +77,7 @@ export class ConstructionAdvanceController {
     };
   }
 
-  @Get('recoverable')
-  @RequireFeature('construction.retention')
-  @RequirePermissions('construction:retention:read')
+  @Get('recoverable')  @RequirePermissions('construction:retention:read')
   async calculateRecoverable(
     @TenantId() tenantId: string,
     @Query() query: CalculateRecoverableAdvanceQueryDto,
@@ -120,9 +106,7 @@ export class ConstructionAdvanceController {
     };
   }
 
-  @Get('contract/:contractId')
-  @RequireFeature('construction.retention')
-  @RequirePermissions('construction:retention:read')
+  @Get('contract/:contractId')  @RequirePermissions('construction:retention:read')
   async listByContract(
     @TenantId() tenantId: string,
     @Param('contractId') contractId: string,
@@ -145,9 +129,7 @@ export class ConstructionAdvanceController {
     };
   }
 
-  @Post('received')
-  @RequireFeature('construction.retention')
-  @RequirePermissions('construction:retention:manage')
+  @Post('received')  @RequirePermissions('construction:retention:manage')
   async received(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -157,9 +139,7 @@ export class ConstructionAdvanceController {
     return { success: true, data };
   }
 
-  @Post('recovered')
-  @RequireFeature('construction.retention')
-  @RequirePermissions('construction:retention:manage')
+  @Post('recovered')  @RequirePermissions('construction:retention:manage')
   async recovered(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,

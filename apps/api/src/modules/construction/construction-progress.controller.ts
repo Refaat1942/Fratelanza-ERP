@@ -8,13 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import { ConstructionProgressService } from './construction-progress.service';
@@ -28,14 +22,10 @@ import {
 } from './dto/construction-progress.dto';
 
 @Controller('construction/progress')
-@UseGuards(PermissionsGuard)
-@RequireModule('construction')
-export class ConstructionProgressController {
+@UseGuards(PermissionsGuard)export class ConstructionProgressController {
   constructor(private progress: ConstructionProgressService) {}
 
-  @Get()
-  @RequireFeature('construction.progress')
-  @RequirePermissions('construction:progress:read')
+  @Get()  @RequirePermissions('construction:progress:read')
   async list(
     @TenantId() tenantId: string,
     @Query() query: ListConstructionProgressQueryDto,
@@ -53,9 +43,7 @@ export class ConstructionProgressController {
     };
   }
 
-  @Post()
-  @RequireFeature('construction.progress')
-  @RequirePermissions('construction:progress:manage')
+  @Post()  @RequirePermissions('construction:progress:manage')
   async create(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -65,17 +53,13 @@ export class ConstructionProgressController {
     return { success: true, data };
   }
 
-  @Get(':id')
-  @RequireFeature('construction.progress')
-  @RequirePermissions('construction:progress:read')
+  @Get(':id')  @RequirePermissions('construction:progress:read')
   async getById(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.progress.findById(tenantId, id);
     return { success: true, data };
   }
 
-  @Patch(':id')
-  @RequireFeature('construction.progress')
-  @RequirePermissions('construction:progress:manage')
+  @Patch(':id')  @RequirePermissions('construction:progress:manage')
   async update(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -86,9 +70,7 @@ export class ConstructionProgressController {
     return { success: true, data };
   }
 
-  @Post(':id/submit')
-  @RequireFeature('construction.progress')
-  @RequirePermissions('construction:progress:submit')
+  @Post(':id/submit')  @RequirePermissions('construction:progress:submit')
   async submit(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -98,9 +80,7 @@ export class ConstructionProgressController {
     return { success: true, data };
   }
 
-  @Post(':id/approve')
-  @RequireFeature('construction.progress')
-  @RequirePermissions('construction:progress:approve')
+  @Post(':id/approve')  @RequirePermissions('construction:progress:approve')
   async approve(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -110,9 +90,7 @@ export class ConstructionProgressController {
     return { success: true, data };
   }
 
-  @Post(':id/reject')
-  @RequireFeature('construction.progress')
-  @RequirePermissions('construction:progress:approve')
+  @Post(':id/reject')  @RequirePermissions('construction:progress:approve')
   async reject(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -123,9 +101,7 @@ export class ConstructionProgressController {
     return { success: true, data };
   }
 
-  @Post(':id/reopen')
-  @RequireFeature('construction.progress')
-  @RequirePermissions('construction:progress:manage')
+  @Post(':id/reopen')  @RequirePermissions('construction:progress:manage')
   async reopen(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -135,9 +111,7 @@ export class ConstructionProgressController {
     return { success: true, data };
   }
 
-  @Post(':id/archive')
-  @RequireFeature('construction.progress')
-  @RequirePermissions('construction:progress:manage')
+  @Post(':id/archive')  @RequirePermissions('construction:progress:manage')
   async archive(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -147,9 +121,7 @@ export class ConstructionProgressController {
     return { success: true, data };
   }
 
-  @Post(':progressId/items')
-  @RequireFeature('construction.progress')
-  @RequirePermissions('construction:progress:manage')
+  @Post(':progressId/items')  @RequirePermissions('construction:progress:manage')
   async createItem(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -165,9 +137,7 @@ export class ConstructionProgressController {
     return { success: true, data };
   }
 
-  @Patch('items/:itemId')
-  @RequireFeature('construction.progress')
-  @RequirePermissions('construction:progress:manage')
+  @Patch('items/:itemId')  @RequirePermissions('construction:progress:manage')
   async updateItem(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,

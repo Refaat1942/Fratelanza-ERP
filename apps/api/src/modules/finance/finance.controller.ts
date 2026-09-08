@@ -8,7 +8,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { TenantId, RequirePermissions, RequireModule, RequireFeature } from '../../common/decorators';
+import { TenantId, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import { PrismaService } from '../../database/prisma.service';
 import { FinancialPostingService } from './posting/financial-posting.service';
@@ -75,9 +75,7 @@ function toPostingDimensions(dto?: PostingDimensionsDto): PostingDimensions | un
 }
 
 @Controller('finance')
-@UseGuards(PermissionsGuard)
-@RequireModule('finance')
-export class FinanceController {
+@UseGuards(PermissionsGuard)export class FinanceController {
   constructor(
     private prisma: PrismaService,
     private financialPosting: FinancialPostingService,
@@ -115,9 +113,7 @@ export class FinanceController {
     return { success: true, data };
   }
 
-  @Post('postings/rule')
-  @RequireFeature('finance.financial-posting')
-  @RequirePermissions('finance:posting:execute')
+  @Post('postings/rule')  @RequirePermissions('finance:posting:execute')
   async postFromRule(@TenantId() tenantId: string, @Body() dto: RulePostingDto) {
     const input: FinancialPostingInput = {
       mode: 'rule',
@@ -138,9 +134,7 @@ export class FinanceController {
     return { success: true, data };
   }
 
-  @Post('postings/lines')
-  @RequireFeature('finance.financial-posting')
-  @RequirePermissions('finance:posting:execute')
+  @Post('postings/lines')  @RequirePermissions('finance:posting:execute')
   async postFromLines(@TenantId() tenantId: string, @Body() dto: LinesPostingDto) {
     const input: FinancialPostingInput = {
       mode: 'lines',

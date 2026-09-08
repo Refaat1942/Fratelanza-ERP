@@ -8,13 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import { ConstructionSubcontractorService } from './construction-subcontractor.service';
@@ -28,14 +22,10 @@ import {
 } from './dto/construction-subcontractor.dto';
 
 @Controller('construction/subcontractors')
-@UseGuards(PermissionsGuard)
-@RequireModule('construction')
-export class ConstructionSubcontractorController {
+@UseGuards(PermissionsGuard)export class ConstructionSubcontractorController {
   constructor(private subcontractors: ConstructionSubcontractorService) {}
 
-  @Get()
-  @RequireFeature('construction.subcontractors')
-  @RequirePermissions('construction:subcontractors:read')
+  @Get()  @RequirePermissions('construction:subcontractors:read')
   async list(
     @TenantId() tenantId: string,
     @Query() query: ListConstructionSubcontractorsQueryDto,
@@ -53,9 +43,7 @@ export class ConstructionSubcontractorController {
     };
   }
 
-  @Patch('assignments/:assignmentId')
-  @RequireFeature('construction.subcontractors')
-  @RequirePermissions('construction:subcontractors:manage')
+  @Patch('assignments/:assignmentId')  @RequirePermissions('construction:subcontractors:manage')
   async updateAssignment(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -71,17 +59,13 @@ export class ConstructionSubcontractorController {
     return { success: true, data };
   }
 
-  @Get(':id')
-  @RequireFeature('construction.subcontractors')
-  @RequirePermissions('construction:subcontractors:read')
+  @Get(':id')  @RequirePermissions('construction:subcontractors:read')
   async getById(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.subcontractors.findById(tenantId, id);
     return { success: true, data };
   }
 
-  @Post()
-  @RequireFeature('construction.subcontractors')
-  @RequirePermissions('construction:subcontractors:manage')
+  @Post()  @RequirePermissions('construction:subcontractors:manage')
   async create(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -91,9 +75,7 @@ export class ConstructionSubcontractorController {
     return { success: true, data };
   }
 
-  @Patch(':id')
-  @RequireFeature('construction.subcontractors')
-  @RequirePermissions('construction:subcontractors:manage')
+  @Patch(':id')  @RequirePermissions('construction:subcontractors:manage')
   async update(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -104,9 +86,7 @@ export class ConstructionSubcontractorController {
     return { success: true, data };
   }
 
-  @Get(':id/assignments')
-  @RequireFeature('construction.subcontractors')
-  @RequirePermissions('construction:subcontractors:read')
+  @Get(':id/assignments')  @RequirePermissions('construction:subcontractors:read')
   async listAssignments(
     @TenantId() tenantId: string,
     @Param('id') profileId: string,
@@ -129,9 +109,7 @@ export class ConstructionSubcontractorController {
     };
   }
 
-  @Post(':id/assignments')
-  @RequireFeature('construction.subcontractors')
-  @RequirePermissions('construction:subcontractors:manage')
+  @Post(':id/assignments')  @RequirePermissions('construction:subcontractors:manage')
   async createAssignment(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,

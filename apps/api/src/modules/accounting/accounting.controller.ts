@@ -3,7 +3,7 @@ import {
 } from '@nestjs/common';
 import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { AccountingService } from './accounting.service';
-import { TenantId, RequirePermissions, RequireModule } from '../../common/decorators';
+import { TenantId, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class CreateAccountDto {
@@ -21,9 +21,7 @@ class UpdateAccountDto {
 }
 
 @Controller('accounting')
-@UseGuards(PermissionsGuard)
-@RequireModule('accounting')
-export class AccountingController {
+@UseGuards(PermissionsGuard)export class AccountingController {
   constructor(private accountingService: AccountingService) {}
 
   @Get('accounts')

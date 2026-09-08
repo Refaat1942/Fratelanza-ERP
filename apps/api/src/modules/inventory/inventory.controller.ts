@@ -3,9 +3,7 @@ import {
 } from '@nestjs/common';
 import { IsString, IsOptional, IsNumber } from 'class-validator';
 import { InventoryService } from './inventory.service';
-import {
-  TenantId, CurrentUser, RequirePermissions, RequireModule, RequireFeature,
-} from '../../common/decorators';
+import { TenantId, CurrentUser, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 
@@ -19,14 +17,10 @@ class AdjustStockDto {
 }
 
 @Controller('inventory')
-@UseGuards(PermissionsGuard)
-@RequireModule('inventory')
-export class InventoryController {
+@UseGuards(PermissionsGuard)export class InventoryController {
   constructor(private inventoryService: InventoryService) {}
 
-  @Get('movements')
-  @RequireFeature('inventory.stock')
-  @RequirePermissions('inventory:movements:read')
+  @Get('movements')  @RequirePermissions('inventory:movements:read')
   async listMovements(
     @TenantId() tenantId: string,
     @Query('warehouseId') warehouseId?: string,
@@ -39,9 +33,7 @@ export class InventoryController {
     return { success: true, data };
   }
 
-  @Get('balances')
-  @RequireFeature('inventory.stock')
-  @RequirePermissions('inventory:stock:read')
+  @Get('balances')  @RequirePermissions('inventory:stock:read')
   async getBalances(
     @TenantId() tenantId: string,
     @Query('warehouseId') warehouseId?: string,
@@ -50,9 +42,7 @@ export class InventoryController {
     return { success: true, data };
   }
 
-  @Post('adjust')
-  @RequireFeature('inventory.stock')
-  @RequirePermissions('inventory:stock:adjust')
+  @Post('adjust')  @RequirePermissions('inventory:stock:adjust')
   async adjustStock(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,

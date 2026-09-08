@@ -8,13 +8,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  CurrentUser,
-  RequireFeature,
-  RequireModule,
-  RequirePermissions,
-  TenantId,
-} from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import { ConstructionBoqService } from './construction-boq.service';
@@ -29,14 +23,10 @@ import {
 } from './dto/construction-boq.dto';
 
 @Controller('construction')
-@UseGuards(PermissionsGuard)
-@RequireModule('construction')
-export class ConstructionBoqController {
+@UseGuards(PermissionsGuard)export class ConstructionBoqController {
   constructor(private boqs: ConstructionBoqService) {}
 
-  @Get('contracts/:contractId/boqs')
-  @RequireFeature('construction.boq')
-  @RequirePermissions('construction:boq:read')
+  @Get('contracts/:contractId/boqs')  @RequirePermissions('construction:boq:read')
   async listByContract(
     @TenantId() tenantId: string,
     @Param('contractId') contractId: string,
@@ -55,9 +45,7 @@ export class ConstructionBoqController {
     };
   }
 
-  @Post('contracts/:contractId/boqs')
-  @RequireFeature('construction.boq')
-  @RequirePermissions('construction:boq:manage')
+  @Post('contracts/:contractId/boqs')  @RequirePermissions('construction:boq:manage')
   async createForContract(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -73,17 +61,13 @@ export class ConstructionBoqController {
     return { success: true, data };
   }
 
-  @Get('boqs/:id')
-  @RequireFeature('construction.boq')
-  @RequirePermissions('construction:boq:read')
+  @Get('boqs/:id')  @RequirePermissions('construction:boq:read')
   async getById(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.boqs.findById(tenantId, id);
     return { success: true, data };
   }
 
-  @Patch('boqs/:id')
-  @RequireFeature('construction.boq')
-  @RequirePermissions('construction:boq:manage')
+  @Patch('boqs/:id')  @RequirePermissions('construction:boq:manage')
   async update(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -94,9 +78,7 @@ export class ConstructionBoqController {
     return { success: true, data };
   }
 
-  @Post('boqs/:id/approve')
-  @RequireFeature('construction.boq')
-  @RequirePermissions('construction:boq:approve')
+  @Post('boqs/:id/approve')  @RequirePermissions('construction:boq:approve')
   async approve(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -106,9 +88,7 @@ export class ConstructionBoqController {
     return { success: true, data };
   }
 
-  @Post('boqs/:id/revise')
-  @RequireFeature('construction.boq')
-  @RequirePermissions('construction:boq:manage')
+  @Post('boqs/:id/revise')  @RequirePermissions('construction:boq:manage')
   async revise(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -118,9 +98,7 @@ export class ConstructionBoqController {
     return { success: true, data };
   }
 
-  @Post('boqs/:boqId/sections')
-  @RequireFeature('construction.boq')
-  @RequirePermissions('construction:boq:manage')
+  @Post('boqs/:boqId/sections')  @RequirePermissions('construction:boq:manage')
   async createSection(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -131,9 +109,7 @@ export class ConstructionBoqController {
     return { success: true, data };
   }
 
-  @Patch('boq-sections/:sectionId')
-  @RequireFeature('construction.boq')
-  @RequirePermissions('construction:boq:manage')
+  @Patch('boq-sections/:sectionId')  @RequirePermissions('construction:boq:manage')
   async updateSection(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -149,9 +125,7 @@ export class ConstructionBoqController {
     return { success: true, data };
   }
 
-  @Post('boqs/:boqId/items')
-  @RequireFeature('construction.boq')
-  @RequirePermissions('construction:boq:manage')
+  @Post('boqs/:boqId/items')  @RequirePermissions('construction:boq:manage')
   async createItem(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
@@ -162,9 +136,7 @@ export class ConstructionBoqController {
     return { success: true, data };
   }
 
-  @Patch('boq-items/:itemId')
-  @RequireFeature('construction.boq')
-  @RequirePermissions('construction:boq:manage')
+  @Patch('boq-items/:itemId')  @RequirePermissions('construction:boq:manage')
   async updateItem(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,

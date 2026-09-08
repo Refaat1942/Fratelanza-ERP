@@ -9,7 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { CurrentUser, RequirePermissions, TenantId, RequireModule } from '../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import {
@@ -25,9 +25,7 @@ import { PartyContactsService } from './party-contacts.service';
 import { PartyRolesService } from './party-roles.service';
 
 @Controller('parties')
-@UseGuards(PermissionsGuard)
-@RequireModule('party')
-export class PartiesController {
+@UseGuards(PermissionsGuard)export class PartiesController {
   constructor(
     private partiesService: PartiesService,
     private partyRolesService: PartyRolesService,

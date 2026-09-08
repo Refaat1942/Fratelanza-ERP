@@ -10,7 +10,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { CurrentUser, RequirePermissions, TenantId, RequireModule } from '../../../common/decorators';
+import { CurrentUser, RequirePermissions, TenantId } from '../../../common/decorators';
 import { PermissionsGuard } from '../../../common/guards';
 import type { JwtPayload } from '@fratelanza/types';
 import {
@@ -25,9 +25,7 @@ import { PatientProfileService } from './patient-profile.service';
 import { PatientsService } from './patients.service';
 
 @Controller('pms/patients')
-@UseGuards(PermissionsGuard)
-@RequireModule('pms')
-export class PatientsController {
+@UseGuards(PermissionsGuard)export class PatientsController {
   constructor(
     private patientsService: PatientsService,
     private patientProfiles: PatientProfileService,

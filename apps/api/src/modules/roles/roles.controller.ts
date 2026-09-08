@@ -2,7 +2,7 @@ import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
 import { IsString, IsOptional, IsArray } from 'class-validator';
 import { RolesService } from './roles.service';
 import { PrismaService } from '../../database/prisma.service';
-import { TenantId, RequirePermissions, LicenseExempt } from '../../common/decorators';
+import { TenantId, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class CreateRoleDto {
@@ -13,9 +13,7 @@ class CreateRoleDto {
 }
 
 @Controller('roles')
-@UseGuards(PermissionsGuard)
-@LicenseExempt()
-export class RolesController {
+@UseGuards(PermissionsGuard)export class RolesController {
   constructor(
     private rolesService: RolesService,
     private prisma: PrismaService,
@@ -25,6 +23,13 @@ export class RolesController {
   @RequirePermissions('core:roles:read')
   async findAll(@TenantId() tenantId: string) {
     const data = await this.rolesService.findAll(tenantId);
+    return { success: true, data };
+  }
+
+  @Get('assignable/list')
+  @RequirePermissions('core:users:read')
+  async findAssignable(@TenantId() tenantId: string) {
+    const data = await this.rolesService.findAssignable(tenantId);
     return { success: true, data };
   }
 

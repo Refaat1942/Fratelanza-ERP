@@ -1,11 +1,14 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
-import { IsEmail, IsString, IsOptional, IsBoolean, MinLength } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, MinLength, Matches } from 'class-validator';
 import { UsersService } from './users.service';
-import { TenantId, RequirePermissions, LicenseExempt } from '../../common/decorators';
+import { TenantId, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class CreateUserDto {
-  @IsEmail() email!: string;
+  @IsString()
+  @MinLength(3)
+  @Matches(/^[a-zA-Z0-9._-]+$/, { message: 'Username may only contain letters, numbers, dot, dash, underscore' })
+  username!: string;
   @IsString() @MinLength(8) password!: string;
   @IsString() firstName!: string;
   @IsString() lastName!: string;
@@ -16,6 +19,11 @@ class CreateUserDto {
 }
 
 class UpdateUserDto {
+  @IsOptional()
+  @IsString()
+  @MinLength(3)
+  @Matches(/^[a-zA-Z0-9._-]+$/)
+  username?: string;
   @IsOptional() @IsString() firstName?: string;
   @IsOptional() @IsString() lastName?: string;
   @IsOptional() @IsString() phone?: string;
@@ -27,9 +35,7 @@ class UpdateUserDto {
 }
 
 @Controller('users')
-@UseGuards(PermissionsGuard)
-@LicenseExempt()
-export class UsersController {
+@UseGuards(PermissionsGuard)export class UsersController {
   constructor(private usersService: UsersService) {}
 
   @Get()

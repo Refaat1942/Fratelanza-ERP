@@ -9,7 +9,6 @@ export class TenantsService {
     const tenant = await this.prisma.tenant.findFirst({
       where: { id: tenantId, deletedAt: null },
       include: {
-        tenantModules: { where: { isEnabled: true } },
         _count: { select: { branches: true, users: true } },
       },
     });

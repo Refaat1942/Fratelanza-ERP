@@ -3,7 +3,7 @@ import {
 } from '@nestjs/common';
 import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { UnitsService } from './units.service';
-import { TenantId, RequirePermissions, RequireModule } from '../../common/decorators';
+import { TenantId, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
 
 class CreateUnitDto {
@@ -19,9 +19,7 @@ class UpdateUnitDto {
 }
 
 @Controller('units-of-measure')
-@UseGuards(PermissionsGuard)
-@RequireModule('products')
-export class UnitsController {
+@UseGuards(PermissionsGuard)export class UnitsController {
   constructor(private unitsService: UnitsService) {}
 
   @Get()
