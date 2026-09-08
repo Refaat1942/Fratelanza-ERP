@@ -1,4 +1,5 @@
 import { createPrivateKey, createPublicKey, generateKeyPairSync, sign, verify } from 'crypto';
+import { normalizePemFromEnv } from '@fratelanza/config';
 import type { SignedLicenseDocument } from './license-document';
 import { canonicalizeLicenseDocument, digestLicenseDocument } from './license-document';
 
@@ -12,7 +13,7 @@ export function signLicenseDocument(
   document: SignedLicenseDocument,
   privateKeyPem: string,
 ): string {
-  const privateKey = createPrivateKey(privateKeyPem);
+  const privateKey = createPrivateKey(normalizePemFromEnv(privateKeyPem) ?? privateKeyPem);
   const payload = Buffer.from(canonicalizeLicenseDocument(document), 'utf8');
   return sign(null, payload, privateKey).toString('base64');
 }
@@ -24,7 +25,8 @@ export function verifyLicenseDocumentSignature(
 ): LicenseSignatureVerificationResult {
   const digest = digestLicenseDocument(document);
   try {
-    const publicKey = createPublicKey(publicKeyPem);
+    const normalizedPublicKey = normalizePemFromEnv(publicKeyPem) ?? publicKeyPem;
+    const publicKey = createPublicKey(normalizedPublicKey);
     const payload = Buffer.from(canonicalizeLicenseDocument(document), 'utf8');
     const signature = Buffer.from(signatureBase64, 'base64');
     const valid = verify(null, payload, publicKey, signature);

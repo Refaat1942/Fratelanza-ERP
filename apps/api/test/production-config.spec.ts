@@ -49,4 +49,12 @@ describe('Production configuration validation (Phase 10.0)', () => {
       validateAppConfig(prodConfig({ FRATELANZA_INSTALLATION_ID: '' })),
     ).toThrow(/FRATELANZA_INSTALLATION_ID/);
   });
+
+  it('normalizes LICENSE_VERIFICATION_PUBLIC_KEY PEM with escaped newlines from .env', () => {
+    process.env.LICENSE_VERIFICATION_PUBLIC_KEY =
+      '"-----BEGIN PUBLIC KEY-----\\nMCowBQYDK2VwAyEAtest\\n-----END PUBLIC KEY-----\\n"';
+    const config = loadApiConfig();
+    expect(config.license.verificationPublicKey).toContain('-----BEGIN PUBLIC KEY-----\n');
+    expect(config.license.verificationPublicKey).not.toContain('\\n');
+  });
 });

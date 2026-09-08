@@ -44,6 +44,16 @@ const DEV_JWT_FALLBACK = 'development-secret-change-in-production';
 
 export { resolveAppVersion, resolveDesktopVersion };
 
+/** Normalize PEM keys stored in .env (often single-line with literal \\n sequences). */
+export function normalizePemFromEnv(value: string | null | undefined): string | null {
+  if (!value?.trim()) return null;
+  return value
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .replace(/\\n/g, '\n')
+    .replace(/\r/g, '');
+}
+
 export function loadApiConfig(): AppConfig {
   const nodeEnv = (process.env.NODE_ENV ?? 'development') as AppConfig['nodeEnv'];
 
@@ -68,8 +78,8 @@ export function loadApiConfig(): AppConfig {
     universalFinancePilotEnabled: process.env.UNIVERSAL_FINANCE_PILOT_ENABLED === 'true',
     universalFinanceSalesPilotEnabled: process.env.UNIVERSAL_FINANCE_SALES_PILOT_ENABLED === 'true',
     license: {
-      verificationPublicKey: process.env.LICENSE_VERIFICATION_PUBLIC_KEY ?? null,
-      signingPrivateKey: process.env.LICENSE_SIGNING_PRIVATE_KEY ?? null,
+      verificationPublicKey: normalizePemFromEnv(process.env.LICENSE_VERIFICATION_PUBLIC_KEY),
+      signingPrivateKey: normalizePemFromEnv(process.env.LICENSE_SIGNING_PRIVATE_KEY),
       allowUnsignedDev: process.env.LICENSE_ALLOW_UNSIGNED_DEV === 'true',
     },
     installationId: process.env.FRATELANZA_INSTALLATION_ID?.trim() || null,
