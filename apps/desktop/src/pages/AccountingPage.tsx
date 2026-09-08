@@ -23,6 +23,7 @@ export function AccountingPage() {
       <PageHeader
         title={t('nav.accounting')}
         subtitle={t('accounting.trialBalance')}
+        breadcrumbs={[{ label: t('nav.accounting') }]}
         action={
           <button type="button" className="btn btn-primary" onClick={() => void seedCoa()}>
             {t('accounting.seedCoa')}
@@ -35,8 +36,8 @@ export function AccountingPage() {
         columns={[
           { key: 'code', label: t('accounting.code') },
           { key: 'name', label: t('accounting.name') },
-          { key: 'debit', label: t('accounting.debit'), render: (r) => Number(r.debit).toFixed(2) },
-          { key: 'credit', label: t('accounting.credit'), render: (r) => Number(r.credit).toFixed(2) },
+          { key: 'debit', label: t('accounting.debit'), align: 'end', render: (r) => Number(r.debit).toFixed(2) },
+          { key: 'credit', label: t('accounting.credit'), align: 'end', render: (r) => Number(r.credit).toFixed(2) },
         ]}
         fetchData={async (c) => {
           const result = await c.getTrialBalance();

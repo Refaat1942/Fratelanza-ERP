@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormField, PageHeader, useApiClient } from '../components/DataTable';
+import { FormField, PageHeader, StatusBadge, useApiClient } from '../components/DataTable';
 import type { ConstructionProgressRow } from '../lib/api';
 
 export function ConstructionProgressPage() {
@@ -87,7 +87,10 @@ export function ConstructionProgressPage() {
 
   return (
     <div>
-      <PageHeader title={t('nav.constructionProgress')} />
+      <PageHeader
+        title={t('nav.constructionProgress')}
+        breadcrumbs={[{ label: t('nav.constructionProgress') }]}
+      />
       {error && <p className="form-error">{error}</p>}
       <div className="card">
         <form onSubmit={(e) => void createProgress(e)}>
@@ -121,7 +124,7 @@ export function ConstructionProgressPage() {
           {rows.map((row) => (
             <li key={row.id}>
               <button type="button" className="btn btn-ghost" onClick={() => void loadDetail(row.id)}>
-                {row.number} — {row.status} — {row.totalCurrentAmount}
+                {row.number} — <StatusBadge status={row.status} /> — {row.totalCurrentAmount}
               </button>
             </li>
           ))}

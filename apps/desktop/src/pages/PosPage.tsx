@@ -158,7 +158,7 @@ export function PosPage() {
   if (shiftLoading) {
     return (
       <div>
-        <PageHeader title={t('nav.pos')} />
+        <PageHeader title={t('nav.pos')} breadcrumbs={[{ label: t('nav.pos') }]} />
         <p>{t('common.loading')}</p>
       </div>
     );
@@ -169,6 +169,7 @@ export function PosPage() {
       <PageHeader
         title={t('nav.pos')}
         subtitle={shiftId ? (offlineMode ? t('pos.shiftOffline') : t('pos.shiftOpen')) : undefined}
+        breadcrumbs={[{ label: t('nav.pos') }]}
       />
       <div className="pos-grid">
         <div className="card">

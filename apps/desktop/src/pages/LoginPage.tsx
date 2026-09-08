@@ -58,8 +58,13 @@ export function LoginPage() {
   return (
     <div className="login-page">
       <div className="login-card">
-        <h1 className="login-title">{t('auth.loginTitle')}</h1>
-        <p className="login-subtitle">{t('auth.loginSubtitle')}</p>
+        <div className="login-brand">
+          <div className="login-brand-mark">FG</div>
+          <div>
+            <h1 className="login-title">{t('auth.loginTitle')}</h1>
+            <p className="login-subtitle" style={{ marginBottom: 0 }}>{t('auth.loginSubtitle')}</p>
+          </div>
+        </div>
 
         <form onSubmit={(e) => void handleSubmit(e)}>
           <div className="form-group">

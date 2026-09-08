@@ -49,6 +49,15 @@ export const en = {
     sessionExpired: 'Your session has expired. Please sign in again.',
   },
   nav: {
+    groups: {
+      core: 'Core',
+      business: 'Business',
+      projects: 'Projects',
+      construction: 'Construction',
+      administration: 'Administration',
+    },
+    expandSidebar: 'Expand sidebar',
+    collapseSidebar: 'Collapse sidebar',
     dashboard: 'Dashboard',
     companies: 'Companies',
     branches: 'Branches',
@@ -291,6 +300,15 @@ export const en = {
     total: 'Line total',
     required: 'Add at least one line item',
   },
+  license: {
+    moduleNotLicensed: 'Module not licensed',
+    featureNotLicensed: 'Feature not licensed',
+    moduleNotLicensedHint: 'This module is not included in your current license. Contact Fratelanza to upgrade.',
+    title: 'License',
+    edition: 'Edition',
+    status: 'Status',
+    modules: 'Modules',
+  },
 } as const;
 
 export type TranslationSchema = {
@@ -321,6 +339,7 @@ export type TranslationSchema = {
   pos: Record<string, string>;
   construction: Record<string, string>;
   lineItems: Record<string, string>;
+  license: Record<string, string>;
 };
 
 export type TranslationKeys = typeof en;

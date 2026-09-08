@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { PageHeader } from '../components/DataTable';
 import { createApiClient, resolveApiBaseUrl } from '../lib/api';
+import { formatCurrency } from '../lib/format';
 import { useAppStore, useAuthStore } from '../stores';
 
 export function DashboardPage() {
@@ -34,8 +35,7 @@ export function DashboardPage() {
     void load();
   }, [apiUrl, accessToken]);
 
-  const formatMoney = (n: number) =>
-    new Intl.NumberFormat(undefined, { style: 'currency', currency: 'EGP' }).format(n);
+  const formatMoney = (n: number) => formatCurrency(n);
 
   const cards = [
     { label: t('dashboard.salesToday'), value: formatMoney(stats.salesToday) },
@@ -51,6 +51,7 @@ export function DashboardPage() {
       <PageHeader
         title={t('dashboard.title')}
         subtitle={`${t('dashboard.welcome', { name: user?.firstName ?? '' })}${user?.tenantName ? ` · ${user.tenantName}` : ''}`}
+        breadcrumbs={[{ label: t('nav.dashboard') }]}
       />
       <div className="card-grid">
         {cards.map((stat) => (

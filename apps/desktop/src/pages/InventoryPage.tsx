@@ -55,6 +55,7 @@ export function InventoryPage() {
     <div>
       <PageHeader
         title={t('nav.inventory')}
+        breadcrumbs={[{ label: t('nav.inventory') }]}
         action={
           <button type="button" className="btn btn-primary" onClick={() => void openForm()}>
             {t('inventory.adjust')}

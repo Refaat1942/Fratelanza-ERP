@@ -108,6 +108,7 @@ export function ProductsPage() {
     <div>
       <PageHeader
         title={t('nav.products')}
+        breadcrumbs={[{ label: t('nav.products') }]}
         action={
           <button type="button" className="btn btn-primary" onClick={() => void openForm()}>
             {t('common.create')}

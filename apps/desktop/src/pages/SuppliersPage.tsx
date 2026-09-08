@@ -72,6 +72,7 @@ export function SuppliersPage() {
     <div>
       <PageHeader
         title={t('nav.suppliers')}
+        breadcrumbs={[{ label: t('nav.suppliers') }]}
         action={
           <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
             {t('common.create')}

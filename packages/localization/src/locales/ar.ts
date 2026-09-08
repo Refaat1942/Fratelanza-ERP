@@ -51,6 +51,15 @@ export const ar: TranslationSchema = {
     sessionExpired: 'انتهت صلاحية جلستك. يرجى تسجيل الدخول مرة أخرى.',
   },
   nav: {
+    groups: {
+      core: 'الأساسيات',
+      business: 'الأعمال',
+      projects: 'المشاريع',
+      construction: 'المقاولات',
+      administration: 'الإدارة',
+    },
+    expandSidebar: 'توسيع الشريط الجانبي',
+    collapseSidebar: 'طي الشريط الجانبي',
     dashboard: 'لوحة التحكم',
     companies: 'الشركات',
     branches: 'الفروع',
@@ -211,4 +220,13 @@ export const ar: TranslationSchema = {
   accounting: { trialBalance: 'ميزان المراجعة', code: 'رمز الحساب', name: 'اسم الحساب', debit: 'مدين', credit: 'دائن', seedCoa: 'إنشاء دليل الحسابات', seeded: 'تم إنشاء {{count}} حساب' },
   pos: { searchPlaceholder: 'بحث عن منتج أو مسح باركود...', cart: 'السلة', total: 'الإجمالي', checkout: 'إتمام البيع', saleComplete: 'تم البيع بنجاح', shiftOpen: 'الوردية مفتوحة', shiftOffline: 'وردية دون اتصال — ستُزامَن المبيعات عند الاتصال', noBranch: 'المستخدم غير مرتبط بفرع. تواصل مع المسؤول.' },
   lineItems: { selectProduct: 'اختر منتج', addLine: 'إضافة سطر', total: 'إجمالي الأسطر', required: 'أضف سطراً واحداً على الأقل' },
+  license: {
+    moduleNotLicensed: 'الوحدة غير مرخصة',
+    featureNotLicensed: 'الميزة غير مرخصة',
+    moduleNotLicensedHint: 'هذه الوحدة غير مشمولة في ترخيصك الحالي. تواصل مع فراتيلانزا للترقية.',
+    title: 'الترخيص',
+    edition: 'الإصدار',
+    status: 'الحالة',
+    modules: 'الوحدات',
+  },
 };

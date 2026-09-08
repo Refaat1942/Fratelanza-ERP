@@ -4,6 +4,7 @@ import { ConnectivityStatus } from '@fratelanza/types';
 import { LOCALE_LABELS, SUPPORTED_LOCALES } from '@fratelanza/localization';
 import type { Locale, ThemeMode } from '@fratelanza/types';
 import { createApiClient, resolveApiBaseUrl, type LicenseAdminView } from '../lib/api';
+import { PageHeader } from '../components/DataTable';
 import { useAppStore, useAuthStore, useEntitlementStore } from '../stores';
 
 export function SettingsPage() {
@@ -69,11 +70,9 @@ export function SettingsPage() {
 
   return (
     <div>
-      <div className="page-header">
-        <h1 className="page-title">{t('settings.title')}</h1>
-      </div>
+      <PageHeader title={t('settings.title')} breadcrumbs={[{ label: t('nav.settings') }]} />
 
-      <div className="card">
+      <div className="card card--flat">
         <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
           <span>{t('connection.serverUrl')}</span>
           <input
@@ -90,7 +89,7 @@ export function SettingsPage() {
               {serverMessage}
             </p>
           )}
-          <p style={{ color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>{t('connection.lanHint')}</p>
+          <p className="form-hint">{t('connection.lanHint')}</p>
         </div>
 
         <div className="settings-row">
@@ -122,14 +121,14 @@ export function SettingsPage() {
         </div>
       </div>
 
-      <div className="card" style={{ marginTop: 16 }}>
-        <h2 style={{ marginTop: 0 }}>License</h2>
+      <div className="card card--flat" style={{ marginTop: 'var(--frz-space-4)' }}>
+        <h2 className="card-title" style={{ marginBottom: 'var(--frz-space-4)' }}>{t('license.title')}</h2>
         <div className="settings-row">
-          <span>Edition</span>
+          <span className="settings-label">{t('license.edition')}</span>
           <span>{edition ?? licenseView?.license.edition ?? '—'}</span>
         </div>
         <div className="settings-row">
-          <span>Status</span>
+          <span className="settings-label">{t('license.status')}</span>
           <span>{status ?? licenseView?.license.status ?? '—'}</span>
         </div>
         {licenseView && (
@@ -149,8 +148,8 @@ export function SettingsPage() {
           </>
         )}
         <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
-          <span>Enabled modules</span>
-          <span style={{ color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+          <span className="settings-label">{t('license.modules')}</span>
+          <span className="form-hint">
             {(licenseView?.entitlements.modules ?? modules)
               .filter((m) => m.enabled)
               .map((m) => m.displayName)

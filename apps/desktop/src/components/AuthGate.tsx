@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Navigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore, useEntitlementStore } from '../stores';
+import { PageState } from './PageState';
 
 function BootScreen() {
   const { t } = useTranslation();
@@ -55,17 +55,36 @@ export function LicensedRoute({
   featureKey?: string;
   children: ReactNode;
 }) {
+  const { t } = useTranslation();
   const loaded = useEntitlementStore((s) => s.loaded);
   const isModuleEnabled = useEntitlementStore((s) => s.isModuleEnabled);
   const isFeatureEnabled = useEntitlementStore((s) => s.isFeatureEnabled);
 
   if (!moduleKey) return <>{children}</>;
-  if (!loaded) return null;
+
+  if (!loaded) {
+    return <PageState variant="loading" />;
+  }
+
   if (!isModuleEnabled(moduleKey)) {
-    return <Navigate to="/settings" replace />;
+    return (
+      <PageState
+        variant="unlicensed"
+        title={t('license.moduleNotLicensed')}
+        message={t('license.moduleNotLicensedHint')}
+      />
+    );
   }
+
   if (featureKey && !isFeatureEnabled(featureKey)) {
-    return <Navigate to="/settings" replace />;
+    return (
+      <PageState
+        variant="unlicensed"
+        title={t('license.featureNotLicensed')}
+        message={t('license.moduleNotLicensedHint')}
+      />
+    );
   }
+
   return <>{children}</>;
 }

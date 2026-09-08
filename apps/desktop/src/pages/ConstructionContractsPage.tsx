@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
-import { DataTable, FormField, Modal, PageHeader, useApiClient } from '../components/DataTable';
+import { DataTable, FormField, Modal, PageHeader, StatusBadge, useApiClient } from '../components/DataTable';
 import type { ConstructionContractRow } from '../lib/api';
 
 export function ConstructionContractsPage() {
@@ -46,6 +46,7 @@ export function ConstructionContractsPage() {
     <div>
       <PageHeader
         title={t('nav.constructionContracts')}
+        breadcrumbs={[{ label: t('nav.constructionContracts') }]}
         action={
           <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
             {t('construction.createContract')}
@@ -59,7 +60,7 @@ export function ConstructionContractsPage() {
           { key: 'number', label: t('construction.contractNumber') },
           { key: 'title', label: t('construction.contractTitle') },
           { key: 'direction', label: t('construction.direction') },
-          { key: 'status', label: t('common.status') },
+          { key: 'status', label: t('common.status'), render: (row) => <StatusBadge status={row.status} /> },
           {
             key: 'id',
             label: t('construction.boq'),

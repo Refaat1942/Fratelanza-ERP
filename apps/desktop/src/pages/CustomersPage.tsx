@@ -78,6 +78,7 @@ export function CustomersPage() {
     <div>
       <PageHeader
         title={t('nav.customers')}
+        breadcrumbs={[{ label: t('nav.customers') }]}
         action={
           <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
             {t('common.create')}

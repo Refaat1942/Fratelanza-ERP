@@ -66,6 +66,7 @@ export function UsersPage() {
     <div>
       <PageHeader
         title={t('users.title')}
+        breadcrumbs={[{ label: t('nav.users') }]}
         action={
           <button type="button" className="btn btn-primary" onClick={() => void openForm()}>
             {t('users.create')}

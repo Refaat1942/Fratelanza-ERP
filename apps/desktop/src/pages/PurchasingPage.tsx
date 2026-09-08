@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DataTable, FormField, Modal, PageHeader, useApiClient } from '../components/DataTable';
+import { DataTable, FormField, Modal, PageHeader, StatusBadge, useApiClient } from '../components/DataTable';
 import { LineItemsEditor, type DocumentLineItem } from '../components/LineItemsEditor';
 import type { PartyRow, PurchaseOrderRow } from '../lib/api';
 import { useAuthStore } from '../stores';
@@ -105,6 +105,7 @@ export function PurchasingPage() {
     <div>
       <PageHeader
         title={t('nav.purchasing')}
+        breadcrumbs={[{ label: t('nav.purchasing') }]}
         action={
           <button type="button" className="btn btn-primary" onClick={() => void openForm()}>
             {t('common.create')}
@@ -117,8 +118,8 @@ export function PurchasingPage() {
         columns={[
           { key: 'number', label: t('purchasing.number') },
           { key: 'supplier', label: t('nav.suppliers'), render: (r) => r.supplier?.name ?? '—' },
-          { key: 'status', label: t('common.status') },
-          { key: 'total', label: t('sales.total'), render: (r) => Number(r.total).toFixed(2) },
+          { key: 'status', label: t('common.status'), render: (r) => <StatusBadge status={r.status} /> },
+          { key: 'total', label: t('sales.total'), align: 'end', render: (r) => Number(r.total).toFixed(2) },
           {
             key: 'actions',
             label: t('common.actions'),

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DataTable, FormField, Modal, PageHeader, useApiClient } from '../components/DataTable';
+import { DataTable, FormField, Modal, PageHeader, PageToolbar, StatusBadge, useApiClient } from '../components/DataTable';
 import type { ProjectRow } from '../lib/api';
 
 export function ProjectsPage() {
@@ -33,27 +33,28 @@ export function ProjectsPage() {
     <div>
       <PageHeader
         title={t('nav.projects')}
+        breadcrumbs={[{ label: t('nav.projects') }]}
         action={
           <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
             {t('projects.create')}
           </button>
         }
       />
-      <div className="toolbar">
+      <PageToolbar>
         <input
           className="input"
           placeholder={t('projects.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-      </div>
+      </PageToolbar>
       {error && <p className="form-error">{error}</p>}
       <DataTable<ProjectRow>
         refreshKey={refreshKey}
         columns={[
           { key: 'code', label: t('projects.code') },
           { key: 'name', label: t('projects.name') },
-          { key: 'status', label: t('common.status') },
+          { key: 'status', label: t('common.status'), render: (r) => <StatusBadge status={r.status} /> },
         ]}
         fetchData={(c) => c.getProjects(search || undefined)}
       />

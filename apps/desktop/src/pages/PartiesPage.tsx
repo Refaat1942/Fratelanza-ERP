@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DataTable, FormField, Modal, PageHeader, useApiClient } from '../components/DataTable';
+import { DataTable, FormField, Modal, PageHeader, PageToolbar, useApiClient } from '../components/DataTable';
 
 interface PartyRow {
   id: string;
@@ -112,6 +112,7 @@ export function PartiesPage() {
     <div>
       <PageHeader
         title={t('nav.parties')}
+        breadcrumbs={[{ label: t('nav.parties') }]}
         action={
           <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
             {t('parties.create')}
@@ -119,14 +120,14 @@ export function PartiesPage() {
         }
       />
       {error ? <p className="form-error">{error}</p> : null}
-      <div className="toolbar">
+      <PageToolbar>
         <input
           className="input"
           placeholder={t('parties.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-      </div>
+      </PageToolbar>
       <DataTable<PartyRow>
         refreshKey={refreshKey}
         columns={[

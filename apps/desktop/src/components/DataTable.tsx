@@ -8,6 +8,7 @@ interface Column<T> {
   key: keyof T | string;
   label: string;
   render?: (row: T) => ReactNode;
+  align?: 'start' | 'end';
 }
 
 interface DataTableProps<T extends { id: string }> {
@@ -79,12 +80,15 @@ export function DataTable<T extends { id: string }>({
   }
 
   return (
-    <div className="card data-table" style={{ padding: 0, overflow: 'auto' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+    <div className="card card--flat data-table">
+      <table>
         <thead>
-          <tr style={{ borderBottom: '1px solid var(--color-border)', textAlign: 'left' }}>
+          <tr>
             {columns.map((col) => (
-              <th key={String(col.key)} style={{ padding: '12px 16px', fontSize: '0.85rem' }}>
+              <th
+                key={String(col.key)}
+                className={col.align === 'end' ? 'cell-numeric' : undefined}
+              >
                 {col.label}
               </th>
             ))}
@@ -92,9 +96,12 @@ export function DataTable<T extends { id: string }>({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} style={{ borderBottom: '1px solid var(--color-border)' }}>
+            <tr key={row.id}>
               {columns.map((col) => (
-                <td key={String(col.key)} style={{ padding: '12px 16px' }}>
+                <td
+                  key={String(col.key)}
+                  className={col.align === 'end' ? 'cell-numeric' : undefined}
+                >
                   {col.render
                     ? col.render(row)
                     : String((row as Record<string, unknown>)[col.key as string] ?? '')}
@@ -108,70 +115,9 @@ export function DataTable<T extends { id: string }>({
   );
 }
 
-export function PageHeader({
-  title,
-  subtitle,
-  action,
-}: {
-  title: string;
-  subtitle?: string;
-  action?: ReactNode;
-}) {
-  return (
-    <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 16 }}>
-      <div>
-        <h1 className="page-title">{title}</h1>
-        {subtitle && <p className="page-subtitle">{subtitle}</p>}
-      </div>
-      {action}
-    </div>
-  );
-}
-
-export function Modal({
-  open,
-  title,
-  onClose,
-  children,
-}: {
-  open: boolean;
-  title: string;
-  onClose: () => void;
-  children: ReactNode;
-}) {
-  const { t } = useTranslation();
-  if (!open) return null;
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content card" onClick={(e) => e.stopPropagation()}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <h2 style={{ margin: 0, fontSize: '1.1rem' }}>{title}</h2>
-          <button type="button" className="btn btn-ghost" onClick={onClose}>{t('common.cancel')}</button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-export function FormField({
-  label,
-  children,
-  error,
-}: {
-  label: string;
-  children: ReactNode;
-  error?: string;
-}) {
-  return (
-    <div className="form-group">
-      <label className="form-label">{label}</label>
-      {children}
-      {error && <p className="form-error">{error}</p>}
-    </div>
-  );
-}
+export { PageHeader, ListPageLayout, PageToolbar } from './layout/PageLayout';
+export { FormField, FormSection, FormActions, Modal, ConfirmDialog } from './feedback/Dialog';
+export { StatusBadge, Badge } from './ui/StatusBadge';
 
 export function useApiClient() {
   const apiUrl = useAppStore((s) => s.apiUrl);

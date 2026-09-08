@@ -31,6 +31,7 @@ export function BranchesPage() {
     <div>
       <PageHeader
         title={t('branches.title')}
+        breadcrumbs={[{ label: t('nav.branches') }]}
         action={
           <button type="button" className="btn btn-primary" onClick={() => setOpen(true)}>
             {t('branches.create')}

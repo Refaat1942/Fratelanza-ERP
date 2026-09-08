@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { FormField, PageHeader, useApiClient } from '../components/DataTable';
+import { FormField, PageHeader, PageToolbar, useApiClient } from '../components/DataTable';
 import type { ConstructionBoqRow } from '../lib/api';
 
 export function ConstructionBoqPage() {
@@ -64,9 +64,15 @@ export function ConstructionBoqPage() {
 
   return (
     <div>
-      <PageHeader title={t('construction.boqEditor')} />
+      <PageHeader
+        title={t('construction.boqEditor')}
+        breadcrumbs={[
+          { label: t('nav.constructionContracts'), to: '/construction/contracts' },
+          { label: t('construction.boqEditor') },
+        ]}
+      />
       {error && <p className="form-error">{error}</p>}
-      <div className="toolbar">
+      <PageToolbar>
         <button type="button" className="btn btn-secondary" onClick={() => void createBoq()}>
           {t('construction.createBoq')}
         </button>
@@ -87,7 +93,7 @@ export function ConstructionBoqPage() {
         <button type="button" className="btn btn-secondary" onClick={() => void reviseBoq()}>
           {t('construction.reviseBoq')}
         </button>
-      </div>
+      </PageToolbar>
       {detail && (
         <div className="card">
           <p>{t('construction.total')}: {detail.totalOriginalAmount}</p>
