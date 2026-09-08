@@ -316,7 +316,7 @@ export type TranslationSchema = {
   boot: Record<string, string>;
   connection: Record<string, string>;
   auth: Record<string, string>;
-  nav: Record<string, string>;
+  nav: Record<string, string | Record<string, string>>;
   dashboard: Record<string, string>;
   sync: Record<string, string>;
   settings: Record<string, string>;
