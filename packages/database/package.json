@@ -30,6 +30,7 @@
     "migrate:local": "prisma db push --schema=./prisma/schema.local.prisma --skip-generate",
     "push:local": "prisma db push --schema=./prisma/schema.local.prisma --skip-generate",
     "seed": "tsx prisma/seed.ts",
+    "seed:eval": "tsx prisma/seed-eval.ts",
     "studio:server": "prisma studio --schema=./prisma/schema.server.prisma"
   },
   "dependencies": {
@@ -43,6 +44,6 @@
     "typescript": "^5.7.3"
   },
   "prisma": {
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed-eval.ts"
   }
 }

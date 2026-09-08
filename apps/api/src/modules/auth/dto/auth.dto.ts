@@ -1,8 +1,16 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, MinLength } from 'class-validator';
+import { IsNotEmpty, IsOptional, IsString, MinLength, ValidateIf } from 'class-validator';
 
 export class LoginDto {
-  @IsEmail()
-  email!: string;
+  @ValidateIf((dto: LoginDto) => !dto.email)
+  @IsString()
+  @IsNotEmpty()
+  username?: string;
+
+  /** @deprecated Old clients send email — treated as username. */
+  @ValidateIf((dto: LoginDto) => !dto.username)
+  @IsString()
+  @IsNotEmpty()
+  email?: string;
 
   @IsString()
   @MinLength(6)

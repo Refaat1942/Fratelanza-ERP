@@ -11,6 +11,7 @@ import { buildPermissionKey } from '@fratelanza/shared';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import type { LoginDto } from './dto/auth.dto';
+import { normalizeLoginIdentifier } from '../../common/utils/login-identity.util';
 
 @Injectable()
 export class AuthService {
@@ -21,9 +22,11 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto, ipAddress?: string, userAgent?: string) {
+    const loginId = dto.username ?? dto.email ?? '';
+    const email = normalizeLoginIdentifier(loginId);
     const user = await this.prisma.user.findFirst({
       where: {
-        email: dto.email,
+        email,
         isActive: true,
         deletedAt: null,
       },
@@ -39,12 +42,12 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Invalid username or password');
     }
 
     const valid = await bcrypt.compare(dto.password, user.passwordHash);
     if (!valid) {
-      throw new UnauthorizedException('Invalid email or password');
+      throw new UnauthorizedException('Invalid username or password');
     }
 
     if (!user.tenant.isActive) {
@@ -132,6 +135,7 @@ export class AuthService {
         locale: user.locale,
         tenantId: user.tenantId,
         branchId: user.branchId,
+        tenantCode: user.tenant.code,
         tenantName: user.tenant.name,
         branchName: user.branch?.name,
         role: user.role.name,

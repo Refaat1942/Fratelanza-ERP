@@ -25,7 +25,6 @@ model Tenant {
   roles          Role[]
   devices        Device[]
   auditLogs      AuditLog[]
-  tenantModules  TenantModule[]
   numberSequences NumberSequence[]
   pmsPatients         Patient[]
   pmsPatientAccounts  PatientAccount[]
@@ -58,7 +57,6 @@ model Tenant {
   constructionMaterialIssueLines ConstructionMaterialIssueLine[]
   constructionBillings ConstructionBilling[]
   constructionBillingLines ConstructionBillingLine[]
-  license             TenantLicense?
 
   @@map("tenants")
 }
@@ -294,112 +292,6 @@ model AuditLog {
   @@index([tenantId, entity, entityId])
   @@index([tenantId, createdAt])
   @@map("audit_logs")
-}
-
-model TenantModule {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @db.Uuid
-  moduleId  String
-  isEnabled Boolean  @default(true)
-  settings  Json     @default("{}")
-  enabledAt DateTime @default(now())
-
-  tenant Tenant @relation(fields: [tenantId], references: [id])
-
-  @@unique([tenantId, moduleId])
-  @@map("tenant_modules")
-}
-
-enum LicenseStatus {
-  pending
-  active
-  grace
-  expired
-  suspended
-  revoked
-}
-
-enum LicenseType {
-  perpetual
-  time_limited
-}
-
-enum EntitlementTermType {
-  perpetual
-  time_limited
-}
-
-enum LicenseEdition {
-  starter
-  professional
-  business
-  enterprise
-}
-
-model TenantLicense {
-  id               String         @id @default(uuid()) @db.Uuid
-  tenantId         String         @unique @db.Uuid
-  licenseKey       String         @unique
-  licenseType      LicenseType    @default(perpetual)
-  edition          LicenseEdition @default(business)
-  status           LicenseStatus  @default(pending)
-  schemaVersion    Int            @default(1)
-  issuedAt         DateTime       @default(now())
-  activatedAt      DateTime?
-  expiresAt        DateTime?
-  graceEndsAt      DateTime?
-  maxUsers         Int            @default(25)
-  maxBranches      Int            @default(5)
-  maxDevices       Int            @default(10)
-  maxStorageMb     Int?
-  installationId   String?
-  payloadDigest    String?
-  payloadSignature String?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-
-  tenant   Tenant                      @relation(fields: [tenantId], references: [id])
-  modules  LicenseModuleEntitlement[]
-  features LicenseFeatureEntitlement[]
-
-  @@index([tenantId, status])
-  @@map("tenant_licenses")
-}
-
-model LicenseModuleEntitlement {
-  id        String              @id @default(uuid()) @db.Uuid
-  tenantId  String              @db.Uuid
-  licenseId String              @db.Uuid
-  moduleKey String
-  termType  EntitlementTermType @default(perpetual)
-  expiresAt DateTime?
-  isEnabled Boolean             @default(true)
-  enabledAt DateTime            @default(now())
-  updatedAt DateTime            @updatedAt
-
-  license TenantLicense @relation(fields: [licenseId], references: [id], onDelete: Cascade)
-
-  @@unique([licenseId, moduleKey])
-  @@unique([tenantId, moduleKey])
-  @@index([tenantId, isEnabled])
-  @@map("license_module_entitlements")
-}
-
-model LicenseFeatureEntitlement {
-  id         String   @id @default(uuid()) @db.Uuid
-  tenantId   String   @db.Uuid
-  licenseId  String   @db.Uuid
-  featureKey String
-  isEnabled  Boolean  @default(true)
-  enabledAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  license TenantLicense @relation(fields: [licenseId], references: [id], onDelete: Cascade)
-
-  @@unique([licenseId, featureKey])
-  @@unique([tenantId, featureKey])
-  @@index([tenantId, isEnabled])
-  @@map("license_feature_entitlements")
 }
 
 model NumberSequence {
