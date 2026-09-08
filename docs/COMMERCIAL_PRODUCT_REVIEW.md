@@ -15,7 +15,7 @@ The platform has **real, working business logic** — multi-tenant RBAC, trading
 - Missing or immature desktop screens for major construction workflows
 - Overlap and confusion between Parties, Customers, and Suppliers
 - Forms that omit obvious business fields (address, tax ID, dates, payment terms)
-- No first-run onboarding
+- First-run onboarding is present but **does not yet persist setup** to the server (informational wizard only)
 - PMS/clinic module remnants in codebase and permissions
 - Navigation that does not match the depth of the backend
 

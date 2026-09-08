@@ -25,7 +25,7 @@ Steps 1–4 removed the primary commercial blocker (licensing) and established a
 | **6** | Make business model obvious | 🔄 Partial — glossary + docs; in-app messaging incomplete |
 | **7** | Field definition audit | ✅ Complete — `docs/FIELD_DEFINITION_AUDIT.md` |
 | **8** | Form UX redesign | ⏳ Not started |
-| **9** | First-run onboarding | ⏳ Not started |
+| **9** | First-run onboarding | ⚠️ Partial — wizard UI; demo tenants skip; no server persistence yet |
 | **10** | Business dashboard | 🔄 Partial — KPI cards exist; no activity feed |
 | **11** | Navigation re-evaluation | 🔄 Partial — grouped sidebar; construction gaps |
 | **12** | Demonstration flow | 🔄 Documented — `docs/PRODUCT_DEMO_CHECKLIST.md` |
