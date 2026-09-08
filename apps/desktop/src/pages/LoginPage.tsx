@@ -11,8 +11,8 @@ export function LoginPage() {
   const apiUrl = useAppStore((s) => s.apiUrl);
   const deviceFingerprint = useAppStore((s) => s.deviceFingerprint);
 
-  const [email, setEmail] = useState('admin@fratelanza.local');
-  const [password, setPassword] = useState('Admin@123456');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 

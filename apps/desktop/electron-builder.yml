@@ -1,6 +1,7 @@
 appId: com.fratelanza.grand-erp
 productName: Fratelanza Grand ERP
 copyright: Copyright © Fratelanza
+electronVersion: 34.0.0
 directories:
   output: release
   buildResources: build
