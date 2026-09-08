@@ -13,10 +13,12 @@ export function DashboardPage() {
   const [stats, setStats] = useState({
     salesToday: 0,
     salesMonth: 0,
+    purchasesMonth: 0,
     receivables: 0,
     payables: 0,
     inventoryValue: 0,
     lowStockCount: 0,
+    activeProjects: 0,
   });
 
   useEffect(() => {
@@ -40,9 +42,11 @@ export function DashboardPage() {
   const cards = [
     { label: t('dashboard.salesToday'), value: formatMoney(stats.salesToday) },
     { label: t('dashboard.salesMonth'), value: formatMoney(stats.salesMonth) },
+    { label: t('dashboard.purchasesMonth'), value: formatMoney(stats.purchasesMonth) },
     { label: t('dashboard.receivables'), value: formatMoney(stats.receivables) },
     { label: t('dashboard.payables'), value: formatMoney(stats.payables) },
     { label: t('dashboard.inventoryValue'), value: formatMoney(stats.inventoryValue) },
+    { label: t('dashboard.activeProjects'), value: String(stats.activeProjects) },
     { label: t('dashboard.lowStock'), value: String(stats.lowStockCount) },
   ];
 

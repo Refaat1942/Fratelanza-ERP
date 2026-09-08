@@ -16,6 +16,14 @@ export class RolesService {
     });
   }
 
+  async findAssignable(tenantId: string) {
+    return this.prisma.role.findMany({
+      where: { tenantId, deletedAt: null, isSystem: true },
+      select: { id: true, name: true, code: true, description: true },
+      orderBy: { name: 'asc' },
+    });
+  }
+
   async findById(tenantId: string, id: string) {
     const role = await this.prisma.role.findFirst({
       where: { id, tenantId, deletedAt: null },

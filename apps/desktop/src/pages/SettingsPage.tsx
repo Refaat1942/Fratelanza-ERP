@@ -3,9 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { ConnectivityStatus } from '@fratelanza/types';
 import { LOCALE_LABELS, SUPPORTED_LOCALES } from '@fratelanza/localization';
 import type { Locale, ThemeMode } from '@fratelanza/types';
-import { createApiClient, resolveApiBaseUrl, type LicenseAdminView } from '../lib/api';
+import { createApiClient, resolveApiBaseUrl } from '../lib/api';
 import { PageHeader } from '../components/DataTable';
-import { useAppStore, useAuthStore, useEntitlementStore } from '../stores';
+import { useAppStore, useAuthStore } from '../stores';
 
 export function SettingsPage() {
   const { t, i18n } = useTranslation();
@@ -19,15 +19,8 @@ export function SettingsPage() {
   const setTheme = useAppStore((s) => s.setTheme);
   const accessToken = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
-  const edition = useEntitlementStore((s) => s.edition);
-  const status = useEntitlementStore((s) => s.status);
-  const modules = useEntitlementStore((s) => s.modules);
-  const setEntitlements = useEntitlementStore((s) => s.setEntitlements);
   const [serverUrl, setServerUrl] = useState(apiUrl);
   const [serverMessage, setServerMessage] = useState('');
-  const [licenseView, setLicenseView] = useState<LicenseAdminView | null>(null);
-
-  const canReadLicense = user?.permissions.includes('core:license:read') ?? false;
 
   function handleLocaleChange(newLocale: Locale) {
     setLocale(newLocale);
@@ -62,23 +55,6 @@ export function SettingsPage() {
   useEffect(() => {
     setServerUrl(apiUrl);
   }, [apiUrl]);
-
-  useEffect(() => {
-    if (!canReadLicense || !accessToken) return;
-    const client = createApiClient(() => resolveApiBaseUrl(apiUrl), () => accessToken);
-    void client.getLicenseAdminView().then(setLicenseView).catch(() => setLicenseView(null));
-  }, [canReadLicense, accessToken, apiUrl]);
-
-  useEffect(() => {
-    if (!licenseView) return;
-    setEntitlements({
-      edition: licenseView.entitlements.edition,
-      status: licenseView.entitlements.status,
-      isOperational: licenseView.entitlements.isOperational,
-      modules: licenseView.entitlements.modules,
-      features: licenseView.entitlements.features,
-    });
-  }, [licenseView, setEntitlements]);
 
   return (
     <div>
@@ -133,42 +109,23 @@ export function SettingsPage() {
         </div>
       </div>
 
-      <div className="card card--flat" style={{ marginTop: 'var(--frz-space-4)' }}>
-        <h2 className="card-title" style={{ marginBottom: 'var(--frz-space-4)' }}>{t('license.title')}</h2>
-        <div className="settings-row">
-          <span className="settings-label">{t('license.edition')}</span>
-          <span>{edition ?? licenseView?.license.edition ?? '—'}</span>
-        </div>
-        <div className="settings-row">
-          <span className="settings-label">{t('license.status')}</span>
-          <span>{status ?? licenseView?.license.status ?? '—'}</span>
-        </div>
-        {licenseView && (
-          <>
+      {user && (
+        <div className="card card--flat" style={{ marginTop: 'var(--frz-space-4)' }}>
+          <h2 className="card-title" style={{ marginBottom: 'var(--frz-space-3)' }}>
+            {t('settings.company')}
+          </h2>
+          <div className="settings-row">
+            <span className="settings-label">{t('settings.companyName')}</span>
+            <span>{user.tenantName}</span>
+          </div>
+          {user.branchName && (
             <div className="settings-row">
-              <span>License key</span>
-              <span>{licenseView.license.licenseKey}</span>
+              <span className="settings-label">{t('users.branch')}</span>
+              <span>{user.branchName}</span>
             </div>
-            <div className="settings-row">
-              <span>Usage</span>
-              <span>
-                Users {licenseView.entitlements.usage.users}/{licenseView.entitlements.limits.maxUsers ?? '—'}
-                {' · '}
-                Branches {licenseView.entitlements.usage.branches}/{licenseView.entitlements.limits.maxBranches ?? '—'}
-              </span>
-            </div>
-          </>
-        )}
-        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 6 }}>
-          <span className="settings-label">{t('license.modules')}</span>
-          <span className="form-hint">
-            {(licenseView?.entitlements.modules ?? modules)
-              .filter((m) => m.enabled)
-              .map((m) => m.displayName)
-              .join(', ') || '—'}
-          </span>
+          )}
         </div>
-      </div>
+      )}
     </div>
   );
 }

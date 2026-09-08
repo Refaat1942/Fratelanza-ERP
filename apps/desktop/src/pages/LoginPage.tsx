@@ -11,7 +11,7 @@ export function LoginPage() {
   const apiUrl = useAppStore((s) => s.apiUrl);
   const deviceFingerprint = useAppStore((s) => s.deviceFingerprint);
 
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -30,7 +30,7 @@ export function LoginPage() {
       }
 
       const result = await client.login(
-        email,
+        username,
         password,
         deviceFingerprint ?? undefined,
         deviceName,
@@ -68,15 +68,15 @@ export function LoginPage() {
 
         <form onSubmit={(e) => void handleSubmit(e)}>
           <div className="form-group">
-            <label className="form-label" htmlFor="email">{t('auth.email')}</label>
+            <label className="form-label" htmlFor="username">{t('auth.username')}</label>
             <input
-              id="email"
-              type="email"
+              id="username"
+              type="text"
               className="form-input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
-              autoComplete="email"
+              autoComplete="username"
             />
           </div>
 

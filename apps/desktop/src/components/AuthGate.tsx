@@ -1,7 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore, useEntitlementStore } from '../stores';
-import { PageState } from './PageState';
+import { useAuthStore } from '../stores';
 
 function BootScreen() {
   const { t } = useTranslation();
@@ -43,48 +42,5 @@ export function AuthHydrationGate({ children }: { children: ReactNode }) {
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const accessToken = useAuthStore((s) => s.accessToken);
   if (!accessToken) return null;
-  return <>{children}</>;
-}
-
-export function LicensedRoute({
-  moduleKey,
-  featureKey,
-  children,
-}: {
-  moduleKey?: string;
-  featureKey?: string;
-  children: ReactNode;
-}) {
-  const { t } = useTranslation();
-  const loaded = useEntitlementStore((s) => s.loaded);
-  const isModuleEnabled = useEntitlementStore((s) => s.isModuleEnabled);
-  const isFeatureEnabled = useEntitlementStore((s) => s.isFeatureEnabled);
-
-  if (!moduleKey) return <>{children}</>;
-
-  if (!loaded) {
-    return <PageState variant="loading" />;
-  }
-
-  if (!isModuleEnabled(moduleKey)) {
-    return (
-      <PageState
-        variant="unlicensed"
-        title={t('license.moduleNotLicensed')}
-        message={t('license.moduleNotLicensedHint')}
-      />
-    );
-  }
-
-  if (featureKey && !isFeatureEnabled(featureKey)) {
-    return (
-      <PageState
-        variant="unlicensed"
-        title={t('license.featureNotLicensed')}
-        message={t('license.moduleNotLicensedHint')}
-      />
-    );
-  }
-
   return <>{children}</>;
 }

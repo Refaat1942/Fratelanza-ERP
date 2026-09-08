@@ -3,7 +3,7 @@ import { AppRouter } from './lib/app-router';
 import { useEffect } from 'react';
 import { useAuthStore, useAppStore } from './stores';
 import { syncElectronAccessToken } from './lib/auth-session';
-import { AuthHydrationGate, ProtectedRoute, LicensedRoute } from './components/AuthGate';
+import { AuthHydrationGate, ProtectedRoute } from './components/AuthGate';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SettingsPage } from './pages/SettingsPage';
@@ -24,7 +24,8 @@ import { BranchesPage } from './pages/BranchesPage';
 import { ConstructionContractsPage } from './pages/ConstructionContractsPage';
 import { ConstructionBoqPage } from './pages/ConstructionBoqPage';
 import { ConstructionProgressPage } from './pages/ConstructionProgressPage';
-import { AppLayout } from './components/AppLayout';
+import { OnboardingGate } from './components/OnboardingGate';
+import { OnboardingPage } from './pages/OnboardingPage';
 
 function AuthBootstrap() {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -54,36 +55,50 @@ function AppRoutes() {
         element={accessToken ? <Navigate to="/" replace /> : <LoginPage />}
       />
       <Route
+        path="/onboarding"
+        element={
+          accessToken ? (
+            <ProtectedRoute>
+              <OnboardingPage />
+            </ProtectedRoute>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+      <Route
         path="/"
         element={
           accessToken ? (
             <ProtectedRoute>
-              <AppLayout />
+              <OnboardingGate />
             </ProtectedRoute>
           ) : (
             <Navigate to="/login" replace />
           )
         }
       >
+        <Route element={<AppLayout />}>
         <Route index element={<DashboardPage />} />
-        <Route path="parties" element={<LicensedRoute moduleKey="party"><PartiesPage /></LicensedRoute>} />
-        <Route path="products" element={<LicensedRoute moduleKey="products"><ProductsPage /></LicensedRoute>} />
-        <Route path="customers" element={<LicensedRoute moduleKey="customers"><CustomersPage /></LicensedRoute>} />
-        <Route path="suppliers" element={<LicensedRoute moduleKey="suppliers"><SuppliersPage /></LicensedRoute>} />
-        <Route path="warehouses" element={<LicensedRoute moduleKey="warehouses"><WarehousesPage /></LicensedRoute>} />
-        <Route path="inventory" element={<LicensedRoute moduleKey="inventory" featureKey="inventory.stock"><InventoryPage /></LicensedRoute>} />
-        <Route path="sales" element={<LicensedRoute moduleKey="sales"><SalesPage /></LicensedRoute>} />
-        <Route path="purchasing" element={<LicensedRoute moduleKey="purchasing"><PurchasingPage /></LicensedRoute>} />
-        <Route path="projects" element={<LicensedRoute moduleKey="projects" featureKey="projects.projects"><ProjectsPage /></LicensedRoute>} />
-        <Route path="cost-centers" element={<LicensedRoute moduleKey="projects" featureKey="projects.cost-centers"><CostCentersPage /></LicensedRoute>} />
-        <Route path="construction/contracts" element={<LicensedRoute moduleKey="construction" featureKey="construction.contracts"><ConstructionContractsPage /></LicensedRoute>} />
-        <Route path="construction/boq/:contractId" element={<LicensedRoute moduleKey="construction" featureKey="construction.boq"><ConstructionBoqPage /></LicensedRoute>} />
-        <Route path="construction/progress" element={<LicensedRoute moduleKey="construction" featureKey="construction.progress"><ConstructionProgressPage /></LicensedRoute>} />
-        <Route path="accounting" element={<LicensedRoute moduleKey="accounting"><AccountingPage /></LicensedRoute>} />
-        <Route path="pos" element={<LicensedRoute moduleKey="pos"><PosPage /></LicensedRoute>} />
+        <Route path="parties" element={<PartiesPage />} />
+        <Route path="products" element={<ProductsPage />} />
+        <Route path="customers" element={<CustomersPage />} />
+        <Route path="suppliers" element={<SuppliersPage />} />
+        <Route path="warehouses" element={<WarehousesPage />} />
+        <Route path="inventory" element={<InventoryPage />} />
+        <Route path="sales" element={<SalesPage />} />
+        <Route path="purchasing" element={<PurchasingPage />} />
+        <Route path="projects" element={<ProjectsPage />} />
+        <Route path="cost-centers" element={<CostCentersPage />} />
+        <Route path="construction/contracts" element={<ConstructionContractsPage />} />
+        <Route path="construction/boq/:contractId" element={<ConstructionBoqPage />} />
+        <Route path="construction/progress" element={<ConstructionProgressPage />} />
+        <Route path="accounting" element={<AccountingPage />} />
+        <Route path="pos" element={<PosPage />} />
         <Route path="users" element={<UsersPage />} />
         <Route path="branches" element={<BranchesPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

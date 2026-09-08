@@ -7,7 +7,7 @@ export function PageState({
   message,
   action,
 }: {
-  variant: 'loading' | 'empty' | 'error' | 'unlicensed';
+  variant: 'loading' | 'empty' | 'error';
   title?: string;
   message?: string;
   action?: ReactNode;
@@ -19,9 +19,7 @@ export function PageState({
       ? t('common.loading')
       : variant === 'empty'
         ? t('common.noData')
-        : variant === 'unlicensed'
-          ? t('license.moduleNotLicensed')
-          : t('errors.loadFailed');
+        : t('errors.loadFailed');
 
   return (
     <div className={`page-state page-state--${variant}`}>
@@ -29,7 +27,6 @@ export function PageState({
         {variant === 'loading' && <span className="page-state-spinner" />}
         {variant === 'empty' && '∅'}
         {variant === 'error' && '!'}
-        {variant === 'unlicensed' && 'L'}
       </div>
       <h3 className="page-state-title">{title ?? defaultTitle}</h3>
       {message && <p className="page-state-message">{message}</p>}

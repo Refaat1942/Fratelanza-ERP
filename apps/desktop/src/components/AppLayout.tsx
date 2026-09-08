@@ -1,39 +1,18 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { useEffect, useMemo, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useAuthStore, useEntitlementStore } from '../stores';
+import { useAuthStore } from '../stores';
 import { ConnectionStatusBadge } from './ConnectionStatusBadge';
 import { ToastContainer } from './feedback/Toast';
 import { createApiClient, resolveApiBaseUrl } from '../lib/api';
 import { syncElectronAccessToken } from '../lib/auth-session';
 import { useAppStore } from '../stores';
-
-const NAV_MODULE_MAP: Record<string, string | undefined> = {
-  '/': 'core',
-  '/parties': 'party',
-  '/products': 'products',
-  '/customers': 'customers',
-  '/suppliers': 'suppliers',
-  '/warehouses': 'warehouses',
-  '/inventory': 'inventory',
-  '/sales': 'sales',
-  '/purchasing': 'purchasing',
-  '/projects': 'projects',
-  '/cost-centers': 'projects',
-  '/construction/contracts': 'construction',
-  '/construction/progress': 'construction',
-  '/accounting': 'accounting',
-  '/pos': 'pos',
-  '/users': 'core',
-  '/branches': 'core',
-  '/settings': 'core',
-};
+import { useEffect } from 'react';
 
 interface NavItem {
   to: string;
   labelKey: string;
   end?: boolean;
-  featureKey?: string;
 }
 
 interface NavGroup {
@@ -43,7 +22,7 @@ interface NavGroup {
 
 const NAV_GROUPS: NavGroup[] = [
   {
-    labelKey: 'nav.groups.core',
+    labelKey: 'nav.groups.home',
     items: [{ to: '/', labelKey: 'nav.dashboard', end: true }],
   },
   {
@@ -57,22 +36,25 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/inventory', labelKey: 'nav.inventory' },
       { to: '/sales', labelKey: 'nav.sales' },
       { to: '/purchasing', labelKey: 'nav.purchasing' },
-      { to: '/accounting', labelKey: 'nav.accounting' },
       { to: '/pos', labelKey: 'nav.pos' },
     ],
   },
   {
+    labelKey: 'nav.groups.finance',
+    items: [{ to: '/accounting', labelKey: 'nav.accounting' }],
+  },
+  {
     labelKey: 'nav.groups.projects',
     items: [
-      { to: '/projects', labelKey: 'nav.projects', featureKey: 'projects.projects' },
-      { to: '/cost-centers', labelKey: 'nav.costCenters', featureKey: 'projects.cost-centers' },
+      { to: '/projects', labelKey: 'nav.projects' },
+      { to: '/cost-centers', labelKey: 'nav.costCenters' },
     ],
   },
   {
     labelKey: 'nav.groups.construction',
     items: [
-      { to: '/construction/contracts', labelKey: 'nav.constructionContracts', featureKey: 'construction.contracts' },
-      { to: '/construction/progress', labelKey: 'nav.constructionProgress', featureKey: 'construction.progress' },
+      { to: '/construction/contracts', labelKey: 'nav.constructionContracts' },
+      { to: '/construction/progress', labelKey: 'nav.constructionProgress' },
     ],
   },
   {
@@ -91,14 +73,6 @@ export function AppLayout() {
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
   const clearAuth = useAuthStore((s) => s.clearAuth);
-  const clearEntitlements = useEntitlementStore((s) => s.clearEntitlements);
-  const setEntitlements = useEntitlementStore((s) => s.setEntitlements);
-  const isModuleEnabled = useEntitlementStore((s) => s.isModuleEnabled);
-  const isFeatureEnabled = useEntitlementStore((s) => s.isFeatureEnabled);
-  const entitlementsLoaded = useEntitlementStore((s) => s.loaded);
-  const entitlementsOperational = useEntitlementStore((s) => s.isOperational);
-  const entitlementModules = useEntitlementStore((s) => s.modules);
-  const entitlementFeatures = useEntitlementStore((s) => s.features);
   const apiUrl = useAppStore((s) => s.apiUrl);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -107,40 +81,6 @@ export function AppLayout() {
       void syncElectronAccessToken();
     }
   }, [accessToken]);
-
-  useEffect(() => {
-    if (!accessToken) {
-      clearEntitlements();
-      return;
-    }
-
-    const client = createApiClient(() => resolveApiBaseUrl(apiUrl), () => accessToken);
-    void client.getEntitlements().then((data) => {
-      setEntitlements({
-        edition: data.edition,
-        status: data.status,
-        isOperational: data.isOperational,
-        modules: data.modules,
-        features: data.features,
-      });
-    }).catch(() => {
-      clearEntitlements();
-    });
-  }, [accessToken, apiUrl, clearEntitlements, setEntitlements]);
-
-  const visibleGroups = useMemo(() => {
-    return NAV_GROUPS.map((group) => ({
-      ...group,
-      items: group.items.filter((item) => {
-        const moduleKey = NAV_MODULE_MAP[item.to];
-        if (!moduleKey || moduleKey === 'core') return true;
-        if (!isModuleEnabled(moduleKey)) return false;
-        if (item.featureKey && !isFeatureEnabled(item.featureKey)) return false;
-        if (item.to === '/inventory' && !isFeatureEnabled('inventory.stock')) return false;
-        return true;
-      }),
-    })).filter((group) => group.items.length > 0);
-  }, [isModuleEnabled, isFeatureEnabled, entitlementsLoaded, entitlementsOperational, entitlementModules, entitlementFeatures]);
 
   async function handleLogout() {
     try {
@@ -152,7 +92,6 @@ export function AppLayout() {
     if (window.desktopApi) {
       await window.desktopApi.setAccessToken(null);
     }
-    clearEntitlements();
     clearAuth();
     navigate('/login');
   }
@@ -169,7 +108,7 @@ export function AppLayout() {
           <span className="sidebar-brand-text">{t('common.appName')}</span>
         </div>
         <nav className="sidebar-nav">
-          {visibleGroups.map((group) => (
+          {NAV_GROUPS.map((group) => (
             <div key={group.labelKey} className="sidebar-group">
               <span className="sidebar-group-label">{t(group.labelKey)}</span>
               {group.items.map((item) => (

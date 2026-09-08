@@ -96,29 +96,6 @@ export type UserRow = {
   role?: { id: string; name: string; code: string };
 };
 export type BranchRow = { id: string; code: string; name: string; isActive: boolean; isDefault?: boolean };
-export type EntitlementSnapshot = {
-  edition: string;
-  status: string;
-  isOperational: boolean;
-  expiresAt: string | null;
-  graceEndsAt: string | null;
-  modules: Array<{ key: string; enabled: boolean; displayName: string }>;
-  features: Array<{ key: string; enabled: boolean; displayName: string }>;
-  limits: Record<string, number | null>;
-  usage: Record<'users' | 'branches' | 'devices', number>;
-};
-export type LicenseAdminView = {
-  license: {
-    id: string;
-    licenseKey: string;
-    edition: string;
-    status: string;
-    isOperational: boolean;
-    expiresAt: string | null;
-    graceEndsAt: string | null;
-  };
-  entitlements: EntitlementSnapshot;
-};
 export type SyncConflictRow = {
   id: string;
   entityType: string;
@@ -203,7 +180,7 @@ export class ApiClient {
     );
   }
 
-  login(email: string, password: string, deviceFingerprint?: string, deviceName?: string) {
+  login(username: string, password: string, deviceFingerprint?: string, deviceName?: string) {
     return this.request<{
       accessToken: string;
       refreshToken: string;
@@ -222,7 +199,7 @@ export class ApiClient {
       };
     }>('/auth/login', {
       method: 'POST',
-      body: JSON.stringify({ email, password, deviceFingerprint, deviceName }),
+      body: JSON.stringify({ username, password, deviceFingerprint, deviceName }),
     });
   }
 
@@ -240,20 +217,6 @@ export class ApiClient {
 
   getSettings() {
     return this.request('/settings');
-  }
-
-  getEntitlements() {
-    return this.request<EntitlementSnapshot>('/license/entitlements');
-  }
-
-  getLicenseAdminView() {
-    return this.request<LicenseAdminView>('/license');
-  }
-
-  getLicenseUsage() {
-    return this.request<{ limits: EntitlementSnapshot['limits']; usage: EntitlementSnapshot['usage'] }>(
-      '/license/usage',
-    );
   }
 
   getDashboardStats() {
@@ -336,7 +299,7 @@ export class ApiClient {
   }
 
   createUser(payload: {
-    email: string;
+    username: string;
     password: string;
     firstName: string;
     lastName: string;
@@ -347,8 +310,25 @@ export class ApiClient {
     return this.request('/users', { method: 'POST', body: JSON.stringify(payload) });
   }
 
+  updateUser(id: string, payload: {
+    username?: string;
+    password?: string;
+    firstName?: string;
+    lastName?: string;
+    roleId?: string;
+    branchId?: string;
+    phone?: string;
+    isActive?: boolean;
+  }) {
+    return this.request(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
   getRoles() {
     return this.request<Array<{ id: string; name: string; code: string }>>('/roles');
+  }
+
+  getAssignableRoles() {
+    return this.request<Array<{ id: string; name: string; code: string }>>('/roles/assignable/list');
   }
 
   createBranch(payload: { name: string; code: string; address?: string }) {

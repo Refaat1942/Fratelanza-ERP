@@ -11,7 +11,7 @@ export class DashboardService {
     const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    const [salesToday, salesMonth, receivables, payables, stockBalances] =
+    const [salesToday, salesMonth, purchasesMonth, receivables, payables, stockBalances, activeProjects] =
       await Promise.all([
         this.prisma.salesInvoice.aggregate({
           where: {
@@ -31,6 +31,14 @@ export class DashboardService {
           },
           _sum: { total: true },
         }),
+        this.prisma.purchaseOrder.aggregate({
+          where: {
+            tenantId,
+            status: { in: ['received', 'partially_received', 'approved'] },
+            orderDate: { gte: startOfMonth },
+          },
+          _sum: { total: true },
+        }),
         this.prisma.customer.aggregate({
           where: { tenantId, deletedAt: null, isActive: true },
           _sum: { balance: true },
@@ -42,6 +50,9 @@ export class DashboardService {
         this.prisma.stockBalance.findMany({
           where: { tenantId },
           select: { quantity: true, avgCost: true },
+        }),
+        this.prisma.project.count({
+          where: { tenantId, status: 'active', deletedAt: null },
         }),
       ]);
 
@@ -66,10 +77,12 @@ export class DashboardService {
     return {
       salesToday: salesTodayTotal,
       salesMonth: Number(salesMonth._sum.total ?? 0),
+      purchasesMonth: Number(purchasesMonth._sum.total ?? 0),
       receivables: Number(receivables._sum.balance ?? 0),
       payables: Number(payables._sum.balance ?? 0),
       inventoryValue: Number(inventoryValue),
       lowStockCount,
+      activeProjects,
     };
   }
 }

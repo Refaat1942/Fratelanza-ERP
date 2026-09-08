@@ -1,6 +1,6 @@
 export const en = {
   common: {
-    appName: 'Fratelanza Grand ERP',
+    appName: 'Fratelanza Business Platform',
     save: 'Save',
     cancel: 'Cancel',
     delete: 'Delete',
@@ -30,28 +30,31 @@ export const en = {
     loading: 'Starting application...',
   },
   connection: {
-    serverUrl: 'Clinic server address',
+    serverUrl: 'Server address',
     saveServer: 'Save and test connection',
-    serverReachable: 'Connected to clinic server.',
-    serverUnreachable: 'Unable to connect to the clinic server.',
+    serverReachable: 'Connected to server.',
+    serverUnreachable: 'Unable to connect to server.',
     serverNotConfigured: 'Server not configured',
-    lanHint: 'Enter the LAN address of the clinic server PC, for example http://192.168.1.10:3000',
+    lanHint: 'Enter the LAN address of your server PC, for example http://192.168.1.10:3000',
   },
   auth: {
     login: 'Sign In',
     logout: 'Sign Out',
     email: 'Email',
+    username: 'Username',
     password: 'Password',
     rememberMe: 'Remember me',
     loginTitle: 'Welcome back',
-    loginSubtitle: 'Sign in to your ERP account',
-    invalidCredentials: 'Invalid email or password',
+    loginSubtitle: 'Sign in to manage your business',
+    invalidCredentials: 'Invalid username or password',
     sessionExpired: 'Your session has expired. Please sign in again.',
   },
   nav: {
     groups: {
+      home: 'Home',
       core: 'Core',
       business: 'Business',
+      finance: 'Finance',
       projects: 'Projects',
       construction: 'Construction',
       administration: 'Administration',
@@ -111,10 +114,46 @@ export const en = {
     welcome: 'Welcome, {{name}}',
     salesToday: 'Sales Today',
     salesMonth: 'Sales This Month',
+    purchasesMonth: 'Purchases This Month',
     receivables: 'Outstanding Receivables',
     payables: 'Outstanding Payables',
     inventoryValue: 'Inventory Value',
+    activeProjects: 'Active Projects',
     lowStock: 'Low Stock Items',
+  },
+  onboarding: {
+    title: 'Welcome to Fratelanza',
+    subtitle: 'Set up your business in a few steps',
+    progress: 'Step {{percent}}% complete',
+    welcomeBody:
+      'Fratelanza helps you manage sales, purchasing, inventory, finance, projects, and construction in one connected platform.',
+    manageSales: 'Track customers, sales, and receivables',
+    managePurchasing: 'Manage suppliers, purchase orders, and payables',
+    manageFinance: 'Post journal entries and monitor cash flow',
+    manageProjects: 'Run projects, cost centers, and construction contracts',
+    companyName: 'Business name',
+    companyNamePlaceholder: 'e.g. Nile Trading Company',
+    companyNameHint: 'This appears on invoices and reports.',
+    branchName: 'Main branch',
+    branchNamePlaceholder: 'e.g. Head Office — Cairo',
+    branchNameHint: 'You can add more branches later from Administration.',
+    warehouseName: 'Main warehouse',
+    warehouseNamePlaceholder: 'e.g. Central Warehouse',
+    warehouseNameHint: 'Required for inventory and stock movements.',
+    financeBody:
+      'Fratelanza will prepare a default chart of accounts and fiscal calendar for your business. Your accountant can adjust these later.',
+    businessType: 'What type of business are you?',
+    typeTrading: 'Trading / Distribution',
+    typeConstruction: 'Construction',
+    typeServices: 'Professional Services',
+    typeRetail: 'Retail',
+    typeOther: 'Other',
+    doneBody: 'You are ready to start. We recommend these first steps:',
+    nextCustomers: 'Add your first customer',
+    nextProducts: 'Create products or services you sell',
+    nextSales: 'Record your first sale or purchase',
+    goToDashboard: 'Go to dashboard',
+    skipForNow: 'Skip for now',
   },
   sync: {
     online: 'Online',
@@ -139,7 +178,8 @@ export const en = {
     themeLight: 'Light',
     themeDark: 'Dark',
     themeSystem: 'System',
-    company: 'Company Settings',
+    company: 'Company',
+    companyName: 'Company name',
     timezone: 'Timezone',
     currency: 'Default Currency',
   },
@@ -161,9 +201,12 @@ export const en = {
     firstName: 'First name',
     lastName: 'Last name',
     email: 'Email',
+    username: 'Username',
     role: 'Role',
     branch: 'Branch',
     create: 'Create User',
+    edit: 'Edit User',
+    passwordHint: 'Leave blank to keep current password',
   },
   devices: {
     title: 'Devices',
@@ -304,10 +347,12 @@ export const en = {
     moduleNotLicensed: 'Module not licensed',
     featureNotLicensed: 'Feature not licensed',
     moduleNotLicensedHint: 'This module is not included in your current license. Contact Fratelanza to upgrade.',
-    title: 'License',
+    title: 'Module access',
     edition: 'Edition',
     status: 'Status',
     modules: 'Modules',
+    enableAll: 'Enable all modules',
+    moduleUpdated: 'Module access updated',
   },
 } as const;
 
@@ -339,6 +384,7 @@ export type TranslationSchema = {
   pos: Record<string, string>;
   construction: Record<string, string>;
   lineItems: Record<string, string>;
+  onboarding: Record<string, string>;
   license: Record<string, string>;
 };
 

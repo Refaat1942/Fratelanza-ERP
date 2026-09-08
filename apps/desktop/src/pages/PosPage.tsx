@@ -73,7 +73,7 @@ export function PosPage() {
           setOfflineMode(true);
         }
       } catch (err) {
-        if (window.desktopApi && user?.branchId && user?.id) {
+        if (window.desktopApi && connectivity === ConnectivityStatus.OFFLINE && user?.branchId && user?.id) {
           try {
             const localProducts = await window.desktopApi.getLocalProducts();
             setProducts(localProducts.filter((p) => p.isActive));
