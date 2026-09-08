@@ -83,8 +83,9 @@ export class FinancialPostingService {
       tx,
     );
 
+    await tx.$executeRawUnsafe('SAVEPOINT financial_posting_create');
     try {
-      return await tx.journalEntry.create({
+      const entry = await tx.journalEntry.create({
         data: {
           tenantId: input.tenantId,
           branchId: input.branchId,
@@ -119,11 +120,14 @@ export class FinancialPostingService {
           fiscalPeriod: true,
         },
       });
+      await tx.$executeRawUnsafe('RELEASE SAVEPOINT financial_posting_create');
+      return entry;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError
         && error.code === 'P2002'
       ) {
+        await tx.$executeRawUnsafe('ROLLBACK TO SAVEPOINT financial_posting_create');
         const raced = await this.findExistingPosting(input, tx);
         if (raced) {
           return raced;

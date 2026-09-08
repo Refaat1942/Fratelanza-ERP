@@ -11,6 +11,8 @@ import {
   createUniversalProject,
   enableConstructionProfile,
   loadConstructionTestContext,
+  prepareConstructionTestSuite,
+  restoreDemoTenantLicense,
 } from './construction-test.helpers';
 import { signTestActivationForTenant, buildTestActivationInput } from './license-test.helpers';
 import { DEMO_ENABLED_MODULES } from '../src/modules/license/catalog/module-catalog';
@@ -27,10 +29,7 @@ describe('Construction foundation (Phase 9.0)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    prisma = app.get(PrismaService);
-    licenseService = app.get(LicenseService);
-    ctx = await loadConstructionTestContext(app);
-    await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
+    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
 
     const project = await createUniversalProject(app, ctx.accessToken);
     projectId = project.id;
@@ -50,7 +49,7 @@ describe('Construction foundation (Phase 9.0)', () => {
   });
 
   afterAll(async () => {
-    await licenseService.seedDemoLicense(ctx.tenantId);
+    await restoreDemoTenantLicense(app);
     await app.close();
   });
 

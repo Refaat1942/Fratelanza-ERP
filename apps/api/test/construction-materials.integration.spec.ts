@@ -15,6 +15,8 @@ import {
   featuresWithConstruction,
   loadConstructionTestContext,
   modulesWithConstruction,
+  prepareConstructionTestSuite,
+  restoreDemoTenantLicense,
 } from './construction-test.helpers';
 import { seedStockBalance } from './inventory-test.helpers';
 import { signTestActivationForTenant } from './license-test.helpers';
@@ -34,10 +36,7 @@ describe('Construction materials (Phase 9.6)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    prisma = app.get(PrismaService);
-    licenseService = app.get(LicenseService);
-    ctx = await loadConstructionTestContext(app);
-    await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
+    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
 
     const project = await createUniversalProject(app, ctx.accessToken);
     projectId = project.id;
@@ -96,7 +95,7 @@ describe('Construction materials (Phase 9.6)', () => {
   });
 
   afterAll(async () => {
-    await licenseService.seedDemoLicense(ctx.tenantId);
+    await restoreDemoTenantLicense(app);
     await app.close();
   });
 

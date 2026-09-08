@@ -1,5 +1,5 @@
 import type { INestApplication } from '@nestjs/common';
-import { createTestApp, loginAdmin, request } from './test-app';
+import { createTestApp, loginAdmin, request, resetDemoTenant } from './test-app';
 
 describe('Auth integration (Phase 0)', () => {
   let app: INestApplication;
@@ -9,6 +9,7 @@ describe('Auth integration (Phase 0)', () => {
   });
 
   afterAll(async () => {
+    await resetDemoTenant(app);
     await app.close();
   });
 

@@ -1,11 +1,13 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsEnum,
   IsInt,
   IsOptional,
   IsString,
   IsUUID,
   Max,
+  MaxLength,
   Min,
 } from 'class-validator';
 import { ConstructionBillingStatus } from '../../../../../../packages/database/generated/server';
@@ -24,6 +26,7 @@ export class ListConstructionBillingQueryDto {
   progressId?: string;
 
   @IsOptional()
+  @IsEnum(ConstructionBillingStatus)
   status?: ConstructionBillingStatus;
 
   @IsOptional()
@@ -74,10 +77,12 @@ export class CreateConstructionBillingDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   notes?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   idempotencyKey?: string;
 }
 

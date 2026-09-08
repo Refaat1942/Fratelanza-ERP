@@ -23,6 +23,8 @@ import {
   featuresWithContractsOnly,
   loadConstructionTestContext,
   modulesWithConstruction,
+  prepareConstructionTestSuite,
+  restoreDemoTenantLicense,
 } from './construction-test.helpers';
 import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
@@ -44,10 +46,7 @@ describe('Construction contracts + BOQ (Phase 9.1)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    prisma = app.get(PrismaService);
-    licenseService = app.get(LicenseService);
-    ctx = await loadConstructionTestContext(app);
-    await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
+    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
 
     const admin = await prisma.user.findFirst({
       where: { email: 'admin@fratelanza.local' },
@@ -115,7 +114,7 @@ describe('Construction contracts + BOQ (Phase 9.1)', () => {
   });
 
   afterAll(async () => {
-    await licenseService.seedDemoLicense(ctx.tenantId);
+    await restoreDemoTenantLicense(app);
     await app.close();
   });
 

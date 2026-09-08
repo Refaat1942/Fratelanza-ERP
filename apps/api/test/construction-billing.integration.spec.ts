@@ -28,6 +28,9 @@ import {
   featuresWithConstruction,
   loadConstructionTestContext,
   modulesWithConstruction,
+  prepareConstructionTestSuite,
+  restoreConstructionLicense,
+  restoreDemoTenantLicense,
 } from './construction-test.helpers';
 import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
@@ -52,10 +55,7 @@ describe('Construction billing (Phase 9.8)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    prisma = app.get(PrismaService);
-    licenseService = app.get(LicenseService);
-    ctx = await loadConstructionTestContext(app);
-    await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
+    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
 
     const admin = await prisma.user.findFirst({
       where: { email: 'admin@fratelanza.local' },
@@ -147,13 +147,14 @@ describe('Construction billing (Phase 9.8)', () => {
   });
 
   afterAll(async () => {
-    await licenseService.seedDemoLicense(ctx.tenantId);
+    await restoreDemoTenantLicense(app);
     await app.close();
   });
 
-  afterEach(() => {
+  afterEach(async () => {
     jest.restoreAllMocks();
     resetAppConfigCache();
+    await restoreConstructionLicense(prisma, ctx.tenantId, licenseService);
   });
 
   function featuresWithoutBilling() {
@@ -538,13 +539,15 @@ describe('Construction billing (Phase 9.8)', () => {
           api().post(`/api/v1/construction/billing/${billing.id}/post`).send({}),
           api().post(`/api/v1/construction/billing/${billing.id}/post`).send({}),
         ]);
-        const successCount = [first.status, second.status].filter((s) => s === 201).length;
-        expect(successCount).toBe(1);
+        expect(first.status).toBe(201);
+        expect(second.status).toBe(201);
+        expect(second.body.data.id).toBe(first.body.data.id);
 
         const refreshed = await prisma.constructionBilling.findUniqueOrThrow({
           where: { id: billing.id },
         });
         expect(refreshed.status).toBe(ConstructionBillingStatus.posted);
+        expect(refreshed.salesInvoiceId).toBeTruthy();
       });
     });
 

@@ -4,9 +4,14 @@ import {
   IsArray,
   IsDateString,
   IsEnum,
+  IsInt,
+  IsNumberString,
   IsOptional,
   IsString,
   IsUUID,
+  Max,
+  MaxLength,
+  Min,
   ValidateNested,
 } from 'class-validator';
 import { ConstructionMaterialIssueStatus } from '../../../../../../packages/database/generated/server';
@@ -15,7 +20,7 @@ export class CreateConstructionMaterialIssueLineDto {
   @IsUUID()
   productId!: string;
 
-  @IsString()
+  @IsNumberString()
   quantity!: string;
 
   @IsOptional()
@@ -44,14 +49,17 @@ export class CreateConstructionMaterialIssueDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   notes?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   sourceModule?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
   sourceType?: string;
 
   @IsOptional()
@@ -60,6 +68,7 @@ export class CreateConstructionMaterialIssueDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   sourceEvent?: string;
 
   @IsArray()
@@ -84,9 +93,14 @@ export class ListConstructionMaterialIssuesQueryDto {
 
   @IsOptional()
   @Type(() => Number)
+  @IsInt()
+  @Min(1)
   page?: number;
 
   @IsOptional()
   @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(100)
   limit?: number;
 }

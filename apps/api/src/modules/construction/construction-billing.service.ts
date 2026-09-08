@@ -399,119 +399,155 @@ export class ConstructionBillingService {
       );
     }
 
-    const billing = await this.findById(tenantId, id);
-    if (billing.status === ConstructionBillingStatus.posted) {
-      return billing;
-    }
-    if (billing.status !== ConstructionBillingStatus.approved) {
-      throw new BadRequestException('Only approved billings can be posted');
-    }
-    if (billing.netBillableAmount.lte(0)) {
-      throw new BadRequestException('Net billable amount must be positive');
-    }
-
-    const contract = await this.contracts.findById(tenantId, billing.contractId);
-    const customer = await this.partyLegacy.resolveLinkedCustomerForSales(
-      tenantId,
-      contract.partyId,
-    );
-
-    const warehouse = await this.prisma.warehouse.findFirst({
-      where: { tenantId, branchId: billing.branchId, deletedAt: null, isActive: true },
-      select: { id: true },
-    });
-    if (!warehouse) {
-      throw new BadRequestException('No active warehouse found for billing branch');
-    }
-
-    const dimensions = await this.resolvePostingDimensions(
-      tenantId,
-      billing,
-      dto,
-    );
-
-    const invoiceLines = billing.lines.map((line) => ({
-      description: `${line.description} (Progress billing ${billing.number})`,
-      quantity: 1,
-      unitPrice: Number(line.netBillableAmount),
-    }));
-
-    const invoice = await this.sales.createInvoice(tenantId, {
-      branchId: billing.branchId,
-      customerId: customer.id,
-      warehouseId: warehouse.id,
-      notes: `Construction billing ${billing.number} — progress ${billing.progress?.number ?? billing.progressId}`,
-      lines: invoiceLines,
-      createdById: userId,
-    });
-
-    const claimed = await this.prisma.constructionBilling.updateMany({
-      where: {
-        id,
-        tenantId,
-        status: ConstructionBillingStatus.approved,
-        salesInvoiceId: null,
-      },
-      data: { salesInvoiceId: invoice.id },
-    });
-
-    if (claimed.count === 0) {
-      const current = await this.findById(tenantId, id);
-      if (current.status === ConstructionBillingStatus.posted && current.salesInvoiceId) {
-        return current;
-      }
-      throw new ConflictException('Billing post conflict — refresh and retry');
-    }
+    await this.prisma.$executeRaw`
+      SELECT pg_advisory_lock(hashtext(${tenantId}), hashtext(${id}))
+    `;
 
     try {
-      await this.sales.postInvoice(tenantId, invoice.id, dimensions);
-
-      if (billing.advanceRecoveryAmount.gt(0)) {
-        await this.advances.recordRecovered(tenantId, userId, {
-          contractId: billing.contractId,
-          partyType: ConstructionSubledgerPartyType.customer,
-          amount: billing.advanceRecoveryAmount.toString(),
-          notes: `Recovered via billing ${billing.number}`,
-        });
+      const billing = await this.findById(tenantId, id);
+      if (billing.status === ConstructionBillingStatus.posted) {
+        return billing;
+      }
+      if (billing.status !== ConstructionBillingStatus.approved) {
+        throw new BadRequestException('Only approved billings can be posted');
+      }
+      if (billing.netBillableAmount.lte(0)) {
+        throw new BadRequestException('Net billable amount must be positive');
       }
 
-      const posted = await this.prisma.constructionBilling.update({
-        where: { id },
-        data: {
-          status: ConstructionBillingStatus.posted,
-          postedAt: new Date(),
-          postedById: userId,
-        },
-        include: billingInclude,
-      });
-
-      await this.audit.log({
+      const contract = await this.contracts.findById(tenantId, billing.contractId);
+      const customer = await this.partyLegacy.resolveLinkedCustomerForSales(
         tenantId,
-        userId,
+        contract.partyId,
+      );
+
+      const warehouse = await this.prisma.warehouse.findFirst({
+        where: { tenantId, branchId: billing.branchId, deletedAt: null, isActive: true },
+        select: { id: true },
+      });
+      if (!warehouse) {
+        throw new BadRequestException('No active warehouse found for billing branch');
+      }
+
+      const dimensions = await this.resolvePostingDimensions(
+        tenantId,
+        billing,
+        dto,
+      );
+
+      const invoiceLines = billing.lines.map((line) => ({
+        description: `${line.description} (Progress billing ${billing.number})`,
+        quantity: 1,
+        unitPrice: Number(line.netBillableAmount),
+      }));
+
+      const invoice = await this.sales.createInvoice(tenantId, {
         branchId: billing.branchId,
-        entity: 'construction_billing',
-        entityId: billing.id,
-        action: 'construction.billing.posted',
-        newValue: {
-          salesInvoiceId: invoice.id,
-          netBillableAmount: billing.netBillableAmount.toString(),
-          retentionAmount: billing.retentionAmount.toString(),
-          advanceRecoveryAmount: billing.advanceRecoveryAmount.toString(),
-        },
+        customerId: customer.id,
+        warehouseId: warehouse.id,
+        notes: `Construction billing ${billing.number} — progress ${billing.progress?.number ?? billing.progressId}`,
+        lines: invoiceLines,
+        createdById: userId,
       });
 
-      return posted;
-    } catch (error) {
-      await this.prisma.constructionBilling.updateMany({
+      const claimed = await this.prisma.constructionBilling.updateMany({
         where: {
           id,
           tenantId,
           status: ConstructionBillingStatus.approved,
-          salesInvoiceId: invoice.id,
+          salesInvoiceId: null,
         },
-        data: { salesInvoiceId: null },
+        data: { salesInvoiceId: invoice.id },
       });
-      throw error;
+
+      if (claimed.count === 0) {
+        const current = await this.findById(tenantId, id);
+        if (current.status === ConstructionBillingStatus.posted) {
+          return current;
+        }
+        if (
+          current.status === ConstructionBillingStatus.approved &&
+          current.salesInvoiceId
+        ) {
+          return this.awaitConcurrentBillingPost(tenantId, id);
+        }
+        throw new ConflictException('Billing post conflict — refresh and retry');
+      }
+
+      try {
+        await this.sales.postInvoice(tenantId, invoice.id, dimensions);
+
+        if (billing.advanceRecoveryAmount.gt(0)) {
+          await this.advances.recordRecovered(tenantId, userId, {
+            contractId: billing.contractId,
+            partyType: ConstructionSubledgerPartyType.customer,
+            amount: billing.advanceRecoveryAmount.toString(),
+            notes: `Recovered via billing ${billing.number}`,
+          });
+        }
+
+        const posted = await this.prisma.constructionBilling.updateMany({
+          where: {
+            id,
+            tenantId,
+            status: ConstructionBillingStatus.approved,
+            salesInvoiceId: invoice.id,
+          },
+          data: {
+            status: ConstructionBillingStatus.posted,
+            postedAt: new Date(),
+            postedById: userId,
+          },
+        });
+
+        if (posted.count === 0) {
+          const current = await this.findById(tenantId, id);
+          if (current.status === ConstructionBillingStatus.posted) {
+            return current;
+          }
+          if (
+            current.status === ConstructionBillingStatus.approved &&
+            current.salesInvoiceId === invoice.id
+          ) {
+            return this.awaitConcurrentBillingPost(tenantId, id);
+          }
+          throw new ConflictException('Billing post conflict — refresh and retry');
+        }
+
+        const billingPosted = await this.findById(tenantId, id);
+
+        await this.audit.log({
+          tenantId,
+          userId,
+          branchId: billing.branchId,
+          entity: 'construction_billing',
+          entityId: billing.id,
+          action: 'construction.billing.posted',
+          newValue: {
+            salesInvoiceId: invoice.id,
+            netBillableAmount: billing.netBillableAmount.toString(),
+            retentionAmount: billing.retentionAmount.toString(),
+            advanceRecoveryAmount: billing.advanceRecoveryAmount.toString(),
+          },
+        });
+
+        return billingPosted;
+      } catch (error) {
+        await this.prisma.constructionBilling.updateMany({
+          where: {
+            id,
+            tenantId,
+            status: ConstructionBillingStatus.approved,
+            salesInvoiceId: invoice.id,
+          },
+          data: { salesInvoiceId: null },
+        });
+        throw error;
+      }
+    } finally {
+      await this.prisma.$executeRaw`
+        SELECT pg_advisory_unlock(hashtext(${tenantId}), hashtext(${id}))
+      `;
     }
   }
 
@@ -524,15 +560,29 @@ export class ConstructionBillingService {
       throw new BadRequestException('Posted billings cannot be cancelled');
     }
 
-    const billing = await this.prisma.constructionBilling.update({
-      where: { id },
+    const updated = await this.prisma.constructionBilling.updateMany({
+      where: {
+        id,
+        tenantId,
+        status: {
+          in: [
+            ConstructionBillingStatus.draft,
+            ConstructionBillingStatus.approved,
+          ],
+        },
+      },
       data: {
         status: ConstructionBillingStatus.cancelled,
         cancelledAt: new Date(),
         cancelledById: userId,
       },
-      include: billingInclude,
     });
+
+    if (updated.count === 0) {
+      throw new ConflictException('Billing cancel conflict — refresh and retry');
+    }
+
+    const billing = await this.findById(tenantId, id);
 
     await this.audit.log({
       tenantId,
@@ -591,6 +641,28 @@ export class ConstructionBillingService {
     );
 
     return items.filter((item) => !billedIds.has(item.id));
+  }
+
+  private async awaitConcurrentBillingPost(tenantId: string, id: string) {
+    for (let attempt = 0; attempt < 100; attempt++) {
+      const latest = await this.findById(tenantId, id);
+      if (latest.status === ConstructionBillingStatus.posted) {
+        return latest;
+      }
+      if (
+        latest.status === ConstructionBillingStatus.approved &&
+        !latest.salesInvoiceId
+      ) {
+        break;
+      }
+      await new Promise((resolve) => setTimeout(resolve, 25));
+    }
+
+    const final = await this.findById(tenantId, id);
+    if (final.status === ConstructionBillingStatus.posted) {
+      return final;
+    }
+    throw new ConflictException('Billing post conflict — refresh and retry');
   }
 
   private buildSourceEvent(progressItemIds: string[]): string {
@@ -678,6 +750,19 @@ export class ConstructionBillingService {
     dto: PostConstructionBillingDto,
   ): Promise<PostingDimensions> {
     const projectId = dto.projectId ?? billing.projectId;
+
+    if (dto.projectId && dto.projectId !== billing.projectId) {
+      throw new BadRequestException('Project does not match billing project');
+    }
+
+    const project = await this.prisma.project.findFirst({
+      where: { id: projectId, tenantId, deletedAt: null },
+      select: { id: true },
+    });
+    if (!project) {
+      throw new BadRequestException('Project not found');
+    }
+
     let costCenterId = dto.costCenterId;
 
     if (!costCenterId) {

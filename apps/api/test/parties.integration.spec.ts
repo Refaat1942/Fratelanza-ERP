@@ -15,7 +15,7 @@ import { PartiesService } from '../src/modules/parties/parties.service';
 import { PartyContactsService } from '../src/modules/parties/party-contacts.service';
 import { PartyRolesService } from '../src/modules/parties/party-roles.service';
 import { createIsolatedTenant, loadPmsTestContext, type PmsTestContext } from './pms-test.helpers';
-import { createTestApp, loginAdmin, request } from './test-app';
+import { createTestApp, loginAdmin, request, resetDemoTenant } from './test-app';
 
 describe('Universal Party (Phase 3)', () => {
   let app: INestApplication;
@@ -29,6 +29,7 @@ describe('Universal Party (Phase 3)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
+    await resetDemoTenant(app);
     prisma = app.get(PrismaService);
     partiesService = app.get(PartiesService);
     partyRolesService = app.get(PartyRolesService);
@@ -40,6 +41,7 @@ describe('Universal Party (Phase 3)', () => {
   });
 
   afterAll(async () => {
+    await resetDemoTenant(app);
     await app.close();
   });
 

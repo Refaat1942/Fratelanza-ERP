@@ -1266,6 +1266,7 @@ model ConstructionMaterialIssue {
   @@index([tenantId, projectId, status])
   @@index([tenantId, warehouseId])
   @@index([tenantId, boqItemId])
+  @@index([tenantId, sourceModule, sourceType, sourceId, sourceEvent])
   @@map("construction_material_issues")
 }
 
@@ -1353,6 +1354,7 @@ model ConstructionBilling {
   @@index([tenantId, projectId])
   @@index([tenantId, contractId, status])
   @@index([tenantId, progressId])
+  @@index([tenantId, idempotencyKey])
   @@map("construction_billings")
 }
 

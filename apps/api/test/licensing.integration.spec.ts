@@ -7,7 +7,7 @@ import {
   buildTestActivationInput,
   signTestActivationForTenant,
 } from './license-test.helpers';
-import { createTestApp, loginAdmin, request } from './test-app';
+import { createTestApp, loginAdmin, request, resetDemoTenant } from './test-app';
 import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
 
 describe('Licensing integration (Phase 4.5)', () => {
@@ -24,9 +24,11 @@ describe('Licensing integration (Phase 4.5)', () => {
     const auth = await loginAdmin(app);
     accessToken = auth.accessToken;
     tenantId = auth.user.tenantId;
+    await resetDemoTenant(app);
   });
 
   afterAll(async () => {
+    await licenseService.seedDemoLicense(tenantId);
     await app.close();
   });
 

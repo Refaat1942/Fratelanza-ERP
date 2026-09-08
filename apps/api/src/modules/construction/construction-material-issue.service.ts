@@ -356,11 +356,20 @@ export class ConstructionMaterialIssueService {
       throw new BadRequestException('Only draft material issues can be cancelled');
     }
 
-    const issue = await this.prisma.constructionMaterialIssue.update({
-      where: { id: issueId },
+    const updated = await this.prisma.constructionMaterialIssue.updateMany({
+      where: {
+        id: issueId,
+        tenantId,
+        status: ConstructionMaterialIssueStatus.draft,
+      },
       data: { status: ConstructionMaterialIssueStatus.cancelled },
-      include: issueInclude,
     });
+
+    if (updated.count === 0) {
+      throw new ConflictException('Material issue cancel conflict — refresh and retry');
+    }
+
+    const issue = await this.findById(tenantId, issueId);
 
     await this.audit.log({
       tenantId,
