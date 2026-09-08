@@ -228,6 +228,15 @@ export class LicenseService {
     const { document, modules, features, limits, expiresAt, graceEndsAt, licenseId } =
       prepared;
 
+    const config = getAppConfig();
+    if (config.installationId) {
+      if (!input.installationId || input.installationId !== config.installationId) {
+        throw new ForbiddenException(
+          'License installation binding does not match this server installation',
+        );
+      }
+    }
+
     let payloadSignature = input.signature;
     let payloadDigest = digestLicenseDocument(document);
 

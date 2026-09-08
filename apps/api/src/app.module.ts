@@ -12,6 +12,7 @@ import { RolesModule } from './modules/roles/roles.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { HealthModule } from './modules/health/health.module';
+import { SystemModule } from './modules/system/system.module';
 import { AuditModule } from './modules/audit/audit.module';
 import { CommonModule } from './common/common.module';
 import { ProductsModule } from './modules/products/products.module';
@@ -49,6 +50,7 @@ import { ConstructionModule } from './modules/construction/construction.module';
     DevicesModule,
     SettingsModule,
     HealthModule,
+    SystemModule,
     AuditModule,
     // ── Legacy ERP modules (frozen — see docs/LEGACY_ERP.md) ──
     ProductsModule,
