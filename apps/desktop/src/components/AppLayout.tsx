@@ -95,6 +95,10 @@ export function AppLayout() {
   const setEntitlements = useEntitlementStore((s) => s.setEntitlements);
   const isModuleEnabled = useEntitlementStore((s) => s.isModuleEnabled);
   const isFeatureEnabled = useEntitlementStore((s) => s.isFeatureEnabled);
+  const entitlementsLoaded = useEntitlementStore((s) => s.loaded);
+  const entitlementsOperational = useEntitlementStore((s) => s.isOperational);
+  const entitlementModules = useEntitlementStore((s) => s.modules);
+  const entitlementFeatures = useEntitlementStore((s) => s.features);
   const apiUrl = useAppStore((s) => s.apiUrl);
   const [collapsed, setCollapsed] = useState(false);
 
@@ -136,7 +140,7 @@ export function AppLayout() {
         return true;
       }),
     })).filter((group) => group.items.length > 0);
-  }, [isModuleEnabled, isFeatureEnabled]);
+  }, [isModuleEnabled, isFeatureEnabled, entitlementsLoaded, entitlementsOperational, entitlementModules, entitlementFeatures]);
 
   async function handleLogout() {
     try {

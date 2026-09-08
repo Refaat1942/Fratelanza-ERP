@@ -22,6 +22,7 @@ export function SettingsPage() {
   const edition = useEntitlementStore((s) => s.edition);
   const status = useEntitlementStore((s) => s.status);
   const modules = useEntitlementStore((s) => s.modules);
+  const setEntitlements = useEntitlementStore((s) => s.setEntitlements);
   const [serverUrl, setServerUrl] = useState(apiUrl);
   const [serverMessage, setServerMessage] = useState('');
   const [licenseView, setLicenseView] = useState<LicenseAdminView | null>(null);
@@ -67,6 +68,17 @@ export function SettingsPage() {
     const client = createApiClient(() => resolveApiBaseUrl(apiUrl), () => accessToken);
     void client.getLicenseAdminView().then(setLicenseView).catch(() => setLicenseView(null));
   }, [canReadLicense, accessToken, apiUrl]);
+
+  useEffect(() => {
+    if (!licenseView) return;
+    setEntitlements({
+      edition: licenseView.entitlements.edition,
+      status: licenseView.entitlements.status,
+      isOperational: licenseView.entitlements.isOperational,
+      modules: licenseView.entitlements.modules,
+      features: licenseView.entitlements.features,
+    });
+  }, [licenseView, setEntitlements]);
 
   return (
     <div>
