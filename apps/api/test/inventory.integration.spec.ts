@@ -1,224 +1,25 @@
 import type { INestApplication } from '@nestjs/common';
 import { PrismaService } from '../src/database/prisma.service';
-import { LicenseService } from '../src/modules/license/license.service';
-import { SuppliersService } from '../src/modules/suppliers/suppliers.service';
-import { DEMO_ENABLED_FEATURES } from '../src/modules/license/catalog/feature-catalog';
-import { DEMO_ENABLED_MODULES } from '../src/modules/license/catalog/module-catalog';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
-import { invoiceLine } from './sales-test.helpers';
 import {
-  activateLicenseWithoutInventory,
   loadInventoryTestContext,
-  seedStockBalance,
   type InventoryTestContext,
 } from './inventory-test.helpers';
-import { poLine } from './purchasing-test.helpers';
 import { createTestApp, loginAdmin, request } from './test-app';
 
 describe('Universal Inventory foundation (Phase 7)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: InventoryTestContext;
 
   beforeAll(async () => {
     app = await createTestApp();
     prisma = app.get(PrismaService);
-    licenseService = app.get(LicenseService);
     ctx = await loadInventoryTestContext(app);
   });
 
   afterAll(async () => {
     await app.close();
-  });
-
-  afterEach(async () => {
-    await licenseService.seedDemoLicense(ctx.tenantId);
-  });
-
-  describe('Licensing', () => {
-    it('rejects Inventory-native stock routes without Inventory module license', async () => {
-      await activateLicenseWithoutInventory(prisma, ctx.tenantId, licenseService);
-
-      const balances = await request(app.getHttpServer())
-        .get('/api/v1/inventory/balances')
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(balances.status).toBe(403);
-
-      const movements = await request(app.getHttpServer())
-        .get('/api/v1/inventory/movements')
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(movements.status).toBe(403);
-
-      const adjust = await request(app.getHttpServer())
-        .post('/api/v1/inventory/adjust')
-        .set('Authorization', `Bearer ${ctx.accessToken}`)
-        .send({ warehouseId: ctx.warehouseId, productId: ctx.productId, quantity: 1 });
-      expect(adjust.status).toBe(403);
-    });
-
-    it('accepts Inventory-native routes with Inventory license and inventory.stock feature', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/inventory/balances')
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(res.status).toBe(200);
-      expect(Array.isArray(res.body.data)).toBe(true);
-    });
-
-    it('rejects Inventory-native routes when inventory.stock feature is disabled', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(DEMO_ENABLED_MODULES, 'perpetual'),
-        features: DEMO_ENABLED_FEATURES.filter((f) => f !== 'inventory.stock'),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/inventory/balances')
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(res.status).toBe(403);
-    });
-
-    it('allows Sales stock deduction without standalone Inventory license', async () => {
-      await activateLicenseWithoutInventory(prisma, ctx.tenantId, licenseService);
-      await seedStockBalance(prisma, ctx.tenantId, ctx.warehouseId, ctx.productId, 50);
-
-      const draft = await request(app.getHttpServer())
-        .post('/api/v1/sales/invoices')
-        .set('Authorization', `Bearer ${ctx.accessToken}`)
-        .send({
-          branchId: ctx.branchId,
-          warehouseId: ctx.warehouseId,
-          lines: [invoiceLine(ctx.productId, 3)],
-        });
-      expect(draft.status).toBe(201);
-
-      const post = await request(app.getHttpServer())
-        .post(`/api/v1/sales/invoices/${draft.body.data.id}/post`)
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(post.status).toBe(201);
-
-      const balance = await prisma.stockBalance.findUnique({
-        where: {
-          tenantId_warehouseId_productId: {
-            tenantId: ctx.tenantId,
-            warehouseId: ctx.warehouseId,
-            productId: ctx.productId,
-          },
-        },
-      });
-      expect(Number(balance?.quantity)).toBe(47);
-
-      const movement = await prisma.inventoryMovement.findFirst({
-        where: {
-          tenantId: ctx.tenantId,
-          referenceType: 'sales_invoice',
-          referenceId: draft.body.data.id,
-          movementType: 'sale',
-        },
-      });
-      expect(movement).toBeTruthy();
-    });
-
-    it('allows Purchasing stock receipt without standalone Inventory license', async () => {
-      await activateLicenseWithoutInventory(prisma, ctx.tenantId, licenseService);
-      await seedStockBalance(prisma, ctx.tenantId, ctx.warehouseId, ctx.productId, 10);
-
-      const suppliers = app.get(SuppliersService);
-      const supplier = await suppliers.create(ctx.tenantId, {
-        code: `S-P7-${Date.now()}`,
-        name: 'Phase 7 Supplier',
-      });
-
-      const draft = await request(app.getHttpServer())
-        .post('/api/v1/purchasing/orders')
-        .set('Authorization', `Bearer ${ctx.accessToken}`)
-        .send({
-          branchId: ctx.branchId,
-          supplierId: supplier.id,
-          warehouseId: ctx.warehouseId,
-          lines: [poLine(ctx.productId, 4)],
-        });
-      expect(draft.status).toBe(201);
-
-      const receive = await request(app.getHttpServer())
-        .post(`/api/v1/purchasing/orders/${draft.body.data.id}/receive`)
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(receive.status).toBe(201);
-
-      const balance = await prisma.stockBalance.findUnique({
-        where: {
-          tenantId_warehouseId_productId: {
-            tenantId: ctx.tenantId,
-            warehouseId: ctx.warehouseId,
-            productId: ctx.productId,
-          },
-        },
-      });
-      expect(Number(balance?.quantity)).toBe(14);
-
-      const movement = await prisma.inventoryMovement.findFirst({
-        where: {
-          tenantId: ctx.tenantId,
-          referenceType: 'purchase_order',
-          referenceId: draft.body.data.id,
-          movementType: 'purchase',
-        },
-      });
-      expect(movement).toBeTruthy();
-    });
-
-    it('allows POS stock deduction without standalone Inventory license', async () => {
-      await activateLicenseWithoutInventory(prisma, ctx.tenantId, licenseService);
-      await seedStockBalance(prisma, ctx.tenantId, ctx.warehouseId, ctx.productId, 30);
-
-      const shift = await request(app.getHttpServer())
-        .post('/api/v1/pos/shifts/open')
-        .set('Authorization', `Bearer ${ctx.accessToken}`)
-        .send({ branchId: ctx.branchId, openingCash: 100 });
-      expect(shift.status).toBe(201);
-
-      const sale = await request(app.getHttpServer())
-        .post('/api/v1/pos/sales')
-        .set('Authorization', `Bearer ${ctx.accessToken}`)
-        .send({
-          branchId: ctx.branchId,
-          shiftId: shift.body.data.id,
-          warehouseId: ctx.warehouseId,
-          lines: [
-            {
-              productId: ctx.productId,
-              description: 'POS regression line',
-              quantity: 2,
-              unitPrice: 20,
-            },
-          ],
-          payments: [{ method: 'cash', amount: 40 }],
-        });
-      expect(sale.status).toBe(201);
-
-      const balance = await prisma.stockBalance.findUnique({
-        where: {
-          tenantId_warehouseId_productId: {
-            tenantId: ctx.tenantId,
-            warehouseId: ctx.warehouseId,
-            productId: ctx.productId,
-          },
-        },
-      });
-      expect(Number(balance?.quantity)).toBe(28);
-
-      const movement = await prisma.inventoryMovement.findFirst({
-        where: {
-          tenantId: ctx.tenantId,
-          referenceType: 'pos_sale',
-          referenceId: sale.body.data.id,
-          movementType: 'pos_sale',
-        },
-      });
-      expect(movement).toBeTruthy();
-    });
   });
 
   describe('Adjustment', () => {
@@ -451,7 +252,7 @@ describe('Universal Inventory foundation (Phase 7)', () => {
   });
 
   describe('RBAC', () => {
-    it('rejects licensed Inventory adjust when user lacks RBAC permission', async () => {
+    it('rejects Inventory adjust when user lacks RBAC permission', async () => {
       const role = await prisma.role.create({
         data: {
           tenantId: ctx.tenantId,
@@ -465,10 +266,11 @@ describe('Universal Inventory foundation (Phase 7)', () => {
       await prisma.rolePermission.create({
         data: { roleId: role.id, permissionId: readPerm!.id },
       });
+      const username = `no-inv-adj-${Date.now()}`;
       const user = await prisma.user.create({
         data: {
           tenantId: ctx.tenantId,
-          email: `no-inv-adj-${Date.now()}@fratelanza.local`,
+          email: `${username}@fratelanza.local`,
           passwordHash: '$2a$12$placeholder',
           firstName: 'No',
           lastName: 'Adjust',
@@ -484,7 +286,7 @@ describe('Universal Inventory foundation (Phase 7)', () => {
 
       const login = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ email: user.email, password: 'Admin@123456' });
+        .send({ username, password: 'Admin@123456' });
       expect(login.status).toBe(200);
 
       const res = await request(app.getHttpServer())
@@ -494,7 +296,7 @@ describe('Universal Inventory foundation (Phase 7)', () => {
       expect(res.status).toBe(403);
     });
 
-    it('accepts licensed and authorized Inventory read', async () => {
+    it('accepts authorized Inventory read', async () => {
       const res = await request(app.getHttpServer())
         .get('/api/v1/inventory/movements')
         .set('Authorization', `Bearer ${ctx.accessToken}`);

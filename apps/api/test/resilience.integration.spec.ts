@@ -1,7 +1,5 @@
 import { randomUUID } from 'crypto';
 import type { INestApplication } from '@nestjs/common';
-import { PrismaService } from '../src/database/prisma.service';
-import { LicenseService } from '../src/modules/license/license.service';
 import { createTestApp, loginAdmin, request } from './test-app';
 
 describe('Resilience integration (Phase 0)', () => {
@@ -49,9 +47,6 @@ describe('Resilience integration (Phase 0)', () => {
   });
 
   afterAll(async () => {
-    const prisma = app.get(PrismaService);
-    const licenseService = app.get(LicenseService);
-    await licenseService.seedDemoLicense(tenantId);
     await app.close();
   });
 

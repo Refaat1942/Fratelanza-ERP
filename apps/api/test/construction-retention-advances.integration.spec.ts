@@ -11,29 +11,21 @@ import {
   PartyType,
   Prisma,
 } from '../../../packages/database/generated/server';
-import { LicenseService } from '../src/modules/license/license.service';
 import { PrismaService } from '../src/database/prisma.service';
-import { DEMO_ENABLED_FEATURES } from '../src/modules/license/catalog/feature-catalog';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
 import {
-  activateConstructionLicense,
   createPartyWithRole,
   createUniversalProject,
   enableConstructionProfile,
-  featuresWithConstruction,
   loadConstructionTestContext,
-  modulesWithConstruction,
   prepareConstructionTestSuite,
   restoreDemoTenantLicense,
 } from './construction-test.helpers';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
 import { createTestApp, request } from './test-app';
 
 describe('Construction retention & advances (Phase 9.4)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: Awaited<ReturnType<typeof loadConstructionTestContext>>;
   let adminUserId: string;
   let projectId: string;
@@ -45,7 +37,7 @@ describe('Construction retention & advances (Phase 9.4)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
+    ({ ctx, prisma } = await prepareConstructionTestSuite(app));
 
     const admin = await prisma.user.findFirst({
       where: { email: 'admin@fratelanza.local' },
@@ -95,17 +87,6 @@ describe('Construction retention & advances (Phase 9.4)', () => {
     await app.close();
   });
 
-  function featuresWithoutRetention() {
-    return [
-      ...DEMO_ENABLED_FEATURES,
-      'construction.foundation',
-      'construction.contracts',
-      'construction.boq',
-      'construction.progress',
-      'construction.variations',
-    ];
-  }
-
   function nextPeriod() {
     periodCounter += 1;
     const month = String(((periodCounter - 1) % 12) + 1).padStart(2, '0');
@@ -131,10 +112,10 @@ describe('Construction retention & advances (Phase 9.4)', () => {
     return bcrypt.hash(password, 12);
   }
 
-  async function loginAsUser(email: string, password = 'Admin@123456') {
+  async function loginAsUser(username: string, password = 'Admin@123456') {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email, password });
+      .send({ username, password });
     expect(login.status).toBe(200);
     return login.body.data.accessToken as string;
   }
@@ -290,35 +271,8 @@ describe('Construction retention & advances (Phase 9.4)', () => {
     };
   }
 
-  describe('Licensing', () => {
-    afterEach(async () => {
-      await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
-    });
-
-    it('rejects construction.retention when feature is not licensed', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(modulesWithConstruction(), 'perpetual'),
-        features: featuresWithoutRetention(),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await api().get(
-        `/api/v1/construction/retention/balance?contractId=${contractId}&partyType=customer`,
-      );
-      expect(res.status).toBe(403);
-    });
-
-    it('allows licensed and authorized access', async () => {
-      const res = await api().get(
-        `/api/v1/construction/retention/balance?contractId=${contractId}&partyType=customer`,
-      );
-      expect(res.status).toBe(200);
-      expect(res.body.data.balance).toBeDefined();
-    });
-  });
-
   describe('RBAC', () => {
-    it('rejects licensed user without retention RBAC permission', async () => {
+    it('rejects user without retention RBAC permission', async () => {
       const role = await prisma.role.create({
         data: {
           tenantId: ctx.tenantId,
@@ -337,10 +291,11 @@ describe('Construction retention & advances (Phase 9.4)', () => {
           data: { roleId: role.id, permissionId: perm.id },
         });
       }
+      const username = `progress-only-ret-${Date.now()}`;
       const user = await prisma.user.create({
         data: {
           tenantId: ctx.tenantId,
-          email: `progress-only-ret-${Date.now()}@fratelanza.local`,
+          email: `${username}@fratelanza.local`,
           passwordHash: await hashPassword('Admin@123456'),
           firstName: 'Progress',
           lastName: 'Only',
@@ -348,7 +303,7 @@ describe('Construction retention & advances (Phase 9.4)', () => {
           isActive: true,
         },
       });
-      const token = await loginAsUser(user.email);
+      const token = await loginAsUser(username);
 
       const progressRes = await api(token).get('/api/v1/construction/progress');
       expect(progressRes.status).toBe(200);
@@ -704,30 +659,6 @@ describe('Construction retention & advances (Phase 9.4)', () => {
         },
       });
       expect(audit).toBeTruthy();
-    });
-  });
-
-  describe('Commercial licensing', () => {
-    afterEach(async () => {
-      await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
-    });
-
-    it('allows perpetual Construction license including retention feature', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(modulesWithConstruction(), 'perpetual'),
-        features: featuresWithConstruction(),
-        licenseType: 'perpetual',
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await api().get(
-        `/api/v1/construction/retention/balance?contractId=${contractId}&partyType=customer`,
-      );
-      expect(res.status).toBe(200);
-
-      const resolved = await licenseService.getLicenseForTenant(ctx.tenantId);
-      expect(resolved?.licenseType).toBe('perpetual');
-      expect(resolved?.isOperational).toBe(true);
     });
   });
 });

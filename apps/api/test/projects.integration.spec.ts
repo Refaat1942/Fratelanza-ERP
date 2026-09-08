@@ -1,71 +1,24 @@
 import type { INestApplication } from '@nestjs/common';
 import { PartyType } from '../../../packages/database/generated/server';
 import { PrismaService } from '../src/database/prisma.service';
-import { LicenseService } from '../src/modules/license/license.service';
 import { PartiesService } from '../src/modules/parties/parties.service';
-import { DEMO_ENABLED_FEATURES } from '../src/modules/license/catalog/feature-catalog';
-import { DEMO_ENABLED_MODULES } from '../src/modules/license/catalog/module-catalog';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
-import {
-  activateLicenseWithoutProjects,
-  loadProjectsTestContext,
-  type ProjectsTestContext,
-} from './projects-test.helpers';
+import { loadProjectsTestContext, type ProjectsTestContext } from './projects-test.helpers';
 import { createTestApp, loginAdmin, request } from './test-app';
 
 describe('Universal Projects foundation (Phase 8)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: ProjectsTestContext;
 
   beforeAll(async () => {
     app = await createTestApp();
     prisma = app.get(PrismaService);
-    licenseService = app.get(LicenseService);
     ctx = await loadProjectsTestContext(app);
   });
 
   afterAll(async () => {
     await app.close();
-  });
-
-  afterEach(async () => {
-    await licenseService.seedDemoLicense(ctx.tenantId);
-  });
-
-  describe('Licensing', () => {
-    it('rejects Projects API when Projects module is unlicensed', async () => {
-      await activateLicenseWithoutProjects(prisma, ctx.tenantId, licenseService);
-
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/projects')
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(res.status).toBe(403);
-    });
-
-    it('accepts Projects API when Projects module and features are licensed', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/projects')
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(res.status).toBe(200);
-    });
-
-    it('rejects Projects routes when projects.projects feature is disabled', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(DEMO_ENABLED_MODULES, 'perpetual'),
-        features: DEMO_ENABLED_FEATURES.filter((f) => f !== 'projects.projects'),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/projects')
-        .set('Authorization', `Bearer ${ctx.accessToken}`)
-        .send({ name: 'Blocked Project' });
-      expect(res.status).toBe(403);
-    });
   });
 
   describe('Project CRUD', () => {
@@ -466,8 +419,8 @@ describe('Universal Projects foundation (Phase 8)', () => {
     });
   });
 
-  describe('RBAC and licensing', () => {
-    it('rejects licensed user without Projects RBAC permission', async () => {
+  describe('RBAC', () => {
+    it('rejects user without Projects RBAC permission', async () => {
       const role = await prisma.role.create({
         data: {
           tenantId: ctx.tenantId,
@@ -481,10 +434,11 @@ describe('Universal Projects foundation (Phase 8)', () => {
       await prisma.rolePermission.create({
         data: { roleId: role.id, permissionId: readPerm!.id },
       });
+      const username = `no-prj-${Date.now()}`;
       const user = await prisma.user.create({
         data: {
           tenantId: ctx.tenantId,
-          email: `no-prj-${Date.now()}@fratelanza.local`,
+          email: `${username}@fratelanza.local`,
           passwordHash: '$2a$12$placeholder',
           firstName: 'No',
           lastName: 'Projects',
@@ -500,22 +454,12 @@ describe('Universal Projects foundation (Phase 8)', () => {
 
       const login = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ email: user.email, password: 'Admin@123456' });
+        .send({ username, password: 'Admin@123456' });
       expect(login.status).toBe(200);
 
       const res = await request(app.getHttpServer())
         .get('/api/v1/projects')
         .set('Authorization', `Bearer ${login.body.data.accessToken}`);
-      expect(res.status).toBe(403);
-    });
-
-    it('rejects unlicensed tenant even when user has Projects RBAC on paper', async () => {
-      await activateLicenseWithoutProjects(prisma, ctx.tenantId, licenseService);
-
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/projects')
-        .set('Authorization', `Bearer ${ctx.accessToken}`)
-        .send({ name: 'Unlicensed Attempt', code: `PRJ-UNL-${Date.now()}` });
       expect(res.status).toBe(403);
     });
   });

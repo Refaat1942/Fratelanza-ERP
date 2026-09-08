@@ -4,29 +4,20 @@ import {
   ConstructionCostCategory,
   ConstructionMaterialIssueStatus,
 } from '../../../packages/database/generated/server';
-import { LicenseService } from '../src/modules/license/license.service';
 import { PrismaService } from '../src/database/prisma.service';
-import { DEMO_ENABLED_FEATURES } from '../src/modules/license/catalog/feature-catalog';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
 import {
-  activateConstructionLicense,
   createUniversalProject,
   enableConstructionProfile,
-  featuresWithConstruction,
   loadConstructionTestContext,
-  modulesWithConstruction,
   prepareConstructionTestSuite,
   restoreDemoTenantLicense,
 } from './construction-test.helpers';
-import { seedStockBalance } from './inventory-test.helpers';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
 import { createTestApp, request } from './test-app';
 
 describe('Construction materials (Phase 9.6)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: Awaited<ReturnType<typeof loadConstructionTestContext>>;
   let projectId: string;
   let costCenterId: string;
@@ -36,7 +27,7 @@ describe('Construction materials (Phase 9.6)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
+    ({ ctx, prisma } = await prepareConstructionTestSuite(app));
 
     const project = await createUniversalProject(app, ctx.accessToken);
     projectId = project.id;
@@ -99,19 +90,6 @@ describe('Construction materials (Phase 9.6)', () => {
     await app.close();
   });
 
-  function featuresWithoutMaterials() {
-    return [
-      ...DEMO_ENABLED_FEATURES,
-      'construction.foundation',
-      'construction.contracts',
-      'construction.boq',
-      'construction.progress',
-      'construction.variations',
-      'construction.retention',
-      'construction.subcontractors',
-    ];
-  }
-
   function api(token = ctx.accessToken) {
     return {
       get: (url: string) =>
@@ -126,10 +104,10 @@ describe('Construction materials (Phase 9.6)', () => {
     return bcrypt.hash(password, 12);
   }
 
-  async function loginAsUser(email: string, password = 'Admin@123456') {
+  async function loginAsUser(username: string, password = 'Admin@123456') {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email, password });
+      .send({ username, password });
     expect(login.status).toBe(200);
     return login.body.data.accessToken as string;
   }
@@ -433,23 +411,8 @@ describe('Construction materials (Phase 9.6)', () => {
     });
   });
 
-  describe('Licensing', () => {
-    it('rejects material routes when construction.materials feature is disabled', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(modulesWithConstruction(), 'perpetual'),
-        features: featuresWithoutMaterials(),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await api().get('/api/v1/construction/material-issues');
-      expect(res.status).toBe(403);
-
-      await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
-    });
-  });
-
   describe('RBAC', () => {
-    it('rejects licensed user without materials RBAC permission', async () => {
+    it('rejects user without materials RBAC permission', async () => {
       const role = await prisma.role.create({
         data: {
           tenantId: ctx.tenantId,
@@ -465,10 +428,11 @@ describe('Construction materials (Phase 9.6)', () => {
           data: { roleId: role.id, permissionId: perm.id },
         });
       }
+      const username = `foundation-only-mat-${Date.now()}`;
       const user = await prisma.user.create({
         data: {
           tenantId: ctx.tenantId,
-          email: `foundation-only-mat-${Date.now()}@fratelanza.local`,
+          email: `${username}@fratelanza.local`,
           passwordHash: await hashPassword('Admin@123456'),
           firstName: 'Foundation',
           lastName: 'Only',
@@ -476,7 +440,7 @@ describe('Construction materials (Phase 9.6)', () => {
           isActive: true,
         },
       });
-      const token = await loginAsUser(user.email);
+      const token = await loginAsUser(username);
 
       const profileRes = await api(token).get(
         `/api/v1/construction/projects/${projectId}/profile`,

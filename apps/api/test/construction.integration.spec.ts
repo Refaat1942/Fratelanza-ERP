@@ -4,32 +4,26 @@ import {
   ConstructionCostCategory,
   PartyRoleType,
 } from '../../../packages/database/generated/server';
-import { LicenseService } from '../src/modules/license/license.service';
 import { PrismaService } from '../src/database/prisma.service';
 import {
-  activateConstructionLicense,
   createUniversalProject,
   enableConstructionProfile,
   loadConstructionTestContext,
   prepareConstructionTestSuite,
   restoreDemoTenantLicense,
 } from './construction-test.helpers';
-import { signTestActivationForTenant, buildTestActivationInput } from './license-test.helpers';
-import { DEMO_ENABLED_MODULES } from '../src/modules/license/catalog/module-catalog';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
 import { createTestApp, loginAdmin, request } from './test-app';
 
 describe('Construction foundation (Phase 9.0)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: Awaited<ReturnType<typeof loadConstructionTestContext>>;
   let projectId: string;
   let costCenterId: string;
 
   beforeAll(async () => {
     app = await createTestApp();
-    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
+    ({ ctx, prisma } = await prepareConstructionTestSuite(app));
 
     const project = await createUniversalProject(app, ctx.accessToken);
     projectId = project.id;
@@ -61,40 +55,6 @@ describe('Construction foundation (Phase 9.0)', () => {
         request(app.getHttpServer()).post(url).set('Authorization', `Bearer ${ctx.accessToken}`),
     };
   }
-
-  describe('Licensing', () => {
-    it('rejects construction routes without construction module entitlement', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(
-          DEMO_ENABLED_MODULES.filter((m) => m !== 'construction'),
-          'perpetual',
-        ),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await api().get(`/api/v1/construction/projects/${projectId}/profile`);
-      expect(res.status).toBe(403);
-
-      await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
-    });
-
-    it('rejects construction activation when projects module is missing', async () => {
-      const payload = buildTestActivationInput(ctx.tenantId, {
-        licenseKey: 'FRZ-NO-PROJECTS-CON',
-        modules: defaultModuleEntries(
-          ['core', 'finance', 'party', 'construction'],
-          'perpetual',
-        ),
-        features: ['construction.foundation'],
-      });
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/license/activate')
-        .set('Authorization', `Bearer ${ctx.accessToken}`)
-        .send(payload);
-      expect(res.status).toBe(400);
-      expect(String(res.body.error?.message ?? res.body.message)).toMatch(/projects/i);
-    });
-  });
 
   describe('Project profile extension', () => {
     it('returns construction profile linked to universal project', async () => {

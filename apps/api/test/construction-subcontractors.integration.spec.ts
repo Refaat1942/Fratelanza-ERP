@@ -8,31 +8,23 @@ import {
   PartyRoleType,
   PartyType,
 } from '../../../packages/database/generated/server';
-import { LicenseService } from '../src/modules/license/license.service';
 import { PrismaService } from '../src/database/prisma.service';
 import { PartiesService } from '../src/modules/parties/parties.service';
 import { PartyRolesService } from '../src/modules/parties/party-roles.service';
-import { DEMO_ENABLED_FEATURES } from '../src/modules/license/catalog/feature-catalog';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
 import {
-  activateConstructionLicense,
   createPartyWithRole,
   createUniversalProject,
   enableConstructionProfile,
-  featuresWithConstruction,
   loadConstructionTestContext,
-  modulesWithConstruction,
   prepareConstructionTestSuite,
   restoreDemoTenantLicense,
 } from './construction-test.helpers';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
 import { createTestApp, request } from './test-app';
 
 describe('Construction subcontractors (Phase 9.5)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: Awaited<ReturnType<typeof loadConstructionTestContext>>;
   let adminUserId: string;
   let projectId: string;
@@ -42,7 +34,7 @@ describe('Construction subcontractors (Phase 9.5)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
+    ({ ctx, prisma } = await prepareConstructionTestSuite(app));
 
     const admin = await prisma.user.findFirst({
       where: { email: 'admin@fratelanza.local' },
@@ -77,18 +69,6 @@ describe('Construction subcontractors (Phase 9.5)', () => {
     await app.close();
   });
 
-  function featuresWithoutSubcontractors() {
-    return [
-      ...DEMO_ENABLED_FEATURES,
-      'construction.foundation',
-      'construction.contracts',
-      'construction.boq',
-      'construction.progress',
-      'construction.variations',
-      'construction.retention',
-    ];
-  }
-
   function api(token = ctx.accessToken) {
     return {
       get: (url: string) =>
@@ -105,10 +85,10 @@ describe('Construction subcontractors (Phase 9.5)', () => {
     return bcrypt.hash(password, 12);
   }
 
-  async function loginAsUser(email: string, password = 'Admin@123456') {
+  async function loginAsUser(username: string, password = 'Admin@123456') {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email, password });
+      .send({ username, password });
     expect(login.status).toBe(200);
     return login.body.data.accessToken as string;
   }
@@ -390,30 +370,8 @@ describe('Construction subcontractors (Phase 9.5)', () => {
     });
   });
 
-  describe('Licensing', () => {
-    afterEach(async () => {
-      await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
-    });
-
-    it('rejects access without construction.subcontractors feature', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(modulesWithConstruction(), 'perpetual'),
-        features: featuresWithoutSubcontractors(),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await api().get('/api/v1/construction/subcontractors');
-      expect(res.status).toBe(403);
-    });
-
-    it('allows licensed and authorized access', async () => {
-      const res = await api().get('/api/v1/construction/subcontractors');
-      expect(res.status).toBe(200);
-    });
-  });
-
   describe('RBAC', () => {
-    it('rejects licensed user without subcontractors RBAC permission', async () => {
+    it('rejects user without subcontractors RBAC permission', async () => {
       const role = await prisma.role.create({
         data: {
           tenantId: ctx.tenantId,
@@ -432,10 +390,11 @@ describe('Construction subcontractors (Phase 9.5)', () => {
           data: { roleId: role.id, permissionId: perm.id },
         });
       }
+      const username = `contracts-only-sub-${Date.now()}`;
       const user = await prisma.user.create({
         data: {
           tenantId: ctx.tenantId,
-          email: `contracts-only-sub-${Date.now()}@fratelanza.local`,
+          email: `${username}@fratelanza.local`,
           passwordHash: await hashPassword('Admin@123456'),
           firstName: 'Contracts',
           lastName: 'Only',
@@ -443,7 +402,7 @@ describe('Construction subcontractors (Phase 9.5)', () => {
           isActive: true,
         },
       });
-      const token = await loginAsUser(user.email);
+      const token = await loginAsUser(username);
 
       const contractRes = await api(token).get('/api/v1/construction/contracts');
       expect(contractRes.status).toBe(200);

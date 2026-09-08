@@ -11,28 +11,21 @@ import {
   PartyRoleType,
   PartyType,
 } from '../../../packages/database/generated/server';
-import { LicenseService } from '../src/modules/license/license.service';
 import { PrismaService } from '../src/database/prisma.service';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
 import {
-  activateConstructionLicense,
   createPartyWithRole,
   createUniversalProject,
   enableConstructionProfile,
-  featuresWithConstruction,
   loadConstructionTestContext,
-  modulesWithConstruction,
   prepareConstructionTestSuite,
   restoreDemoTenantLicense,
 } from './construction-test.helpers';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
 import { createTestApp, request } from './test-app';
 
 describe('Construction reporting (Phase 9.9)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: Awaited<ReturnType<typeof loadConstructionTestContext>>;
   let adminUserId: string;
   let projectId: string;
@@ -45,7 +38,7 @@ describe('Construction reporting (Phase 9.9)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
+    ({ ctx, prisma } = await prepareConstructionTestSuite(app));
 
     const admin = await prisma.user.findFirst({
       where: { email: 'admin@fratelanza.local' },
@@ -118,10 +111,6 @@ describe('Construction reporting (Phase 9.9)', () => {
     await app.close();
   });
 
-  function featuresWithoutReports() {
-    return featuresWithConstruction().filter((f) => f !== 'construction.reports');
-  }
-
   function reportUrl(path: string, params: Record<string, string> = {}) {
     const query = new URLSearchParams({ projectId, ...params });
     return `/api/v1/construction/reports/${path}?${query.toString()}`;
@@ -150,10 +139,10 @@ describe('Construction reporting (Phase 9.9)', () => {
     return bcrypt.hash(password, 12);
   }
 
-  async function loginAsUser(email: string, password = 'Admin@123456') {
+  async function loginAsUser(username: string, password = 'Admin@123456') {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email, password });
+      .send({ username, password });
     expect(login.status).toBe(200);
     return login.body.data.accessToken as string;
   }
@@ -285,31 +274,8 @@ describe('Construction reporting (Phase 9.9)', () => {
     return res.body.data;
   }
 
-  describe('Licensing', () => {
-    afterEach(async () => {
-      await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
-    });
-
-    it('rejects reporting routes when construction.reports feature is disabled', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(modulesWithConstruction(), 'perpetual'),
-        features: featuresWithoutReports(),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await api().get(reportUrl('project-summary'));
-      expect(res.status).toBe(403);
-    });
-
-    it('allows licensed reporting access', async () => {
-      const res = await api().get(reportUrl('project-summary'));
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-    });
-  });
-
   describe('RBAC', () => {
-    it('rejects licensed user without reports read permission', async () => {
+    it('rejects user without reports read permission', async () => {
       const role = await prisma.role.create({
         data: {
           tenantId: ctx.tenantId,
@@ -328,10 +294,11 @@ describe('Construction reporting (Phase 9.9)', () => {
           data: { roleId: role.id, permissionId: perm.id },
         });
       }
+      const username = `costing-only-reports-${Date.now()}`;
       const user = await prisma.user.create({
         data: {
           tenantId: ctx.tenantId,
-          email: `costing-only-reports-${Date.now()}@fratelanza.local`,
+          email: `${username}@fratelanza.local`,
           passwordHash: await hashPassword('Admin@123456'),
           firstName: 'Costing',
           lastName: 'Only',
@@ -339,7 +306,7 @@ describe('Construction reporting (Phase 9.9)', () => {
           isActive: true,
         },
       });
-      const token = await loginAsUser(user.email);
+      const token = await loginAsUser(username);
 
       const costingRes = await api(token).get(
         `/api/v1/construction/costing/projects/${projectId}`,

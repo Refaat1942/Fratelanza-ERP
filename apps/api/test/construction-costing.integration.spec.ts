@@ -10,28 +10,21 @@ import {
   PartyRoleType,
   PartyType,
 } from '../../../packages/database/generated/server';
-import { LicenseService } from '../src/modules/license/license.service';
 import { PrismaService } from '../src/database/prisma.service';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
 import {
-  activateConstructionLicense,
   createPartyWithRole,
   createUniversalProject,
   enableConstructionProfile,
-  featuresWithConstruction,
   loadConstructionTestContext,
-  modulesWithConstruction,
   prepareConstructionTestSuite,
   restoreDemoTenantLicense,
 } from './construction-test.helpers';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
 import { createTestApp, request } from './test-app';
 
 describe('Construction costing (Phase 9.7)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: Awaited<ReturnType<typeof loadConstructionTestContext>>;
   let adminUserId: string;
   let projectId: string;
@@ -44,7 +37,7 @@ describe('Construction costing (Phase 9.7)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
+    ({ ctx, prisma } = await prepareConstructionTestSuite(app));
 
     const admin = await prisma.user.findFirst({
       where: { email: 'admin@fratelanza.local' },
@@ -102,10 +95,6 @@ describe('Construction costing (Phase 9.7)', () => {
     await app.close();
   });
 
-  function featuresWithoutCosting() {
-    return featuresWithConstruction().filter((f) => f !== 'construction.costing');
-  }
-
   function nextPeriod() {
     periodCounter += 1;
     const month = String(((periodCounter - 1) % 12) + 1).padStart(2, '0');
@@ -129,10 +118,10 @@ describe('Construction costing (Phase 9.7)', () => {
     return bcrypt.hash(password, 12);
   }
 
-  async function loginAsUser(email: string, password = 'Admin@123456') {
+  async function loginAsUser(username: string, password = 'Admin@123456') {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email, password });
+      .send({ username, password });
     expect(login.status).toBe(200);
     return login.body.data.accessToken as string;
   }
@@ -258,31 +247,8 @@ describe('Construction costing (Phase 9.7)', () => {
     return res.body.data;
   }
 
-  describe('Licensing', () => {
-    afterEach(async () => {
-      await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
-    });
-
-    it('rejects costing routes when construction.costing feature is disabled', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(modulesWithConstruction(), 'perpetual'),
-        features: featuresWithoutCosting(),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await api().get(`/api/v1/construction/costing/projects/${projectId}`);
-      expect(res.status).toBe(403);
-    });
-
-    it('allows licensed costing access', async () => {
-      const res = await api().get(`/api/v1/construction/costing/projects/${projectId}`);
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-    });
-  });
-
   describe('RBAC', () => {
-    it('rejects licensed user without costing read permission', async () => {
+    it('rejects user without costing read permission', async () => {
       const role = await prisma.role.create({
         data: {
           tenantId: ctx.tenantId,
@@ -301,10 +267,11 @@ describe('Construction costing (Phase 9.7)', () => {
           data: { roleId: role.id, permissionId: perm.id },
         });
       }
+      const username = `foundation-only-${Date.now()}`;
       const user = await prisma.user.create({
         data: {
           tenantId: ctx.tenantId,
-          email: `foundation-only-${Date.now()}@fratelanza.local`,
+          email: `${username}@fratelanza.local`,
           passwordHash: await hashPassword('Admin@123456'),
           firstName: 'Foundation',
           lastName: 'Only',
@@ -312,7 +279,7 @@ describe('Construction costing (Phase 9.7)', () => {
           isActive: true,
         },
       });
-      const token = await loginAsUser(user.email);
+      const token = await loginAsUser(username);
 
       const profileRes = await api(token).get(
         `/api/v1/construction/projects/${projectId}/profile`,

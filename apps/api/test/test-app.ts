@@ -5,12 +5,11 @@ import { GlobalExceptionFilter } from '../src/common/filters/http-exception.filt
 import { bootstrapAppConfig } from '../src/config/app-config';
 import { PrismaService } from '../src/database/prisma.service';
 import { FinanceSetupService } from '../src/modules/finance/finance-setup.service';
-import { LicenseService } from '../src/modules/license/license.service';
 import request from './http-client';
 
 export { request };
 
-const DEMO_TENANT_CODE = 'FRATELANZA';
+const DEMO_TENANT_CODE = 'TRADING_DEMO';
 
 async function getDemoTenant(prisma: PrismaService) {
   return prisma.tenant.findUnique({ where: { code: DEMO_TENANT_CODE } });
@@ -295,65 +294,7 @@ async function ensureFinanceFoundation(app: INestApplication): Promise<void> {
   await financeSetup.seedTenantFinanceFoundation(tenant.id);
 }
 
-async function ensureLicense(app: INestApplication): Promise<void> {
-  const prisma = app.get(PrismaService);
-  const tenant = await getDemoTenant(prisma);
-  if (!tenant) return;
-
-  const licenseService = app.get(LicenseService);
-  await licenseService.seedDemoLicense(tenant.id);
-}
-
-async function ensureLicensePermissions(app: INestApplication): Promise<void> {
-  const prisma = app.get(PrismaService);
-  const tenant = await getDemoTenant(prisma);
-  if (!tenant) return;
-
-  const licensePermissions = [
-    { module: 'core', feature: 'license', action: 'read' },
-    { module: 'core', feature: 'license', action: 'manage' },
-  ];
-
-  for (const perm of licensePermissions) {
-    const permission = await prisma.permission.upsert({
-      where: {
-        module_feature_action: {
-          module: perm.module,
-          feature: perm.feature,
-          action: perm.action,
-        },
-      },
-      update: {},
-      create: perm,
-    });
-
-    const ownerRole = await prisma.role.findFirst({
-      where: { tenantId: tenant.id, code: 'owner' },
-    });
-    if (ownerRole) {
-      await prisma.rolePermission.upsert({
-        where: {
-          roleId_permissionId: {
-            roleId: ownerRole.id,
-            permissionId: permission.id,
-          },
-        },
-        update: {},
-        create: {
-          roleId: ownerRole.id,
-          permissionId: permission.id,
-        },
-      });
-    }
-  }
-}
-
 export async function resetDemoTenant(app: INestApplication): Promise<void> {
-  const prisma = app.get(PrismaService);
-  const licenseService = app.get(LicenseService);
-  const tenant = await getDemoTenant(prisma);
-  if (!tenant) return;
-  await licenseService.seedDemoLicense(tenant.id);
   await ensureDocumentSequences(app);
 }
 
@@ -381,8 +322,6 @@ export async function createTestApp(): Promise<INestApplication> {
   await ensurePartyPermissions(app);
   await ensureProjectsPermissions(app);
   await ensureConstructionPermissions(app);
-  await ensureLicensePermissions(app);
-  await ensureLicense(app);
   return app;
 }
 
@@ -557,8 +496,8 @@ export async function loginAdmin(app: INestApplication) {
   const response = await request(app.getHttpServer())
     .post('/api/v1/auth/login')
     .send({
-      email: 'admin@fratelanza.local',
-      password: 'Admin@123456',
+      username: 'admin',
+      password: process.env.DEMO_SEED_PASSWORD ?? 'Eval@2026!Demo',
     });
 
   expect(response.status).toBe(200);

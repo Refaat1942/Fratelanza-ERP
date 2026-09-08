@@ -1,15 +1,10 @@
 import type { INestApplication } from '@nestjs/common';
 import { PartyRoleType, PartyType } from '../../../packages/database/generated/server';
 import { PrismaService } from '../src/database/prisma.service';
-import { LicenseService } from '../src/modules/license/license.service';
 import { CustomersService } from '../src/modules/customers/customers.service';
 import { PartiesService } from '../src/modules/parties/parties.service';
 import { PartyLegacyAdapterService } from '../src/modules/parties/party-legacy-adapter.service';
 import { PartyRolesService } from '../src/modules/parties/party-roles.service';
-import { DEMO_ENABLED_MODULES } from '../src/modules/license/catalog/module-catalog';
-import { DEMO_ENABLED_FEATURES } from '../src/modules/license/catalog/feature-catalog';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
 import {
   createLinkedPartyCustomer,
@@ -23,86 +18,16 @@ import { createTestApp, loginAdmin, request } from './test-app';
 describe('Universal Sales foundation (Phase 5)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: SalesTestContext;
 
   beforeAll(async () => {
     app = await createTestApp();
     prisma = app.get(PrismaService);
-    licenseService = app.get(LicenseService);
     ctx = await loadSalesTestContext(app);
   });
 
   afterAll(async () => {
     await app.close();
-  });
-
-  afterEach(async () => {
-    await licenseService.seedDemoLicense(ctx.tenantId);
-  });
-
-  describe('Licensing', () => {
-    it('accepts Sales operations when Sales module is licensed', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/sales/invoices')
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(res.status).toBe(200);
-    });
-
-    it('rejects Sales operations when Sales module is unlicensed', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(
-          DEMO_ENABLED_MODULES.filter((m) => m !== 'sales' && m !== 'pos'),
-          'perpetual',
-        ),
-        features: DEMO_ENABLED_FEATURES.filter(
-          (f) => !f.startsWith('sales.') && !f.startsWith('pos.'),
-        ),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/sales/invoices')
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(res.status).toBe(403);
-    });
-
-    it('allows Sales with Finance licensed and Inventory unlicensed (Customer A scenario)', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(
-          DEMO_ENABLED_MODULES.filter((m) => m !== 'inventory' && m !== 'pos'),
-          'perpetual',
-        ),
-        features: DEMO_ENABLED_FEATURES.filter((f) => !f.startsWith('inventory.')),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/sales/invoices')
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(res.status).toBe(200);
-    });
-
-    it('rejects Sales for Customer B even when user has Sales RBAC permissions', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(
-          DEMO_ENABLED_MODULES.filter((m) => m !== 'sales' && m !== 'pos'),
-          'perpetual',
-        ),
-        features: DEMO_ENABLED_FEATURES.filter((f) => !f.startsWith('sales.')),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/sales/invoices')
-        .set('Authorization', `Bearer ${ctx.accessToken}`)
-        .send({
-          branchId: ctx.branchId,
-          warehouseId: ctx.warehouseId,
-          lines: [invoiceLine(ctx.productId)],
-        });
-      expect(res.status).toBe(403);
-    });
   });
 
   describe('Party routing', () => {
@@ -513,7 +438,7 @@ describe('Universal Sales foundation (Phase 5)', () => {
   });
 
   describe('RBAC', () => {
-    it('rejects licensed Sales create when user lacks Sales RBAC permission', async () => {
+    it('rejects Sales create when user lacks Sales RBAC permission', async () => {
       const role = await prisma.role.create({
         data: {
           tenantId: ctx.tenantId,
@@ -527,10 +452,11 @@ describe('Universal Sales foundation (Phase 5)', () => {
       await prisma.rolePermission.create({
         data: { roleId: role.id, permissionId: readPerm!.id },
       });
+      const username = `no-sales-create-${Date.now()}`;
       const user = await prisma.user.create({
         data: {
           tenantId: ctx.tenantId,
-          email: `no-sales-create-${Date.now()}@fratelanza.local`,
+          email: `${username}@fratelanza.local`,
           passwordHash: '$2a$12$placeholder',
           firstName: 'No',
           lastName: 'Create',
@@ -546,7 +472,7 @@ describe('Universal Sales foundation (Phase 5)', () => {
 
       const login = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ email: user.email, password: 'Admin@123456' });
+        .send({ username, password: 'Admin@123456' });
       expect(login.status).toBe(200);
 
       const res = await request(app.getHttpServer())

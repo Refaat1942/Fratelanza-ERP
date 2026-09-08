@@ -17,7 +17,6 @@ import { AccountingEngineService } from '../src/common/services/accounting-engin
 import { InventoryLedgerService } from '../src/common/services/inventory-ledger.service';
 import { PrismaService } from '../src/database/prisma.service';
 import { FinancialPostingService } from '../src/modules/finance/posting/financial-posting.service';
-import { LicenseService } from '../src/modules/license/license.service';
 import { CustomersService } from '../src/modules/customers/customers.service';
 import { PartyLegacyAdapterService } from '../src/modules/parties/party-legacy-adapter.service';
 import {
@@ -36,7 +35,6 @@ import { createTestApp, request } from './test-app';
 describe('Construction hardening (Phase 9.10)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: Awaited<ReturnType<typeof loadConstructionTestContext>>;
   let adminUserId: string;
   let projectId: string;
@@ -51,7 +49,7 @@ describe('Construction hardening (Phase 9.10)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
+    ({ ctx, prisma } = await prepareConstructionTestSuite(app));
 
     const admin = await prisma.user.findFirst({
       where: { email: 'admin@fratelanza.local' },

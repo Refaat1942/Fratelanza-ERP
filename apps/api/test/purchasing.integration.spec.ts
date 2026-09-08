@@ -1,14 +1,9 @@
 import type { INestApplication } from '@nestjs/common';
 import { PartyRoleType, PartyType, ProjectStatus } from '../../../packages/database/generated/server';
 import { PrismaService } from '../src/database/prisma.service';
-import { LicenseService } from '../src/modules/license/license.service';
 import { SuppliersService } from '../src/modules/suppliers/suppliers.service';
 import { PartiesService } from '../src/modules/parties/parties.service';
 import { PartyRolesService } from '../src/modules/parties/party-roles.service';
-import { DEMO_ENABLED_MODULES } from '../src/modules/license/catalog/module-catalog';
-import { DEMO_ENABLED_FEATURES } from '../src/modules/license/catalog/feature-catalog';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
 import {
   createLinkedPartySupplier,
@@ -23,82 +18,16 @@ import { createTestApp, loginAdmin, request } from './test-app';
 describe('Universal Purchasing foundation (Phase 6)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: PurchasingTestContext;
 
   beforeAll(async () => {
     app = await createTestApp();
     prisma = app.get(PrismaService);
-    licenseService = app.get(LicenseService);
     ctx = await loadPurchasingTestContext(app);
   });
 
   afterAll(async () => {
     await app.close();
-  });
-
-  afterEach(async () => {
-    await licenseService.seedDemoLicense(ctx.tenantId);
-  });
-
-  describe('Licensing', () => {
-    it('accepts Purchasing operations when Purchasing module is licensed', async () => {
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/purchasing/orders')
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(res.status).toBe(200);
-    });
-
-    it('rejects Purchasing operations when Purchasing module is unlicensed', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(
-          DEMO_ENABLED_MODULES.filter((m) => m !== 'purchasing'),
-          'perpetual',
-        ),
-        features: DEMO_ENABLED_FEATURES.filter((f) => !f.startsWith('purchasing.')),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/purchasing/orders')
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(res.status).toBe(403);
-    });
-
-    it('allows Purchasing with Inventory licensed (Company A scenario)', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(DEMO_ENABLED_MODULES, 'perpetual'),
-        features: DEMO_ENABLED_FEATURES,
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await request(app.getHttpServer())
-        .get('/api/v1/purchasing/orders')
-        .set('Authorization', `Bearer ${ctx.accessToken}`);
-      expect(res.status).toBe(200);
-    });
-
-    it('rejects Purchasing for Company B even when user has Purchasing RBAC permissions', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(
-          DEMO_ENABLED_MODULES.filter((m) => m !== 'purchasing'),
-          'perpetual',
-        ),
-        features: DEMO_ENABLED_FEATURES.filter((f) => !f.startsWith('purchasing.')),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await request(app.getHttpServer())
-        .post('/api/v1/purchasing/orders')
-        .set('Authorization', `Bearer ${ctx.accessToken}`)
-        .send({
-          branchId: ctx.branchId,
-          supplierId: '00000000-0000-4000-8000-000000000001',
-          warehouseId: ctx.warehouseId,
-          lines: [poLine(ctx.productId)],
-        });
-      expect(res.status).toBe(403);
-    });
   });
 
   describe('Party/Supplier resolution', () => {
@@ -504,7 +433,7 @@ describe('Universal Purchasing foundation (Phase 6)', () => {
   });
 
   describe('RBAC', () => {
-    it('rejects licensed Purchasing create when user lacks RBAC permission', async () => {
+    it('rejects Purchasing create when user lacks RBAC permission', async () => {
       const role = await prisma.role.create({
         data: {
           tenantId: ctx.tenantId,
@@ -518,10 +447,11 @@ describe('Universal Purchasing foundation (Phase 6)', () => {
       await prisma.rolePermission.create({
         data: { roleId: role.id, permissionId: readPerm!.id },
       });
+      const username = `no-po-create-${Date.now()}`;
       const user = await prisma.user.create({
         data: {
           tenantId: ctx.tenantId,
-          email: `no-po-create-${Date.now()}@fratelanza.local`,
+          email: `${username}@fratelanza.local`,
           passwordHash: '$2a$12$placeholder',
           firstName: 'No',
           lastName: 'Create',
@@ -537,7 +467,7 @@ describe('Universal Purchasing foundation (Phase 6)', () => {
 
       const login = await request(app.getHttpServer())
         .post('/api/v1/auth/login')
-        .send({ email: user.email, password: 'Admin@123456' });
+        .send({ username, password: 'Admin@123456' });
       expect(login.status).toBe(200);
 
       const suppliers = app.get(SuppliersService);

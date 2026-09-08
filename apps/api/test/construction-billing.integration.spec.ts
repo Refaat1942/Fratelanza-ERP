@@ -12,27 +12,18 @@ import {
   Prisma,
   ProjectStatus,
 } from '../../../packages/database/generated/server';
-import { resetAppConfigCache } from '../src/config/app-config';
 import { PrismaService } from '../src/database/prisma.service';
 import { FinancialPostingService } from '../src/modules/finance/posting/financial-posting.service';
-import { LicenseService } from '../src/modules/license/license.service';
 import { CustomersService } from '../src/modules/customers/customers.service';
 import { PartyLegacyAdapterService } from '../src/modules/parties/party-legacy-adapter.service';
-import { DEMO_ENABLED_FEATURES } from '../src/modules/license/catalog/feature-catalog';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
 import {
-  activateConstructionLicense,
   createPartyWithRole,
   createUniversalProject,
   enableConstructionProfile,
-  featuresWithConstruction,
   loadConstructionTestContext,
-  modulesWithConstruction,
   prepareConstructionTestSuite,
-  restoreConstructionLicense,
   restoreDemoTenantLicense,
 } from './construction-test.helpers';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
 import { withUniversalFinanceSalesPilotAsync } from './sales-test.helpers';
 import { createTestApp, request } from './test-app';
@@ -40,7 +31,6 @@ import { createTestApp, request } from './test-app';
 describe('Construction billing (Phase 9.8)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: Awaited<ReturnType<typeof loadConstructionTestContext>>;
   let adminUserId: string;
   let projectId: string;
@@ -55,7 +45,7 @@ describe('Construction billing (Phase 9.8)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
+    ({ ctx, prisma } = await prepareConstructionTestSuite(app));
 
     const admin = await prisma.user.findFirst({
       where: { email: 'admin@fratelanza.local' },
@@ -151,15 +141,6 @@ describe('Construction billing (Phase 9.8)', () => {
     await app.close();
   });
 
-  afterEach(async () => {
-    jest.restoreAllMocks();
-    resetAppConfigCache();
-    await restoreConstructionLicense(prisma, ctx.tenantId, licenseService);
-  });
-
-  function featuresWithoutBilling() {
-    return featuresWithConstruction().filter((f) => f !== 'construction.billing');
-  }
 
   function nextPeriod() {
     periodCounter += 1;
@@ -186,10 +167,10 @@ describe('Construction billing (Phase 9.8)', () => {
     return bcrypt.hash(password, 12);
   }
 
-  async function loginAsUser(email: string, password = 'Admin@123456') {
+  async function loginAsUser(username: string, password = 'Admin@123456') {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email, password });
+      .send({ username, password });
     expect(login.status).toBe(200);
     return login.body.data.accessToken as string;
   }
@@ -607,22 +588,7 @@ describe('Construction billing (Phase 9.8)', () => {
     });
   });
 
-  describe('Licensing and RBAC', () => {
-    afterEach(async () => {
-      await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
-    });
-
-    it('rejects billing routes when construction.billing feature is disabled', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(modulesWithConstruction(), 'perpetual'),
-        features: featuresWithoutBilling(),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await api().get('/api/v1/construction/billing/candidates');
-      expect(res.status).toBeGreaterThanOrEqual(400);
-    });
-
+  describe('RBAC', () => {
     it('enforces RBAC on create', async () => {
       const role = await prisma.role.create({
         data: {
@@ -641,12 +607,12 @@ describe('Construction billing (Phase 9.8)', () => {
       await prisma.rolePermission.create({
         data: { roleId: role.id, permissionId: readPerm.id },
       });
-      const email = `billing-readonly-${Date.now()}@fratelanza.local`;
+      const username = `billing-readonly-${Date.now()}`;
       await prisma.user.create({
         data: {
           tenantId: ctx.tenantId,
           branchId: ctx.branchId,
-          email,
+          email: `${username}@fratelanza.local`,
           passwordHash: await hashPassword('Admin@123456'),
           firstName: 'Billing',
           lastName: 'Reader',
@@ -654,7 +620,7 @@ describe('Construction billing (Phase 9.8)', () => {
           isActive: true,
         },
       });
-      const token = await loginAsUser(email);
+      const token = await loginAsUser(username);
 
       const progress = await createApprovedProgress([
         { boqItemId, currentPeriodQuantity: '2' },

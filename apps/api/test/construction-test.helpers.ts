@@ -4,13 +4,8 @@ import {
   PartyType,
 } from '../../../packages/database/generated/server';
 import { PrismaService } from '../src/database/prisma.service';
-import { LicenseService } from '../src/modules/license/license.service';
 import { PartiesService } from '../src/modules/parties/parties.service';
 import { PartyRolesService } from '../src/modules/parties/party-roles.service';
-import { DEMO_ENABLED_FEATURES } from '../src/modules/license/catalog/feature-catalog';
-import { DEMO_ENABLED_MODULES } from '../src/modules/license/catalog/module-catalog';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { loginAdmin, request, resetDemoTenant } from './test-app';
 
 export interface ConstructionTestContext {
@@ -30,54 +25,11 @@ export async function loadConstructionTestContext(
   };
 }
 
-export function modulesWithConstruction() {
-  return [...DEMO_ENABLED_MODULES, 'construction'];
-}
-
-export function featuresWithConstruction() {
-  return [
-    ...DEMO_ENABLED_FEATURES,
-    'construction.foundation',
-    'construction.contracts',
-    'construction.boq',
-    'construction.progress',
-    'construction.variations',
-    'construction.retention',
-    'construction.subcontractors',
-    'construction.materials',
-    'construction.costing',
-    'construction.billing',
-    'construction.reports',
-  ];
-}
-
-export async function activateConstructionLicense(
-  prisma: Parameters<typeof signTestActivationForTenant>[0],
-  tenantId: string,
-  licenseService: LicenseService,
-) {
-  const signed = await signTestActivationForTenant(prisma, tenantId, {
-    modules: defaultModuleEntries(modulesWithConstruction(), 'perpetual'),
-    features: featuresWithConstruction(),
-  });
-  await licenseService.activateLicense(tenantId, signed);
-}
-
 export async function prepareConstructionTestSuite(app: INestApplication) {
   await resetDemoTenant(app);
   const prisma = app.get(PrismaService);
-  const licenseService = app.get(LicenseService);
   const ctx = await loadConstructionTestContext(app);
-  await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
-  return { ctx, prisma, licenseService };
-}
-
-export async function restoreConstructionLicense(
-  prisma: Parameters<typeof signTestActivationForTenant>[0],
-  tenantId: string,
-  licenseService: LicenseService,
-) {
-  await activateConstructionLicense(prisma, tenantId, licenseService);
+  return { ctx, prisma };
 }
 
 export async function restoreDemoTenantLicense(app: INestApplication): Promise<void> {
@@ -132,13 +84,9 @@ export async function createPartyWithRole(
 }
 
 export function featuresWithConstructionFoundationOnly() {
-  return [...DEMO_ENABLED_FEATURES, 'construction.foundation'];
+  return ['construction.foundation'];
 }
 
 export function featuresWithContractsOnly() {
-  return [
-    ...DEMO_ENABLED_FEATURES,
-    'construction.foundation',
-    'construction.contracts',
-  ];
+  return ['construction.foundation', 'construction.contracts'];
 }

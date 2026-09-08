@@ -8,32 +8,22 @@ import {
   PartyRoleType,
   PartyType,
 } from '../../../packages/database/generated/server';
-import { LicenseService } from '../src/modules/license/license.service';
 import { PrismaService } from '../src/database/prisma.service';
 import { PartiesService } from '../src/modules/parties/parties.service';
-import { DEMO_ENABLED_MODULES } from '../src/modules/license/catalog/module-catalog';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
 import {
-  activateConstructionLicense,
   createPartyWithRole,
   createUniversalProject,
   enableConstructionProfile,
-  featuresWithConstruction,
-  featuresWithConstructionFoundationOnly,
-  featuresWithContractsOnly,
   loadConstructionTestContext,
-  modulesWithConstruction,
   prepareConstructionTestSuite,
   restoreDemoTenantLicense,
 } from './construction-test.helpers';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
 import { createTestApp, request } from './test-app';
 
 describe('Construction contracts + BOQ (Phase 9.1)', () => {
   let app: INestApplication;
   let prisma: PrismaService;
-  let licenseService: LicenseService;
   let ctx: Awaited<ReturnType<typeof loadConstructionTestContext>>;
   let adminUserId: string;
   let projectId: string;
@@ -46,7 +36,7 @@ describe('Construction contracts + BOQ (Phase 9.1)', () => {
 
   beforeAll(async () => {
     app = await createTestApp();
-    ({ ctx, prisma, licenseService } = await prepareConstructionTestSuite(app));
+    ({ ctx, prisma } = await prepareConstructionTestSuite(app));
 
     const admin = await prisma.user.findFirst({
       where: { email: 'admin@fratelanza.local' },
@@ -176,50 +166,16 @@ describe('Construction contracts + BOQ (Phase 9.1)', () => {
     return bcrypt.hash(password, 12);
   }
 
-  async function loginAsUser(email: string, password = 'Admin@123456') {
+  async function loginAsUser(username: string, password = 'Admin@123456') {
     const login = await request(app.getHttpServer())
       .post('/api/v1/auth/login')
-      .send({ email, password });
+      .send({ username, password });
     expect(login.status).toBe(200);
     return login.body.data.accessToken as string;
   }
 
-  describe('Licensing', () => {
-    afterEach(async () => {
-      await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
-    });
-
-    it('rejects construction.contracts when feature is not licensed', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(modulesWithConstruction(), 'perpetual'),
-        features: featuresWithConstructionFoundationOnly(),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await api().get('/api/v1/construction/contracts');
-      expect(res.status).toBe(403);
-    });
-
-    it('rejects construction.boq when feature is not licensed', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(modulesWithConstruction(), 'perpetual'),
-        features: featuresWithContractsOnly(),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await api().get(
-        `/api/v1/construction/contracts/${sharedCustomerContractId}/boqs`,
-      );
-      expect(res.status).toBe(403);
-    });
-
-    it('allows licensed and authorized access', async () => {
-      const res = await api().get('/api/v1/construction/contracts');
-      expect(res.status).toBe(200);
-      expect(Array.isArray(res.body.data)).toBe(true);
-    });
-
-    it('rejects licensed user without BOQ RBAC permission', async () => {
+  describe('RBAC', () => {
+    it('rejects user without BOQ RBAC permission', async () => {
       const role = await prisma.role.create({
         data: {
           tenantId: ctx.tenantId,
@@ -235,10 +191,11 @@ describe('Construction contracts + BOQ (Phase 9.1)', () => {
           data: { roleId: role.id, permissionId: perm.id },
         });
       }
+      const username = `cnt-only-${Date.now()}`;
       const user = await prisma.user.create({
         data: {
           tenantId: ctx.tenantId,
-          email: `cnt-only-${Date.now()}@fratelanza.local`,
+          email: `${username}@fratelanza.local`,
           passwordHash: await hashPassword('Admin@123456'),
           firstName: 'Contracts',
           lastName: 'Only',
@@ -246,7 +203,7 @@ describe('Construction contracts + BOQ (Phase 9.1)', () => {
           isActive: true,
         },
       });
-      const token = await loginAsUser(user.email);
+      const token = await loginAsUser(username);
 
       const contractsRes = await api(token).get('/api/v1/construction/contracts');
       expect(contractsRes.status).toBe(200);
@@ -933,42 +890,6 @@ describe('Construction contracts + BOQ (Phase 9.1)', () => {
         select: { displayName: true },
       });
       expect(partyAfter?.displayName).toBe(partyBefore?.displayName);
-    });
-  });
-
-  describe('Commercial licensing', () => {
-    afterEach(async () => {
-      await activateConstructionLicense(prisma, ctx.tenantId, licenseService);
-    });
-
-    it('allows perpetual Construction license for contract and BOQ operations', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(modulesWithConstruction(), 'perpetual'),
-        features: featuresWithConstruction(),
-        licenseType: 'perpetual',
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const contract = await createContract({ title: 'Perpetual License Contract' });
-      const boq = await createBoq(contract.id);
-      expect(boq.status).toBe(ConstructionBoqStatus.draft);
-
-      const resolved = await licenseService.getLicenseForTenant(ctx.tenantId);
-      expect(resolved?.licenseType).toBe('perpetual');
-      expect(resolved?.isOperational).toBe(true);
-    });
-
-    it('rejects unlicensed Construction API when module is missing', async () => {
-      const signed = await signTestActivationForTenant(prisma, ctx.tenantId, {
-        modules: defaultModuleEntries(
-          DEMO_ENABLED_MODULES.filter((m) => m !== 'construction'),
-          'perpetual',
-        ),
-      });
-      await licenseService.activateLicense(ctx.tenantId, signed);
-
-      const res = await api().get('/api/v1/construction/contracts');
-      expect(res.status).toBe(403);
     });
   });
 });

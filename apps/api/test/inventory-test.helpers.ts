@@ -1,10 +1,6 @@
 import type { INestApplication } from '@nestjs/common';
 import { Prisma } from '../../../packages/database/generated/server';
 import { PrismaService } from '../src/database/prisma.service';
-import { DEMO_ENABLED_FEATURES } from '../src/modules/license/catalog/feature-catalog';
-import { DEMO_ENABLED_MODULES } from '../src/modules/license/catalog/module-catalog';
-import { defaultModuleEntries } from '../src/modules/license/verification/license-verifier.interface';
-import { signTestActivationForTenant } from './license-test.helpers';
 import { loginAdmin, request } from './test-app';
 
 export interface InventoryTestContext {
@@ -63,26 +59,6 @@ export async function loadInventoryTestContext(
     productId,
     unitId,
   };
-}
-
-export function modulesWithoutInventory() {
-  return DEMO_ENABLED_MODULES.filter((m) => m !== 'inventory');
-}
-
-export function featuresWithoutInventory() {
-  return DEMO_ENABLED_FEATURES.filter((f) => !f.startsWith('inventory.'));
-}
-
-export async function activateLicenseWithoutInventory(
-  prisma: PrismaService,
-  tenantId: string,
-  licenseService: { activateLicense: (tenantId: string, signed: unknown) => Promise<unknown> },
-) {
-  const signed = await signTestActivationForTenant(prisma, tenantId, {
-    modules: defaultModuleEntries(modulesWithoutInventory(), 'perpetual'),
-    features: featuresWithoutInventory(),
-  });
-  await licenseService.activateLicense(tenantId, signed);
 }
 
 export async function seedStockBalance(
