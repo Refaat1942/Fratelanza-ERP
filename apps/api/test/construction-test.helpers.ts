@@ -47,6 +47,7 @@ export function featuresWithConstruction() {
     'construction.materials',
     'construction.costing',
     'construction.billing',
+    'construction.reports',
   ];
 }
 

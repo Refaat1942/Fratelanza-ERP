@@ -120,6 +120,12 @@ export const FEATURE_CATALOG: Record<string, FeatureCatalogEntry> = {
     displayName: 'Construction Billing',
     description: 'Progress-based client billing via Universal Sales and FinancialPostingService',
   },
+  'construction.reports': {
+    key: 'construction.reports',
+    moduleKey: 'construction',
+    displayName: 'Construction Reports',
+    description: 'Read-only operational construction reports across projects, contracts, BOQ, progress, costs, billing, and subledgers',
+  },
   'pms.patients': {
     key: 'pms.patients',
     moduleKey: 'pms',

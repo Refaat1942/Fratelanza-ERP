@@ -8,6 +8,8 @@ import { ConstructionAdvanceController } from './construction-advance.controller
 import { ConstructionAdvanceService } from './construction-advance.service';
 import { ConstructionBillingController } from './construction-billing.controller';
 import { ConstructionBillingService } from './construction-billing.service';
+import { ConstructionReportingController } from './construction-reporting.controller';
+import { ConstructionReportingService } from './construction-reporting.service';
 import { ConstructionBoqController } from './construction-boq.controller';
 import { ConstructionBoqService } from './construction-boq.service';
 import { ConstructionContractsController } from './construction-contracts.controller';
@@ -42,6 +44,7 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionMaterialIssueController,
     ConstructionCostingController,
     ConstructionBillingController,
+    ConstructionReportingController,
   ],
   providers: [
     ConstructionProjectProfileService,
@@ -56,6 +59,7 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionMaterialIssueService,
     ConstructionCostingService,
     ConstructionBillingService,
+    ConstructionReportingService,
   ],
   exports: [
     ConstructionProjectProfileService,
@@ -70,6 +74,7 @@ import { ConstructionProjectProfileService } from './construction-project-profil
     ConstructionMaterialIssueService,
     ConstructionCostingService,
     ConstructionBillingService,
+    ConstructionReportingService,
   ],
 })
 export class ConstructionModule {}

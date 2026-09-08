@@ -172,6 +172,7 @@ const CONSTRUCTION_PERMISSIONS = [
     { module: 'construction', feature: 'billing', action: 'read' },
     { module: 'construction', feature: 'billing', action: 'create' },
     { module: 'construction', feature: 'billing', action: 'manage' },
+    { module: 'construction', feature: 'reports', action: 'read' },
 ];
 
 const ALL_PERMISSIONS = [
