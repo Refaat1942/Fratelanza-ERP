@@ -34,6 +34,8 @@
     "db:seed": "dotenv -e .env -- npm run seed -w @fratelanza/database",
     "db:setup": "npm run db:migrate:server:deploy && npm run db:seed",
     "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
-    "docker:down": "docker compose -f infra/docker/docker-compose.yml down"
+    "docker:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "backup:db": "powershell -ExecutionPolicy Bypass -File scripts/backup-database.ps1",
+    "verify:production-env": "npm run test -w @fratelanza/api -- --testPathPattern=production-config"
   }
 }
