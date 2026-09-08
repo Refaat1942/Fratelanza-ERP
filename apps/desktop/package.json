@@ -6,8 +6,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -p tsconfig.electron.json && vite build",
-    "pack": "npm run build && electron-builder --config electron-builder.yml",
-    "pack:dir": "npm run build && electron-builder --dir --config electron-builder.yml",
+    "verify:packaging": "npx tsx scripts/verify-packaging.ts",
+    "smoke:renderer": "npx electron scripts/smoke-renderer.mjs",
+    "pack": "npm run build && npm run verify:packaging && npm run smoke:renderer && electron-builder --config electron-builder.yml",
+    "pack:dir": "npm run build && npm run verify:packaging && npm run smoke:renderer && electron-builder --dir --config electron-builder.yml",
     "typecheck": "tsc --noEmit && tsc -p tsconfig.electron.json --noEmit",
     "lint": "eslint src electron --ext .ts,.tsx"
   },

@@ -1,4 +1,5 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { AppRouter } from './lib/app-router';
 import { useEffect } from 'react';
 import { useAuthStore, useAppStore } from './stores';
 import { syncElectronAccessToken } from './lib/auth-session';
@@ -91,11 +92,11 @@ function AppRoutes() {
 
 export function App() {
   return (
-    <BrowserRouter>
+    <AppRouter>
       <AuthHydrationGate>
         <AuthBootstrap />
         <AppRoutes />
       </AuthHydrationGate>
-    </BrowserRouter>
+    </AppRouter>
   );
 }

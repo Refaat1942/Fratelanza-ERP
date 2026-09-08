@@ -17,6 +17,13 @@ function getHealthUrl(baseUrl?: string): string {
   return `${base}/api/v1/health`;
 }
 
+function resolveRendererIndexHtml(): string {
+  if (app.isPackaged) {
+    return path.join(app.getAppPath(), 'dist', 'index.html');
+  }
+  return path.join(__dirname, '../dist/index.html');
+}
+
 function createWindow() {
   mainWindow = new BrowserWindow({
     width: 1400,
@@ -32,14 +39,16 @@ function createWindow() {
     },
   });
 
-  if (process.env.VITE_DEV_SERVER_URL) {
+  if (!app.isPackaged && process.env.VITE_DEV_SERVER_URL) {
     void mainWindow.loadURL(process.env.VITE_DEV_SERVER_URL);
     if (process.env.ELECTRON_OPEN_DEVTOOLS === '1') {
       mainWindow.webContents.openDevTools({ mode: 'detach' });
     }
-  } else {
-    void mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    return;
   }
+
+  const rendererIndex = resolveRendererIndexHtml();
+  void mainWindow.loadFile(rendererIndex);
 
   mainWindow.on('closed', () => {
     mainWindow = null;

@@ -6,6 +6,7 @@ import { resolve } from 'path';
 const root = resolve(__dirname, '../..');
 
 export default defineConfig({
+  base: './',
   plugins: [
     react(),
     electron({
