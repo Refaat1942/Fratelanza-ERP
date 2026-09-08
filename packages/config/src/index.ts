@@ -1,3 +1,5 @@
+import { resolveAppVersion, resolveDesktopVersion } from './version';
+
 export interface ApiConfig {
   port: number;
   host: string;
@@ -29,18 +31,18 @@ export interface AppConfig {
   database: DatabaseConfig;
   jwt: JwtConfig;
   syncEnabled: boolean;
-  /** When true, Sales may resolve Party → Customer via legacy adapter. Disabled by default. */
   partyLegacyRoutingEnabled: boolean;
-  /** When true, Purchasing may resolve Party → Supplier via legacy adapter. Disabled by default. */
   purchasingPartyRoutingEnabled: boolean;
-  /** When true, PO receive posts via FinancialPostingService (Phase 8.2 pilot). Default false. */
   universalFinancePilotEnabled: boolean;
-  /** When true, Sales invoice post uses FinancialPostingService (Phase 8.3 pilot). Default false. */
   universalFinanceSalesPilotEnabled: boolean;
   license: LicenseConfig;
+  installationId: string | null;
+  appVersion: string;
 }
 
 const DEV_JWT_FALLBACK = 'development-secret-change-in-production';
+
+export { resolveAppVersion, resolveDesktopVersion };
 
 export function loadApiConfig(): AppConfig {
   const nodeEnv = (process.env.NODE_ENV ?? 'development') as AppConfig['nodeEnv'];
@@ -70,6 +72,8 @@ export function loadApiConfig(): AppConfig {
       signingPrivateKey: process.env.LICENSE_SIGNING_PRIVATE_KEY ?? null,
       allowUnsignedDev: process.env.LICENSE_ALLOW_UNSIGNED_DEV === 'true',
     },
+    installationId: process.env.FRATELANZA_INSTALLATION_ID?.trim() || null,
+    appVersion: resolveAppVersion(),
   };
 }
 
@@ -86,6 +90,26 @@ export function validateAppConfig(config: AppConfig = loadApiConfig()): void {
     }
     if (config.jwt.secret.length < 32) {
       errors.push('JWT_SECRET must be at least 32 characters in production/test');
+    }
+  }
+
+  if (config.nodeEnv === 'production') {
+    if (!config.license.verificationPublicKey?.trim()) {
+      errors.push('LICENSE_VERIFICATION_PUBLIC_KEY is required in production');
+    }
+    if (config.license.allowUnsignedDev) {
+      errors.push('LICENSE_ALLOW_UNSIGNED_DEV must be false in production');
+    }
+    if (config.license.signingPrivateKey?.trim()) {
+      errors.push(
+        'LICENSE_SIGNING_PRIVATE_KEY must NOT be configured on customer production servers',
+      );
+    }
+    if (!config.installationId) {
+      errors.push('FRATELANZA_INSTALLATION_ID is required in production');
+    }
+    if (config.jwt.secret.includes('change-this') || config.jwt.secret.includes('dev')) {
+      errors.push('JWT_SECRET appears to be a placeholder — set a unique production secret');
     }
   }
 
