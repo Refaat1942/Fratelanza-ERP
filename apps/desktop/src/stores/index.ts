@@ -16,6 +16,12 @@ interface AuthUser {
   branchName?: string;
   role: string;
   permissions: string[];
+  isPlatformAdmin?: boolean;
+  countryCode?: string;
+  currency?: string;
+  timezone?: string;
+  taxAuthority?: string;
+  eInvoicingProvider?: string;
 }
 
 interface AuthState {

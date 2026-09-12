@@ -7,7 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import type { JwtPayload } from '@fratelanza/types';
-import { buildPermissionKey } from '@fratelanza/shared';
+import { buildPermissionKey, getCountryProfile, normalizeCountryCode } from '@fratelanza/shared';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import type { LoginDto } from './dto/auth.dto';
@@ -50,8 +50,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid username or password');
     }
 
-    if (!user.tenant.isActive) {
+    if (!user.tenant.isActive || user.tenant.status === 'ARCHIVED') {
       throw new ForbiddenException('Company account is inactive');
+    }
+
+    if (user.tenant.status === 'SUSPENDED') {
+      throw new ForbiddenException('Organization is suspended');
     }
 
     let deviceId: string | undefined;
@@ -102,6 +106,7 @@ export class AuthService {
       branchId: user.branchId ?? undefined,
       sessionId,
       type: 'access',
+      isPlatformAdmin: user.isPlatformAdmin,
     };
 
     const accessToken = this.jwtService.sign(accessPayload, {
@@ -123,6 +128,10 @@ export class AuthService {
       buildPermissionKey(rp.permission.module, rp.permission.feature, rp.permission.action),
     );
 
+    const countryCode = normalizeCountryCode(user.tenant.country) ?? 'SA';
+    const countryProfile = getCountryProfile(countryCode);
+    const tenantSettings = (user.tenant.settings ?? {}) as Record<string, unknown>;
+
     return {
       accessToken,
       refreshToken,
@@ -140,6 +149,14 @@ export class AuthService {
         branchName: user.branch?.name,
         role: user.role.name,
         permissions,
+        isPlatformAdmin: user.isPlatformAdmin,
+        countryCode,
+        currency: user.tenant.currency,
+        timezone: typeof tenantSettings.timezone === 'string'
+          ? tenantSettings.timezone
+          : countryProfile.timezone,
+        taxAuthority: countryProfile.taxAuthority,
+        eInvoicingProvider: countryProfile.eInvoicingProvider,
       },
     };
   }
@@ -176,6 +193,7 @@ export class AuthService {
       branchId: session.user.branchId ?? undefined,
       sessionId: session.id,
       type: 'access',
+      isPlatformAdmin: session.user.isPlatformAdmin,
     };
 
     const accessToken = this.jwtService.sign(accessPayload, {
@@ -197,6 +215,45 @@ export class AuthService {
     if (!session || session.revokedAt || session.expiresAt < new Date()) {
       throw new UnauthorizedException('Session is no longer active');
     }
+  }
+
+  async validateAccessUser(userId: string, tenantId: string) {
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: userId,
+        tenantId,
+        isActive: true,
+        deletedAt: null,
+      },
+      include: {
+        tenant: true,
+        branchAccess: { select: { branchId: true } },
+        warehouseAccess: { select: { warehouseId: true } },
+      },
+    });
+
+    if (!user || !user.tenant.isActive || user.tenant.status === 'ARCHIVED') {
+      throw new UnauthorizedException('User account is no longer active');
+    }
+
+    if (user.tenant.status === 'SUSPENDED') {
+      throw new ForbiddenException('Organization is suspended');
+    }
+
+    const allowedBranchIds = user.branchAccess.map((entry) => entry.branchId);
+    if (user.branchId && !allowedBranchIds.includes(user.branchId)) {
+      allowedBranchIds.push(user.branchId);
+    }
+
+    const allowedWarehouseIds = user.warehouseAccess.map((entry) => entry.warehouseId);
+
+    return {
+      tenantId: user.tenantId,
+      branchId: user.branchId,
+      isPlatformAdmin: user.isPlatformAdmin,
+      allowedBranchIds,
+      allowedWarehouseIds,
+    };
   }
 
   async logout(sessionId: string, userId: string) {

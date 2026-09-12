@@ -439,6 +439,7 @@ export class ConstructionBillingService {
         description: `${line.description} (Progress billing ${billing.number})`,
         quantity: 1,
         unitPrice: Number(line.netBillableAmount),
+        taxRate: 0,
       }));
 
       const invoice = await this.sales.createInvoice(tenantId, {

@@ -42,8 +42,11 @@ export interface JwtPayload {
   email: string;
   tenantId: string;
   branchId?: string;
+  allowedBranchIds?: string[];
+  allowedWarehouseIds?: string[];
   sessionId: string;
   type: 'access' | 'refresh';
+  isPlatformAdmin?: boolean;
 }
 
 export interface ApiResponse<T = unknown> {

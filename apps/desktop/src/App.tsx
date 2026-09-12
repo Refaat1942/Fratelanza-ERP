@@ -4,9 +4,13 @@ import { useEffect } from 'react';
 import { useAuthStore, useAppStore } from './stores';
 import { syncElectronAccessToken } from './lib/auth-session';
 import { AuthHydrationGate, ProtectedRoute } from './components/AuthGate';
+import { PlatformAdminRoute } from './components/PlatformAdminRoute';
 import { LoginPage } from './pages/LoginPage';
+import { DemoEntryPage } from './pages/DemoEntryPage';
+import { ModuleHubPage } from './pages/ModuleHubPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { IntegrationsPage } from './pages/IntegrationsPage';
 import { PartiesPage } from './pages/PartiesPage';
 import { ProductsPage } from './pages/ProductsPage';
 import { CustomersPage } from './pages/CustomersPage';
@@ -26,6 +30,13 @@ import { ConstructionBoqPage } from './pages/ConstructionBoqPage';
 import { ConstructionProgressPage } from './pages/ConstructionProgressPage';
 import { OnboardingGate } from './components/OnboardingGate';
 import { OnboardingPage } from './pages/OnboardingPage';
+import { AppLayout } from './components/AppLayout';
+import { ControlCenterLayout } from './pages/control/ControlCenterLayout';
+import { ControlCenterDashboardPage } from './pages/control/ControlCenterDashboardPage';
+import { OrganizationsPage } from './pages/control/OrganizationsPage';
+import { DemoManagementPage } from './pages/control/DemoManagementPage';
+import { ModuleManagementPage } from './pages/control/ModuleManagementPage';
+import { AuthorizationMatrixPage } from './pages/control/AuthorizationMatrixPage';
 
 function AuthBootstrap() {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -79,7 +90,8 @@ function AppRoutes() {
         }
       >
         <Route element={<AppLayout />}>
-        <Route index element={<DashboardPage />} />
+        <Route index element={<ModuleHubPage />} />
+        <Route path="dashboard" element={<DashboardPage />} />
         <Route path="parties" element={<PartiesPage />} />
         <Route path="products" element={<ProductsPage />} />
         <Route path="customers" element={<CustomersPage />} />
@@ -98,7 +110,29 @@ function AppRoutes() {
         <Route path="users" element={<UsersPage />} />
         <Route path="branches" element={<BranchesPage />} />
         <Route path="settings" element={<SettingsPage />} />
+        <Route path="settings/integrations" element={<IntegrationsPage />} />
         </Route>
+      </Route>
+      <Route path="/demo/*" element={<DemoEntryPage />} />
+      <Route
+        path="/control"
+        element={
+          accessToken ? (
+            <ProtectedRoute>
+              <PlatformAdminRoute>
+                <ControlCenterLayout />
+              </PlatformAdminRoute>
+            </ProtectedRoute>
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      >
+        <Route index element={<ControlCenterDashboardPage />} />
+        <Route path="organizations" element={<OrganizationsPage />} />
+        <Route path="demos" element={<DemoManagementPage />} />
+        <Route path="modules" element={<ModuleManagementPage />} />
+        <Route path="authorization" element={<AuthorizationMatrixPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

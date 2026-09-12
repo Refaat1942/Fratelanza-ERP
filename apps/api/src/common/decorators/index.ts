@@ -12,6 +12,9 @@ export const PERMISSIONS_KEY = 'permissions';
 export const RequirePermissions = (...permissions: string[]) =>
   SetMetadata(PERMISSIONS_KEY, permissions);
 
+export const MODULE_KEY = 'module';
+export const RequireModule = (moduleId: string) => SetMetadata(MODULE_KEY, moduleId);
+
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): JwtPayload => {
     const request = ctx.switchToHttp().getRequest<{ user: JwtPayload }>();

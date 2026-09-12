@@ -6,8 +6,9 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { SalesService } from './sales.service';
-import { TenantId, CurrentUser, RequirePermissions } from '../../common/decorators';
-import { PermissionsGuard } from '../../common/guards';
+import { TenantId, CurrentUser, RequirePermissions, RequireModule } from '../../common/decorators';
+import { PermissionsGuard, ModuleAccessGuard } from '../../common/guards';
+import { TenantAccessService } from '../../common/services/tenant-access.service';
 import { PartyLegacyRoutingGuard } from './guards/party-legacy-routing.guard';
 import type { JwtPayload } from '@fratelanza/types';
 
@@ -18,6 +19,7 @@ class InvoiceLineDto {
   @IsNumber() @Min(0) unitPrice!: number;
   @IsOptional() @IsNumber() @Min(0) discount?: number;
   @IsOptional() @IsNumber() @Min(0) taxRate?: number;
+  @IsOptional() @IsString() taxCategoryId?: string;
 }
 
 class CreateInvoiceDto {
@@ -75,27 +77,47 @@ class PostSalesInvoiceDto {
 }
 
 @Controller('sales')
-@UseGuards(PermissionsGuard)export class SalesController {
-  constructor(private salesService: SalesService) {}
+@UseGuards(PermissionsGuard, ModuleAccessGuard)
+@RequireModule('sales')
+export class SalesController {
+  constructor(
+    private salesService: SalesService,
+    private tenantAccess: TenantAccessService,
+  ) {}
 
-  @Get('invoices')  @RequirePermissions('sales:invoices:read')
-  async listInvoices(@TenantId() tenantId: string) {
-    const data = await this.salesService.findAll(tenantId);
+  @Get('invoices')
+  @RequirePermissions('sales:invoices:read')
+  async listInvoices(@TenantId() tenantId: string, @CurrentUser() user: JwtPayload) {
+    const data = await this.salesService.findAll(
+      tenantId,
+      this.tenantAccess.buildBranchWhere(user),
+    );
     return { success: true, data };
   }
 
-  @Get('invoices/:id')  @RequirePermissions('sales:invoices:read')
-  async getInvoice(@TenantId() tenantId: string, @Param('id') id: string) {
-    const data = await this.salesService.findById(tenantId, id);
+  @Get('invoices/:id')
+  @RequirePermissions('sales:invoices:read')
+  async getInvoice(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    const data = await this.salesService.findById(
+      tenantId,
+      id,
+      this.tenantAccess.buildBranchWhere(user),
+    );
     return { success: true, data };
   }
 
-  @Post('invoices')  @RequirePermissions('sales:invoices:create')
+  @Post('invoices')
+  @RequirePermissions('sales:invoices:create')
   async createInvoice(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateInvoiceDto,
   ) {
+    this.tenantAccess.assertBranchAccess(user, dto.branchId);
     const data = await this.salesService.createInvoice(tenantId, {
       ...dto,
       createdById: user.sub,
@@ -104,12 +126,14 @@ class PostSalesInvoiceDto {
   }
 
   @Post('invoices/from-party')
-  @UseGuards(PartyLegacyRoutingGuard)  @RequirePermissions('sales:invoices:create')
+  @UseGuards(PartyLegacyRoutingGuard)
+  @RequirePermissions('sales:invoices:create')
   async createInvoiceFromParty(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateInvoiceFromPartyDto,
   ) {
+    this.tenantAccess.assertBranchAccess(user, dto.branchId);
     const data = await this.salesService.createInvoiceFromParty(tenantId, {
       ...dto,
       createdById: user.sub,
@@ -117,12 +141,15 @@ class PostSalesInvoiceDto {
     return { success: true, data };
   }
 
-  @Post('invoices/:id/post')  @RequirePermissions('sales:invoices:post')
+  @Post('invoices/:id/post')
+  @RequirePermissions('sales:invoices:post')
   async postInvoice(
     @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
     @Body() dto?: PostSalesInvoiceDto,
   ) {
+    await this.tenantAccess.assertSalesInvoiceAccess(tenantId, user, id);
     const dimensions = dto?.dimensions
       ? {
           ...(dto.dimensions.projectId ? { projectId: dto.dimensions.projectId } : {}),
@@ -133,14 +160,35 @@ class PostSalesInvoiceDto {
       tenantId,
       id,
       dimensions && Object.keys(dimensions).length > 0 ? dimensions : undefined,
+      user.sub,
     );
+    return { success: true, data };
+  }
+
+  @Post('invoices/:id/return')
+  @RequirePermissions('sales:invoices:post')
+  async returnInvoice(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    await this.tenantAccess.assertSalesInvoiceAccess(tenantId, user, id);
+    const data = await this.salesService.returnInvoice(tenantId, id, user.sub);
     return { success: true, data };
   }
 
   @Post('payments')
   @RequirePermissions('sales:payments:create')
-  async recordPayment(@TenantId() tenantId: string, @Body() dto: RecordPaymentDto) {
-    const data = await this.salesService.recordPayment(tenantId, dto);
+  async recordPayment(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: RecordPaymentDto,
+  ) {
+    this.tenantAccess.assertBranchAccess(user, dto.branchId);
+    const data = await this.salesService.recordPayment(tenantId, {
+      ...dto,
+      actorUserId: user.sub,
+    });
     return { success: true, data };
   }
 
@@ -152,6 +200,7 @@ class PostSalesInvoiceDto {
     @CurrentUser() user: JwtPayload,
     @Body() dto: RecordPaymentFromPartyDto,
   ) {
+    this.tenantAccess.assertBranchAccess(user, dto.branchId);
     const data = await this.salesService.recordPaymentFromParty(tenantId, {
       ...dto,
       actorUserId: user.sub,

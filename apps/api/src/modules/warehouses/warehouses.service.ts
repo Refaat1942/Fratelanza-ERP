@@ -5,9 +5,12 @@ import { PrismaService } from '../../database/prisma.service';
 export class WarehousesService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(tenantId: string) {
+  async findAll(
+    tenantId: string,
+    scopeWhere?: { branchId?: string | { in: string[] }; id?: string | { in: string[] } },
+  ) {
     return this.prisma.warehouse.findMany({
-      where: { tenantId, deletedAt: null },
+      where: { tenantId, deletedAt: null, ...scopeWhere },
       include: { branch: { select: { id: true, name: true, code: true } } },
       orderBy: { name: 'asc' },
     });

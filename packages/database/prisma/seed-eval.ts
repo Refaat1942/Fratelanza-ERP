@@ -201,9 +201,10 @@ const ACCOUNT_ROLE_MAPPINGS = [
 
 const DEFAULT_TENANT_SETTINGS = {
   defaultLocale: 'ar',
-  defaultCurrency: 'EGP',
-  timezone: 'Africa/Cairo',
+  defaultCurrency: 'SAR',
+  timezone: 'Asia/Riyadh',
   fiscalYearStart: 1,
+  country: 'SA',
 };
 
 function assertEvalDatabase(): void {
@@ -291,10 +292,10 @@ async function seedPermissions(): Promise<void> {
 
 async function enableTenantModules(tenantId: string, moduleIds: string[]): Promise<void> {
   for (const moduleId of moduleIds) {
-    await prisma.tenantModule.upsert({
+    await prisma.tenantModuleAccess.upsert({
       where: { tenantId_moduleId: { tenantId, moduleId } },
-      update: { isEnabled: true },
-      create: { tenantId, moduleId, isEnabled: true },
+      update: { enabled: true },
+      create: { tenantId, moduleId, enabled: true },
     });
   }
 }
@@ -471,10 +472,19 @@ async function upsertUser(
   firstName: string,
   lastName: string,
   passwordHash: string,
+  isPlatformAdmin = false,
 ): Promise<string> {
   const user = await prisma.user.upsert({
     where: { tenantId_email: { tenantId, email } },
-    update: { roleId, branchId, passwordHash, firstName, lastName, isActive: true },
+    update: {
+      roleId,
+      branchId,
+      passwordHash,
+      firstName,
+      lastName,
+      isActive: true,
+      isPlatformAdmin,
+    },
     create: {
       tenantId,
       branchId,
@@ -484,6 +494,7 @@ async function upsertUser(
       firstName,
       lastName,
       locale: 'ar',
+      isPlatformAdmin,
     },
   });
   return user.id;
@@ -519,11 +530,44 @@ async function upsertSuppliers(
 async function seedTradingTenant(passwordHash: string): Promise<void> {
   const tenant = await prisma.tenant.upsert({
     where: { code: 'TRADING_DEMO' },
-    update: { name: 'Nile Trading Company | شركة النيل للتجارة' },
+    update: {
+      name: 'Nile Trading Company | شركة النيل للتجارة',
+      country: 'EG',
+      currency: 'EGP',
+      language: 'ar',
+      settings: {
+        ...DEFAULT_TENANT_SETTINGS,
+        defaultCurrency: 'EGP',
+        timezone: 'Africa/Cairo',
+        country: 'EG',
+        taxProfile: {
+          countryCode: 'EG',
+          defaultTaxMode: 'exclusive',
+          roundingMode: 'line',
+          categories: [
+            { id: 'standard', label: 'Standard VAT', labelAr: 'ضريبة القيمة المضافة', rate: 14, kind: 'standard' },
+            { id: 'zero_rated', label: 'Zero Rated', labelAr: 'نسبة صفر', rate: 0, kind: 'zero_rated' },
+            { id: 'exempt', label: 'Exempt', labelAr: 'معفى', rate: 0, kind: 'exempt' },
+            { id: 'out_of_scope', label: 'Out of Scope', labelAr: ' خارج النطاق', rate: 0, kind: 'out_of_scope' },
+          ],
+        },
+        integrations: {
+          eta: { environment: 'sandbox' },
+        },
+      },
+    },
     create: {
       code: 'TRADING_DEMO',
       name: 'Nile Trading Company | شركة النيل للتجارة',
-      settings: DEFAULT_TENANT_SETTINGS,
+      country: 'EG',
+      currency: 'EGP',
+      language: 'ar',
+      settings: {
+        ...DEFAULT_TENANT_SETTINGS,
+        defaultCurrency: 'EGP',
+        timezone: 'Africa/Cairo',
+        country: 'EG',
+      },
     },
   });
 
@@ -816,10 +860,24 @@ async function seedTradingTenant(passwordHash: string): Promise<void> {
 async function seedConstructionTenant(passwordHash: string): Promise<void> {
   const tenant = await prisma.tenant.upsert({
     where: { code: 'CONSTRUCTION_DEMO' },
-    update: { name: 'Ahram Construction | شركة الأهرام للمقاولات' },
+    update: {
+      name: 'Jeddah Construction | شركة جدة للمقاولات',
+      country: 'SA',
+      currency: 'SAR',
+      language: 'ar',
+      settings: {
+        ...DEFAULT_TENANT_SETTINGS,
+        timezone: 'Asia/Riyadh',
+        country: 'SA',
+        integrations: { zatca: { environment: 'sandbox', certificateStatus: 'not_configured' } },
+      },
+    },
     create: {
       code: 'CONSTRUCTION_DEMO',
-      name: 'Ahram Construction | شركة الأهرام للمقاولات',
+      name: 'Jeddah Construction | شركة جدة للمقاولات',
+      country: 'SA',
+      currency: 'SAR',
+      language: 'ar',
       settings: DEFAULT_TENANT_SETTINGS,
     },
   });
@@ -1082,10 +1140,23 @@ async function seedConstructionTenant(passwordHash: string): Promise<void> {
 async function seedServicesTenant(passwordHash: string): Promise<void> {
   const tenant = await prisma.tenant.upsert({
     where: { code: 'SERVICES_DEMO' },
-    update: { name: 'Hilal Professional Services | مكتب الهلال للخدمات المهنية' },
+    update: {
+      name: 'Riyadh Professional Services | مكتب الرياض للخدمات المهنية',
+      country: 'SA',
+      currency: 'SAR',
+      language: 'ar',
+      settings: {
+        ...DEFAULT_TENANT_SETTINGS,
+        timezone: 'Asia/Riyadh',
+        country: 'SA',
+      },
+    },
     create: {
       code: 'SERVICES_DEMO',
-      name: 'Hilal Professional Services | مكتب الهلال للخدمات المهنية',
+      name: 'Riyadh Professional Services | مكتب الرياض للخدمات المهنية',
+      country: 'SA',
+      currency: 'SAR',
+      language: 'ar',
       settings: DEFAULT_TENANT_SETTINGS,
     },
   });
@@ -1214,7 +1285,201 @@ async function seedServicesTenant(passwordHash: string): Promise<void> {
     tenant.id,
     branch.id,
     ownerRoleId,
-    'serv-admin@fratelanza.local', — 3 service products, accounting foundation');
+    'serv-admin@fratelanza.local',
+    'ليلى',
+    'محمود',
+    passwordHash,
+  );
+
+  console.log('  [SERVICES_DEMO] Hilal Professional Services — 3 service products, accounting foundation');
+}
+
+async function seedPlatformAdmin(passwordHash: string): Promise<void> {
+  const tenant = await prisma.tenant.upsert({
+    where: { code: 'FRATELANZA_PLATFORM' },
+    update: {
+      name: 'Fratelanza Platform',
+      displayName: 'Fratelanza Control Center',
+      country: 'SA',
+      currency: 'SAR',
+      language: 'ar',
+      status: 'ACTIVE',
+    },
+    create: {
+      code: 'FRATELANZA_PLATFORM',
+      name: 'Fratelanza Platform',
+      displayName: 'Fratelanza Control Center',
+      country: 'SA',
+      currency: 'SAR',
+      language: 'ar',
+      status: 'ACTIVE',
+      settings: DEFAULT_TENANT_SETTINGS,
+    },
+  });
+
+  const branch = await prisma.branch.upsert({
+    where: { tenantId_code: { tenantId: tenant.id, code: 'HQ' } },
+    update: { name: 'Platform HQ' },
+    create: {
+      tenantId: tenant.id,
+      code: 'HQ',
+      name: 'Platform HQ',
+      isDefault: true,
+    },
+  });
+
+  const ownerRoleId = await upsertRole(
+    tenant.id,
+    'platform-admin',
+    'Platform Administrator',
+    'Full platform control center access',
+    EVAL_PERMISSIONS,
+  );
+
+  await upsertUser(
+    tenant.id,
+    branch.id,
+    ownerRoleId,
+    'platform-admin@fratelanza.local',
+    'Platform',
+    'Admin',
+    passwordHash,
+    true,
+  );
+
+  console.log('  [PLATFORM] platform-admin@fratelanza.local (isPlatformAdmin=true)');
+}
+
+async function seedDemoEnvironments(): Promise<void> {
+  const tenantCountry: Record<string, { country: string; currency: string }> = {
+    TRADING_DEMO: { country: 'EG', currency: 'EGP' },
+    CONSTRUCTION_DEMO: { country: 'SA', currency: 'SAR' },
+    SERVICES_DEMO: { country: 'SA', currency: 'SAR' },
+  };
+
+  const demos: Array<{
+    slug: string;
+    name: string;
+    tenantCode: string;
+    demoUserEmail: string;
+    modules: string[];
+  }> = [
+    {
+      slug: 'egypt/trading',
+      name: 'Cairo Trading Company',
+      tenantCode: 'TRADING_DEMO',
+      demoUserEmail: 'admin@fratelanza.local',
+      modules: ['dashboard', 'sales', 'purchasing', 'inventory', 'customers', 'suppliers', 'accounting', 'reports'],
+    },
+    {
+      slug: 'egypt/construction',
+      name: 'Cairo Construction Demo',
+      tenantCode: 'TRADING_DEMO',
+      demoUserEmail: 'admin@fratelanza.local',
+      modules: ['dashboard', 'projects', 'construction', 'purchasing', 'inventory', 'accounting', 'reports'],
+    },
+    {
+      slug: 'egypt/restaurant',
+      name: 'Egypt Restaurant Demo',
+      tenantCode: 'TRADING_DEMO',
+      demoUserEmail: 'admin@fratelanza.local',
+      modules: ['dashboard', 'restaurant', 'pos', 'inventory', 'sales', 'reports'],
+    },
+    {
+      slug: 'saudi/trading',
+      name: 'Riyadh Trading Company',
+      tenantCode: 'SERVICES_DEMO',
+      demoUserEmail: 'serv-admin@fratelanza.local',
+      modules: ['dashboard', 'sales', 'purchasing', 'inventory', 'customers', 'suppliers', 'accounting', 'reports'],
+    },
+    {
+      slug: 'saudi/construction',
+      name: 'Jeddah Construction Company',
+      tenantCode: 'CONSTRUCTION_DEMO',
+      demoUserEmail: 'constr-admin@fratelanza.local',
+      modules: ['dashboard', 'projects', 'construction', 'purchasing', 'inventory', 'accounting', 'reports'],
+    },
+    {
+      slug: 'saudi/restaurant',
+      name: 'Saudi Restaurant Demo',
+      tenantCode: 'SERVICES_DEMO',
+      demoUserEmail: 'serv-admin@fratelanza.local',
+      modules: ['dashboard', 'restaurant', 'pos', 'inventory', 'sales', 'reports'],
+    },
+    {
+      slug: 'trading',
+      name: 'Cairo Trading Company',
+      tenantCode: 'TRADING_DEMO',
+      demoUserEmail: 'admin@fratelanza.local',
+      modules: ['dashboard', 'sales', 'purchasing', 'inventory', 'customers', 'suppliers', 'accounting', 'reports'],
+    },
+    {
+      slug: 'construction',
+      name: 'Jeddah Construction Company',
+      tenantCode: 'CONSTRUCTION_DEMO',
+      demoUserEmail: 'constr-admin@fratelanza.local',
+      modules: ['dashboard', 'projects', 'construction', 'purchasing', 'inventory', 'accounting', 'reports'],
+    },
+    {
+      slug: 'restaurant',
+      name: 'Egypt Restaurant Demo',
+      tenantCode: 'TRADING_DEMO',
+      demoUserEmail: 'admin@fratelanza.local',
+      modules: ['dashboard', 'restaurant', 'pos', 'inventory', 'sales', 'reports'],
+    },
+    {
+      slug: 'services',
+      name: 'Riyadh Professional Services',
+      tenantCode: 'SERVICES_DEMO',
+      demoUserEmail: 'serv-admin@fratelanza.local',
+      modules: ['dashboard', 'sales', 'customers', 'accounting', 'reports'],
+    },
+  ];
+
+  const configuredTenants = new Set<string>();
+
+  for (const demo of demos) {
+    const tenant = await prisma.tenant.findUnique({ where: { code: demo.tenantCode } });
+    if (!tenant) continue;
+
+    const demoUser = await prisma.user.findFirst({
+      where: { tenantId: tenant.id, email: demo.demoUserEmail },
+    });
+
+    const countryConfig = tenantCountry[demo.tenantCode];
+    if (countryConfig && !configuredTenants.has(tenant.id)) {
+      await prisma.tenant.update({
+        where: { id: tenant.id },
+        data: {
+          isDemo: true,
+          country: countryConfig.country,
+          currency: countryConfig.currency,
+          language: 'ar',
+        },
+      });
+      configuredTenants.add(tenant.id);
+    }
+
+    await prisma.demoEnvironment.upsert({
+      where: { slug: demo.slug },
+      update: {
+        name: demo.name,
+        enabled: true,
+        modules: demo.modules,
+        demoUserId: demoUser?.id,
+      },
+      create: {
+        slug: demo.slug,
+        name: demo.name,
+        tenantId: tenant.id,
+        enabled: true,
+        modules: demo.modules,
+        demoUserId: demoUser?.id,
+      },
+    });
+  }
+
+  console.log('  [DEMOS] /demo/egypt/* and /demo/saudi/* plus legacy slugs');
 }
 
 export async function main(): Promise<void> {
@@ -1231,14 +1496,18 @@ export async function main(): Promise<void> {
   await seedTradingTenant(passwordHash);
   await seedConstructionTenant(passwordHash);
   await seedServicesTenant(passwordHash);
+  await seedPlatformAdmin(passwordHash);
+  await seedDemoEnvironments();
 
   console.log('');
   console.log('Evaluation seed completed.');
-  console.log('  Tenants: TRADING_DEMO, CONSTRUCTION_DEMO, SERVICES_DEMO');
+  console.log('  Tenants: TRADING_DEMO, CONSTRUCTION_DEMO, SERVICES_DEMO, FRATELANZA_PLATFORM');
   console.log(`  Password (all demo users): ${demoPassword}`);
   console.log('  Trading users: admin, manager, accountant, sales');
   console.log('  Construction admin: constr-admin');
   console.log('  Services admin: serv-admin');
+  console.log('  Platform admin: platform-admin');
+  console.log('  Demo links: /demo/trading /demo/construction /demo/restaurant /demo/services');
 }
 
 function isExecutedDirectly(): boolean {

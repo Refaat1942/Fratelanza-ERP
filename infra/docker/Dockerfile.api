@@ -1,0 +1,22 @@
+# syntax=docker/dockerfile:1
+
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/
+COPY packages ./packages
+COPY apps/api ./apps/api
+RUN npm ci --workspace=@fratelanza/api --include-workspace-root
+RUN npm run build -w @fratelanza/api
+
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production
+COPY package.json package-lock.json ./
+COPY apps/api/package.json apps/api/
+COPY packages ./packages
+RUN npm ci --workspace=@fratelanza/api --include-workspace-root --omit=dev
+COPY --from=build /app/apps/api/dist ./apps/api/dist
+COPY --from=build /app/packages/database/generated ./packages/database/generated
+EXPOSE 3000
+CMD ["node", "apps/api/dist/main.js"]

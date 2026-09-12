@@ -10,15 +10,29 @@ datasource db {
 
 // ─── Platform / Core ───────────────────────────────────────────────
 
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  ARCHIVED
+}
+
 model Tenant {
-  id        String    @id @default(uuid()) @db.Uuid
-  name      String
-  code      String    @unique
-  isActive  Boolean   @default(true)
-  settings  Json      @default("{}")
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  id           String       @id @default(uuid()) @db.Uuid
+  name         String
+  code         String       @unique
+  displayName  String?
+  businessType String?
+  country      String       @default("SA")
+  currency     String       @default("SAR")
+  language     String       @default("ar")
+  status       TenantStatus @default(ACTIVE)
+  isDemo       Boolean      @default(false)
+  demoSlug     String?      @unique
+  isActive     Boolean      @default(true)
+  settings     Json         @default("{}")
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+  deletedAt    DateTime?
 
   branches       Branch[]
   users          User[]
@@ -26,6 +40,9 @@ model Tenant {
   devices        Device[]
   auditLogs      AuditLog[]
   numberSequences NumberSequence[]
+  demoEnvironments DemoEnvironment[]
+  moduleAccess   TenantModuleAccess[]
+  governmentIntegrationLogs GovernmentIntegrationLog[]
   pmsPatients         Patient[]
   pmsPatientAccounts  PatientAccount[]
   pmsServiceCategories ServiceCategory[]
@@ -102,6 +119,7 @@ model Branch {
   constructionAdvanceEntries ConstructionAdvanceEntry[]
   constructionMaterialIssues ConstructionMaterialIssue[]
   constructionBillings ConstructionBilling[]
+  userBranchAccess UserBranchAccess[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -125,6 +143,7 @@ model Warehouse {
   inventoryMovements InventoryMovement[]
   purchaseOrders PurchaseOrder[]
   constructionMaterialIssues ConstructionMaterialIssue[]
+  userAccess UserWarehouseAccess[]
 
   @@unique([tenantId, code])
   @@index([tenantId, branchId])
@@ -132,27 +151,29 @@ model Warehouse {
 }
 
 model User {
-  id           String    @id @default(uuid()) @db.Uuid
-  tenantId     String    @db.Uuid
-  branchId     String?   @db.Uuid
-  roleId       String    @db.Uuid
-  email        String
-  passwordHash String
-  firstName    String
-  lastName     String
-  phone        String?
-  locale       String    @default("en")
-  isActive     Boolean   @default(true)
-  lastLoginAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  deletedAt    DateTime?
+  id               String    @id @default(uuid()) @db.Uuid
+  tenantId         String    @db.Uuid
+  branchId         String?   @db.Uuid
+  roleId           String    @db.Uuid
+  email            String
+  passwordHash     String
+  firstName        String
+  lastName         String
+  phone            String?
+  locale           String    @default("en")
+  isActive         Boolean   @default(true)
+  isPlatformAdmin  Boolean   @default(false)
+  lastLoginAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  deletedAt        DateTime?
 
   tenant    Tenant     @relation(fields: [tenantId], references: [id])
   branch    Branch?    @relation(fields: [branchId], references: [id])
   role      Role       @relation(fields: [roleId], references: [id])
   sessions  Session[]
   auditLogs AuditLog[]
+  demoEnvironments DemoEnvironment[]
   pmsEncountersAsProvider Encounter[] @relation("EncounterProvider")
   managedProjects         Project[]   @relation("ProjectManager")
   constructionProfilesCreated ConstructionProjectProfile[] @relation("ConstructionProfileCreator")
@@ -178,10 +199,93 @@ model User {
   constructionBillingsApproved ConstructionBilling[] @relation("ConstructionBillingApprover")
   constructionBillingsPosted ConstructionBilling[] @relation("ConstructionBillingPoster")
   constructionBillingsCancelled ConstructionBilling[] @relation("ConstructionBillingCanceller")
+  branchAccess UserBranchAccess[]
+  warehouseAccess UserWarehouseAccess[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
   @@map("users")
+}
+
+model UserBranchAccess {
+  userId   String @db.Uuid
+  branchId String @db.Uuid
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  branch Branch @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@id([userId, branchId])
+  @@index([branchId])
+  @@map("user_branch_access")
+}
+
+model UserWarehouseAccess {
+  userId      String @db.Uuid
+  warehouseId String @db.Uuid
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  warehouse Warehouse @relation(fields: [warehouseId], references: [id], onDelete: Cascade)
+
+  @@id([userId, warehouseId])
+  @@index([warehouseId])
+  @@map("user_warehouse_access")
+}
+
+model GovernmentIntegrationLog {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  countryCode    String
+  authority      String
+  documentType   String
+  documentId     String?  @db.Uuid
+  documentNumber String?
+  requestId      String?
+  submissionId   String?
+  documentUuid   String?
+  status         String
+  response       Json?
+  errorMessage   String?
+  retryCount     Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([tenantId, authority])
+  @@index([documentId])
+  @@map("government_integration_logs")
+}
+
+model DemoEnvironment {
+  id           String   @id @default(uuid()) @db.Uuid
+  slug         String   @unique
+  name         String
+  tenantId     String   @db.Uuid
+  enabled      Boolean  @default(true)
+  modules      Json     @default("[]")
+  demoUserId   String?  @db.Uuid
+  restrictions Json     @default("{}")
+  linkToken    String   @unique @default(uuid())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  demoUser User?  @relation(fields: [demoUserId], references: [id])
+
+  @@index([tenantId])
+  @@map("demo_environments")
+}
+
+model TenantModuleAccess {
+  tenantId  String  @db.Uuid
+  moduleId  String
+  enabled   Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([tenantId, moduleId])
+  @@map("tenant_module_access")
 }
 
 model Role {

@@ -101,6 +101,22 @@ export function PurchasingPage() {
     }
   }
 
+  async function payOrder(row: PurchaseOrderRow) {
+    if (!user?.branchId || !row.supplier?.id) return;
+    try {
+      await client.recordSupplierPayment({
+        branchId: user.branchId,
+        supplierId: row.supplier.id,
+        purchaseOrderId: row.id,
+        amount: Number(row.total),
+      });
+      setMessage(t('purchasing.paid'));
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : t('errors.generic'));
+    }
+  }
+
   return (
     <div>
       <PageHeader
@@ -123,12 +139,20 @@ export function PurchasingPage() {
           {
             key: 'actions',
             label: t('common.actions'),
-            render: (r) =>
-              r.status !== 'received' ? (
-                <button type="button" className="btn btn-ghost" onClick={() => void receiveOrder(r.id)}>
-                  {t('purchasing.receive')}
-                </button>
-              ) : null,
+            render: (r) => (
+              <div style={{ display: 'flex', gap: 8 }}>
+                {r.status !== 'received' && r.status !== 'returned' ? (
+                  <button type="button" className="btn btn-ghost" onClick={() => void receiveOrder(r.id)}>
+                    {t('purchasing.receive')}
+                  </button>
+                ) : null}
+                {r.status === 'received' ? (
+                  <button type="button" className="btn btn-ghost" onClick={() => void payOrder(r)}>
+                    {t('purchasing.pay')}
+                  </button>
+                ) : null}
+              </div>
+            ),
           },
         ]}
         fetchData={(c) => c.getPurchaseOrders()}

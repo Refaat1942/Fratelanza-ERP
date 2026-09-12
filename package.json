@@ -22,6 +22,8 @@
     "build:desktop": "npm run build -w @fratelanza/desktop",
     "dev:api": "npm run dev -w @fratelanza/api",
     "dev:desktop": "npm run dev -w @fratelanza/desktop",
+    "dev:web": "npm run dev -w @fratelanza/web",
+    "build:web": "npm run build -w @fratelanza/web",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
@@ -35,6 +37,8 @@
     "db:setup": "npm run db:migrate:server:deploy && npm run db:seed",
     "docker:up": "docker compose -f infra/docker/docker-compose.yml up -d",
     "docker:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "docker:prod:up": "docker compose -f infra/docker/docker-compose.prod.yml up -d",
+    "docker:prod:build": "npm run build:web && docker compose -f infra/docker/docker-compose.prod.yml build",
     "backup:db": "powershell -ExecutionPolicy Bypass -File scripts/backup-database.ps1",
     "verify:production-env": "npm run test -w @fratelanza/api -- --testPathPattern=production-config"
   }

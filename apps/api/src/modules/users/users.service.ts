@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../database/prisma.service';
+import { TenantAccessService } from '../../common/services/tenant-access.service';
 import {
   isValidUsername,
   normalizeLoginIdentifier,
@@ -8,7 +9,10 @@ import {
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private tenantAccess: TenantAccessService,
+  ) {}
 
   async findAll(tenantId: string) {
     return this.prisma.user.findMany({
@@ -72,6 +76,10 @@ export class UsersService {
     });
     if (existing) throw new ConflictException('Username already in use');
 
+    if (data.branchId) {
+      await this.tenantAccess.assertBranchBelongsToTenant(tenantId, data.branchId);
+    }
+
     const passwordHash = await bcrypt.hash(data.password, 12);
     return this.prisma.user.create({
       data: {
@@ -126,8 +134,13 @@ export class UsersService {
       updateData.passwordHash = await bcrypt.hash(data.password, 12);
       delete updateData.password;
     }
+
+    if (data.branchId) {
+      await this.tenantAccess.assertBranchBelongsToTenant(tenantId, data.branchId);
+    }
+
     return this.prisma.user.update({
-      where: { id },
+      where: { id, tenantId },
       data: updateData,
       select: { id: true, email: true, firstName: true, lastName: true, isActive: true },
     });
@@ -136,7 +149,7 @@ export class UsersService {
   async softDelete(tenantId: string, id: string) {
     await this.findById(tenantId, id);
     return this.prisma.user.update({
-      where: { id },
+      where: { id, tenantId },
       data: { deletedAt: new Date(), isActive: false },
     });
   }

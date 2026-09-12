@@ -1,6 +1,7 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { COUNTRY_PROFILES, type CountryCode } from '@fratelanza/shared';
 import { useAuthStore } from '../stores';
 import { ConnectionStatusBadge } from './ConnectionStatusBadge';
 import { ToastContainer } from './feedback/Toast';
@@ -23,7 +24,10 @@ interface NavGroup {
 const NAV_GROUPS: NavGroup[] = [
   {
     labelKey: 'nav.groups.home',
-    items: [{ to: '/', labelKey: 'nav.dashboard', end: true }],
+    items: [
+      { to: '/', labelKey: 'nav.home', end: true },
+      { to: '/dashboard', labelKey: 'nav.dashboard' },
+    ],
   },
   {
     labelKey: 'nav.groups.business',
@@ -63,6 +67,7 @@ const NAV_GROUPS: NavGroup[] = [
       { to: '/users', labelKey: 'nav.users' },
       { to: '/branches', labelKey: 'nav.branches' },
       { to: '/settings', labelKey: 'nav.settings' },
+      { to: '/settings/integrations', labelKey: 'nav.integrations' },
     ],
   },
 ];
@@ -99,6 +104,8 @@ export function AppLayout() {
   const initials = user
     ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}`.toUpperCase()
     : '?';
+  const countryCode = (user?.countryCode ?? 'SA') as CountryCode;
+  const countryProfile = COUNTRY_PROFILES[countryCode] ?? COUNTRY_PROFILES.SA;
 
   return (
     <div className="app-layout">
@@ -125,6 +132,14 @@ export function AppLayout() {
               ))}
             </div>
           ))}
+          {user?.isPlatformAdmin && (
+            <div className="sidebar-group">
+              <span className="sidebar-group-label">{t('control.title')}</span>
+              <NavLink to="/control" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
+                <span className="sidebar-link-label">{t('control.nav.dashboard')}</span>
+              </NavLink>
+            </div>
+          )}
         </nav>
         <div className="sidebar-footer">
           <button
@@ -144,6 +159,11 @@ export function AppLayout() {
             <ConnectionStatusBadge />
             <div className="topbar-context">
               <span className="topbar-context-label">{user?.tenantName ?? t('common.appName')}</span>
+              {user?.countryCode && (
+                <span className="topbar-country-badge">
+                  {countryProfile.flag} {countryProfile.name} · {user.currency ?? countryProfile.currency}
+                </span>
+              )}
             </div>
           </div>
           <div className="topbar-end">

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
 import { IsString, IsOptional, IsArray } from 'class-validator';
 import { RolesService } from './roles.service';
 import { PrismaService } from '../../database/prisma.service';
@@ -12,8 +12,13 @@ class CreateRoleDto {
   @IsOptional() @IsArray() permissionIds?: string[];
 }
 
+class UpdateRolePermissionsDto {
+  @IsArray() permissionIds!: string[];
+}
+
 @Controller('roles')
-@UseGuards(PermissionsGuard)export class RolesController {
+@UseGuards(PermissionsGuard)
+export class RolesController {
   constructor(
     private rolesService: RolesService,
     private prisma: PrismaService,
@@ -51,6 +56,17 @@ class CreateRoleDto {
   @RequirePermissions('core:roles:create')
   async create(@TenantId() tenantId: string, @Body() dto: CreateRoleDto) {
     const data = await this.rolesService.create(tenantId, dto);
+    return { success: true, data };
+  }
+
+  @Patch(':id/permissions')
+  @RequirePermissions('core:roles:update')
+  async updatePermissions(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateRolePermissionsDto,
+  ) {
+    const data = await this.rolesService.updatePermissions(tenantId, id, dto.permissionIds);
     return { success: true, data };
   }
 }

@@ -11,6 +11,9 @@ import { FinancialPostingService } from '../finance/posting/financial-posting.se
 import type { PostingDimensions } from '../finance/posting/posting.types';
 import { AuditService } from '../audit/audit.service';
 import { PartyLegacyAdapterService } from '../parties/party-legacy-adapter.service';
+import { TenantAccessService } from '../../common/services/tenant-access.service';
+import { TaxEngineService } from '../localization/tax-engine.service';
+import { EInvoicingEngineService } from '../localization/e-invoicing-engine.service';
 
 interface InvoiceLineInput {
   productId?: string;
@@ -19,6 +22,7 @@ interface InvoiceLineInput {
   unitPrice: number;
   discount?: number;
   taxRate?: number;
+  taxCategoryId?: string;
 }
 
 @Injectable()
@@ -31,11 +35,14 @@ export class SalesService {
     private financialPosting: FinancialPostingService,
     private partyLegacy: PartyLegacyAdapterService,
     private audit: AuditService,
+    private tenantAccess: TenantAccessService,
+    private taxEngine: TaxEngineService,
+    private eInvoicingEngine: EInvoicingEngineService,
   ) {}
 
-  async findAll(tenantId: string) {
+  async findAll(tenantId: string, branchWhere: { branchId?: string | { in: string[] } } = {}) {
     return this.prisma.salesInvoice.findMany({
-      where: { tenantId, deletedAt: null },
+      where: { tenantId, deletedAt: null, ...branchWhere },
       include: {
         customer: { select: { id: true, code: true, name: true } },
         lines: true,
@@ -44,9 +51,9 @@ export class SalesService {
     });
   }
 
-  async findById(tenantId: string, id: string) {
+  async findById(tenantId: string, id: string, branchWhere: { branchId?: string | { in: string[] } } = {}) {
     const invoice = await this.prisma.salesInvoice.findFirst({
-      where: { id, tenantId, deletedAt: null },
+      where: { id, tenantId, deletedAt: null, ...branchWhere },
       include: {
         customer: true,
         lines: { include: { product: { select: { id: true, sku: true, name: true } } } },
@@ -57,15 +64,21 @@ export class SalesService {
     return invoice;
   }
 
-  private calcLine(line: InvoiceLineInput) {
-    const qty = new Prisma.Decimal(line.quantity);
-    const price = new Prisma.Decimal(line.unitPrice);
-    const discount = new Prisma.Decimal(line.discount ?? 0);
-    const taxRate = new Prisma.Decimal(line.taxRate ?? 0);
-    const gross = qty.mul(price).sub(discount);
-    const taxAmount = gross.mul(taxRate).div(100);
-    const lineTotal = gross.add(taxAmount);
-    return { taxAmount, lineTotal, gross };
+  private async calcLine(tenantId: string, line: InvoiceLineInput) {
+    const result = await this.taxEngine.calculateLineTax(tenantId, {
+      quantity: line.quantity,
+      unitPrice: line.unitPrice,
+      discount: line.discount,
+      taxCategoryId: line.taxCategoryId,
+      taxRateOverride: line.taxRate,
+    });
+    return {
+      taxAmount: new Prisma.Decimal(result.taxAmount),
+      lineTotal: new Prisma.Decimal(result.lineTotal),
+      gross: new Prisma.Decimal(result.gross),
+      taxRate: new Prisma.Decimal(result.taxRate),
+      taxCategoryId: result.taxCategoryId,
+    };
   }
 
   async createInvoice(
@@ -88,21 +101,31 @@ export class SalesService {
     let subtotal = new Prisma.Decimal(0);
     let taxAmount = new Prisma.Decimal(0);
 
-    const lineData = data.lines.map((line) => {
-      const calc = this.calcLine(line);
+    const lineData: Array<{
+      productId?: string;
+      description: string;
+      quantity: Prisma.Decimal;
+      unitPrice: Prisma.Decimal;
+      discount: Prisma.Decimal;
+      taxRate: Prisma.Decimal;
+      taxAmount: Prisma.Decimal;
+      lineTotal: Prisma.Decimal;
+    }> = [];
+    for (const line of data.lines) {
+      const calc = await this.calcLine(tenantId, line);
       subtotal = subtotal.add(calc.gross);
       taxAmount = taxAmount.add(calc.taxAmount);
-      return {
+      lineData.push({
         productId: line.productId,
         description: line.description,
         quantity: new Prisma.Decimal(line.quantity),
         unitPrice: new Prisma.Decimal(line.unitPrice),
         discount: new Prisma.Decimal(line.discount ?? 0),
-        taxRate: new Prisma.Decimal(line.taxRate ?? 0),
+        taxRate: calc.taxRate,
         taxAmount: calc.taxAmount,
         lineTotal: calc.lineTotal,
-      };
-    });
+      });
+    }
 
     const total = subtotal.add(taxAmount);
 
@@ -113,6 +136,11 @@ export class SalesService {
       if (!customer) {
         throw new BadRequestException('Customer not found');
       }
+    }
+
+    await this.tenantAccess.assertBranchExists(tenantId, data.branchId);
+    if (data.warehouseId) {
+      await this.tenantAccess.assertWarehouseForBranch(tenantId, data.warehouseId, data.branchId);
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -218,6 +246,7 @@ export class SalesService {
       method: data.method,
       paymentDate: data.paymentDate,
       reference: data.reference,
+      actorUserId: data.actorUserId,
     });
 
     await this.audit.log({
@@ -236,6 +265,7 @@ export class SalesService {
     tenantId: string,
     id: string,
     dimensions?: PostingDimensions,
+    actorUserId?: string,
   ) {
     const invoice = await this.findById(tenantId, id);
     if (invoice.status !== 'draft') {
@@ -249,7 +279,7 @@ export class SalesService {
     let cogsTotal = new Prisma.Decimal(0);
     const useSalesFinancePilot = getAppConfig().universalFinanceSalesPilotEnabled;
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       for (const line of invoice.lines) {
         if (!line.productId) continue;
         const product = await tx.product.findFirst({
@@ -342,6 +372,24 @@ export class SalesService {
         include: { lines: true, customer: true },
       });
     });
+
+    await this.audit.log({
+      tenantId,
+      branchId: invoice.branchId,
+      userId: actorUserId,
+      entity: 'sales_invoice',
+      entityId: invoice.id,
+      action: 'sales.invoice.posted',
+      newValue: { total: totalNum },
+    });
+
+    await this.eInvoicingEngine.queueDocument(tenantId, {
+      documentType: 'sales_invoice',
+      documentId: result.id,
+      documentNumber: result.number,
+    });
+
+    return result;
   }
 
   async recordPayment(
@@ -354,6 +402,7 @@ export class SalesService {
       method?: string;
       paymentDate?: string;
       reference?: string;
+      actorUserId?: string;
     },
   ) {
     const customer = await this.prisma.customer.findFirst({
@@ -363,7 +412,9 @@ export class SalesService {
       throw new BadRequestException('Customer not found');
     }
 
-    return this.prisma.$transaction(async (tx) => {
+    await this.tenantAccess.assertBranchExists(tenantId, data.branchId);
+
+    const payment = await this.prisma.$transaction(async (tx) => {
       const number = await this.documentNumbers.nextNumber(
         tenantId, 'RCP', 'RCP', data.branchId, tx,
       );
@@ -409,5 +460,112 @@ export class SalesService {
 
       return payment;
     });
+
+    await this.audit.log({
+      tenantId,
+      branchId: data.branchId,
+      userId: data.actorUserId,
+      entity: 'customer_payment',
+      entityId: payment.id,
+      action: 'sales.payment.recorded',
+      newValue: { customerId: data.customerId, amount: data.amount, invoiceId: data.invoiceId ?? null },
+    });
+
+    return payment;
+  }
+
+  async returnInvoice(tenantId: string, id: string, actorUserId?: string) {
+    const invoice = await this.findById(tenantId, id);
+    if (invoice.status !== 'posted') {
+      throw new BadRequestException('Only posted invoices can be returned');
+    }
+    if (!invoice.warehouseId) {
+      throw new BadRequestException('Invoice warehouse is required for return');
+    }
+
+    const totalNum = Number(invoice.total);
+    let cogsTotal = new Prisma.Decimal(0);
+
+    const result = await this.prisma.$transaction(async (tx) => {
+      for (const line of invoice.lines) {
+        if (!line.productId) continue;
+        const product = await tx.product.findFirst({
+          where: { id: line.productId, tenantId },
+        });
+        if (!product?.trackInventory) continue;
+
+        const balance = await tx.stockBalance.findUnique({
+          where: {
+            tenantId_warehouseId_productId: {
+              tenantId,
+              warehouseId: invoice.warehouseId!,
+              productId: line.productId,
+            },
+          },
+        });
+        const unitCost = balance ? Number(balance.avgCost) : Number(product.costPrice);
+        cogsTotal = cogsTotal.add(new Prisma.Decimal(unitCost).mul(line.quantity));
+
+        await this.inventoryLedger.applyMovement(
+          {
+            tenantId,
+            branchId: invoice.branchId,
+            warehouseId: invoice.warehouseId!,
+            productId: line.productId,
+            movementType: 'sale_return',
+            quantity: Number(line.quantity),
+            unitCost,
+            referenceType: 'sales_invoice_return',
+            referenceId: invoice.id,
+          },
+          tx,
+        );
+      }
+
+      const cogsNum = Number(cogsTotal);
+      await this.accounting.createEntry(
+        tenantId,
+        invoice.branchId,
+        `Sales return ${invoice.number}`,
+        [
+          { accountCode: '4000', debit: totalNum, credit: 0, description: 'Revenue reversal' },
+          { accountCode: '1100', debit: 0, credit: totalNum, description: 'AR reversal' },
+          ...(cogsNum > 0
+            ? [
+                { accountCode: '1200', debit: cogsNum, credit: 0, description: 'Inventory restored' },
+                { accountCode: '5000', debit: 0, credit: cogsNum, description: 'COGS reversal' },
+              ]
+            : []),
+        ],
+        'sales_invoice_return',
+        invoice.id,
+        tx,
+      );
+
+      if (invoice.customerId) {
+        await tx.customer.update({
+          where: { id: invoice.customerId },
+          data: { balance: { decrement: invoice.total } },
+        });
+      }
+
+      return tx.salesInvoice.update({
+        where: { id },
+        data: { status: 'returned' },
+        include: { lines: true, customer: true },
+      });
+    });
+
+    await this.audit.log({
+      tenantId,
+      branchId: invoice.branchId,
+      userId: actorUserId,
+      entity: 'sales_invoice',
+      entityId: invoice.id,
+      action: 'sales.invoice.returned',
+      newValue: { total: totalNum },
+    });
+
+    return result;
   }
 }

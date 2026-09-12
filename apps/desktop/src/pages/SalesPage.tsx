@@ -130,6 +130,35 @@ export function SalesPage() {
     }
   }
 
+  async function payInvoice(row: SalesInvoiceRow) {
+    if (!user?.branchId || !row.customer?.id) {
+      setMessage(t('sales.paymentRequiresCustomer'));
+      return;
+    }
+    try {
+      await client.recordSalesPayment({
+        branchId: user.branchId,
+        customerId: row.customer.id,
+        invoiceId: row.id,
+        amount: Number(row.total),
+      });
+      setMessage(t('sales.paid'));
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : t('errors.generic'));
+    }
+  }
+
+  async function returnInvoice(id: string) {
+    try {
+      await client.returnSalesInvoice(id);
+      setMessage(t('sales.returned'));
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : t('errors.generic'));
+    }
+  }
+
   return (
     <div>
       <PageHeader
@@ -172,12 +201,25 @@ export function SalesPage() {
           {
             key: 'actions',
             label: t('common.actions'),
-            render: (r) =>
-              r.status === 'draft' ? (
-                <button type="button" className="btn btn-ghost" onClick={() => void postInvoice(r.id)}>
-                  {t('sales.post')}
-                </button>
-              ) : null,
+            render: (r) => (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {r.status === 'draft' ? (
+                  <button type="button" className="btn btn-ghost" onClick={() => void postInvoice(r.id)}>
+                    {t('sales.post')}
+                  </button>
+                ) : null}
+                {r.status === 'posted' ? (
+                  <>
+                    <button type="button" className="btn btn-ghost" onClick={() => void payInvoice(r)}>
+                      {t('sales.receivePayment')}
+                    </button>
+                    <button type="button" className="btn btn-ghost" onClick={() => void returnInvoice(r.id)}>
+                      {t('sales.return')}
+                    </button>
+                  </>
+                ) : null}
+              </div>
+            ),
           },
         ]}
         fetchData={(c) => c.getSalesInvoices()}

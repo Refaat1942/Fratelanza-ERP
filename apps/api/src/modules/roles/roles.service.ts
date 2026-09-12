@@ -52,4 +52,19 @@ export class RolesService {
 
     return this.findById(tenantId, role.id);
   }
+
+  async updatePermissions(tenantId: string, id: string, permissionIds: string[]) {
+    const role = await this.prisma.role.findFirst({
+      where: { id, tenantId, deletedAt: null },
+    });
+    if (!role) throw new NotFoundException('Role not found');
+
+    await this.prisma.rolePermission.deleteMany({ where: { roleId: id } });
+    if (permissionIds.length > 0) {
+      await this.prisma.rolePermission.createMany({
+        data: permissionIds.map((permissionId) => ({ roleId: id, permissionId })),
+      });
+    }
+    return this.findById(tenantId, id);
+  }
 }

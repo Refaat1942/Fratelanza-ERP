@@ -27,6 +27,8 @@ export interface AppConfig {
   universalFinancePilotEnabled: boolean;
   universalFinanceSalesPilotEnabled: boolean;
   appVersion: string;
+  appUrl: string;
+  frontendUrl: string;
 }
 
 const DEV_JWT_FALLBACK = 'development-secret-change-in-production';
@@ -35,13 +37,16 @@ export { resolveAppVersion, resolveDesktopVersion };
 
 export function loadApiConfig(): AppConfig {
   const nodeEnv = (process.env.NODE_ENV ?? 'development') as AppConfig['nodeEnv'];
+  const appUrl = process.env.APP_URL ?? process.env.FRONTEND_URL ?? 'http://localhost:5174';
+  const frontendUrl = process.env.FRONTEND_URL ?? appUrl;
+  const defaultCors = `${frontendUrl},http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174`;
 
   return {
     nodeEnv,
     api: {
       port: parseInt(process.env.API_PORT ?? '3000', 10),
       host: process.env.API_HOST ?? '0.0.0.0',
-      corsOrigins: (process.env.CORS_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173').split(','),
+      corsOrigins: (process.env.CORS_ORIGINS ?? defaultCors).split(',').map((s) => s.trim()),
     },
     database: {
       url: process.env.DATABASE_URL ?? '',
@@ -57,6 +62,8 @@ export function loadApiConfig(): AppConfig {
     universalFinancePilotEnabled: process.env.UNIVERSAL_FINANCE_PILOT_ENABLED === 'true',
     universalFinanceSalesPilotEnabled: process.env.UNIVERSAL_FINANCE_SALES_PILOT_ENABLED === 'true',
     appVersion: resolveAppVersion(),
+    appUrl,
+    frontendUrl,
   };
 }
 

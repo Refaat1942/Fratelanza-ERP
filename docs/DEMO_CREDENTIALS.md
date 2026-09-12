@@ -43,8 +43,8 @@ Override during seed with environment variable `DEMO_SEED_PASSWORD`.
 
 ## Setup
 
-1. Run `scripts\Setup-Eval-Database.cmd`
-2. Run `Start-Fratelanza.cmd`
+1. **One time only:** double-click `0-Setup-Once.cmd` (enter postgres password if asked)
+2. **Every time you test:** double-click `Start-Fratelanza.cmd`
 3. Log in with username `admin` and password above
 
 **Note:** Login is case-insensitive. Usernames are stored internally as `username@fratelanza.local` but you only type the username part.

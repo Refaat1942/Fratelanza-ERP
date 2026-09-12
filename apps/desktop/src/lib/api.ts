@@ -15,8 +15,8 @@ export type PartyRow = {
   roles?: Array<{ role: string }>;
 };
 export type InventoryBalanceRow = { id: string; quantity: number; product: { id: string; name: string; sku: string }; warehouse: { id: string; name: string } };
-export type SalesInvoiceRow = { id: string; number: string; status: string; total: number; invoiceDate: string; customer?: { name: string } };
-export type PurchaseOrderRow = { id: string; number: string; status: string; total: number; supplier: { name: string } };
+export type SalesInvoiceRow = { id: string; number: string; status: string; total: number; invoiceDate: string; customer?: { id: string; name: string } };
+export type PurchaseOrderRow = { id: string; number: string; status: string; total: number; supplier: { id: string; name: string } };
 export type ProjectRow = {
   id: string;
   code: string;
@@ -106,8 +106,10 @@ export type SyncConflictRow = {
 };
 
 export function resolveApiBaseUrl(storedUrl: string): string {
-  // In Vite dev, route through the proxy (same origin) to avoid CORS/network issues
-  if (import.meta.env.DEV) {
+  if (import.meta.env.VITE_API_BASE_URL) {
+    return String(import.meta.env.VITE_API_BASE_URL);
+  }
+  if (import.meta.env.DEV || import.meta.env.VITE_SAME_ORIGIN_API === 'true') {
     return '';
   }
   return storedUrl || 'http://localhost:3000';
@@ -192,10 +194,12 @@ export class ApiClient {
         locale: string;
         tenantId: string;
         branchId?: string;
+        tenantCode: string;
         tenantName: string;
         branchName?: string;
         role: string;
         permissions: string[];
+        isPlatformAdmin?: boolean;
       };
     }>('/auth/login', {
       method: 'POST',
@@ -211,6 +215,10 @@ export class ApiClient {
     return this.request('/tenants/current');
   }
 
+  getTenantModules() {
+    return this.request<string[]>('/tenants/current/modules');
+  }
+
   getBranches() {
     return this.request('/branches');
   }
@@ -219,14 +227,100 @@ export class ApiClient {
     return this.request('/settings');
   }
 
+  getIntegrationCountry() {
+    return this.request<{
+      countryCode: string;
+      currency: string;
+      timezone: string;
+      integration: {
+        authority: string;
+        environment: string;
+        credentialsStatus: string;
+        pendingDocuments: number;
+        successfulDocuments: number;
+        failedDocuments: number;
+        lastSubmission: string | null;
+        configurationRequired: string[];
+      };
+    }>('/integrations/country');
+  }
+
+  getIntegrationLogs() {
+    return this.request<Array<{
+      id: string;
+      authority: string;
+      documentType: string;
+      documentNumber?: string | null;
+      status: string;
+      errorMessage?: string | null;
+      createdAt: string;
+    }>>('/integrations/logs');
+  }
+
+  getEgyptIntegrationStatus() {
+    return this.request<{
+      eInvoice: {
+        authority: string;
+        environment: string;
+        credentialsStatus: string;
+        pendingDocuments: number;
+        successfulDocuments: number;
+        failedDocuments: number;
+        lastSubmission: string | null;
+        configurationRequired: string[];
+      };
+      eReceipt: {
+        authority: string;
+        environment: string;
+        credentialsStatus: string;
+        lastSubmission: string | null;
+        configurationRequired: string[];
+        pendingDocuments?: number;
+        successfulDocuments?: number;
+        failedDocuments?: number;
+      };
+    }>('/integrations/egypt/status');
+  }
+
+  updateEgyptIntegrationSettings(payload: { environment?: 'sandbox' | 'production'; clientId?: string; clientSecret?: string }) {
+    return this.request('/integrations/egypt/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  getSaudiIntegrationStatus() {
+    return this.request<{
+      authority: string;
+      environment: string;
+      connectionStatus?: string;
+      certificateStatus?: string;
+      credentialsStatus: string;
+      pendingDocuments: number;
+      successfulDocuments: number;
+      failedDocuments: number;
+      lastSubmission: string | null;
+      configurationRequired: string[];
+    }>('/integrations/saudi/status');
+  }
+
+  updateSaudiIntegrationSettings(payload: { environment?: 'sandbox' | 'production'; vatNumber?: string; csrCommonName?: string }) {
+    return this.request('/integrations/saudi/settings', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  }
+
   getDashboardStats() {
     return this.request<{
       salesToday: number;
       salesMonth: number;
+      purchasesMonth: number;
       receivables: number;
       payables: number;
       inventoryValue: number;
       lowStockCount: number;
+      activeProjects: number;
     }>('/dashboard/stats');
   }
 
@@ -324,7 +418,103 @@ export class ApiClient {
   }
 
   getRoles() {
-    return this.request<Array<{ id: string; name: string; code: string }>>('/roles');
+    return this.request<
+      Array<{
+        id: string;
+        name: string;
+        code: string;
+        permissions: Array<{ permission: { id: string; module: string; feature: string; action: string } }>;
+      }>
+    >('/roles');
+  }
+
+  getPermissions() {
+    return this.request<Array<{ id: string; module: string; feature: string; action: string }>>(
+      '/roles/permissions',
+    );
+  }
+
+  updateRolePermissions(roleId: string, permissionIds: string[]) {
+    return this.request(`/roles/${roleId}/permissions`, {
+      method: 'PATCH',
+      body: JSON.stringify({ permissionIds }),
+    });
+  }
+
+  getDemoInfo(slug: string) {
+    return this.request<{ slug: string; name: string; modules: string[]; tenantName: string }>(
+      `/demo/${slug}`,
+    );
+  }
+
+  demoLogin(slug: string, username?: string, password?: string) {
+    return this.request<{
+      accessToken: string;
+      refreshToken: string;
+      user: {
+        id: string;
+        email: string;
+        firstName: string;
+        lastName: string;
+        locale: string;
+        tenantId: string;
+        branchId?: string;
+        tenantCode: string;
+        tenantName: string;
+        branchName?: string;
+        role: string;
+        permissions: string[];
+        isPlatformAdmin?: boolean;
+      };
+    }>(`/demo/${slug}/login`, {
+      method: 'POST',
+      body: JSON.stringify({ username, password }),
+    });
+  }
+
+  getPlatformDashboard() {
+    return this.request<{
+      organizations: number;
+      activeUsers: number;
+      demoTenants: number;
+      enabledModules: number;
+      disabledModules: number;
+    }>('/platform/dashboard');
+  }
+
+  getPlatformOrganizations() {
+    return this.request<
+      Array<{
+        id: string;
+        name: string;
+        code: string;
+        displayName?: string | null;
+        status: string;
+        country: string;
+        currency: string;
+        _count: { users: number; branches: number };
+      }>
+    >('/platform/organizations');
+  }
+
+  getPlatformDemos() {
+    return this.request<
+      Array<{
+        id: string;
+        slug: string;
+        name: string;
+        enabled: boolean;
+        linkToken: string;
+        modules: string[];
+        tenant: { name: string; code: string };
+      }>
+    >('/platform/demos');
+  }
+
+  getPlatformTenantModules(tenantId: string) {
+    return this.request<Array<{ id: string; enabled: boolean; nameKey: string }>>(
+      `/platform/modules/${tenantId}`,
+    );
   }
 
   getAssignableRoles() {
@@ -495,6 +685,21 @@ export class ApiClient {
     });
   }
 
+  returnSalesInvoice(id: string) {
+    return this.request(`/sales/invoices/${id}/return`, { method: 'POST' });
+  }
+
+  recordSalesPayment(payload: {
+    branchId: string;
+    customerId: string;
+    invoiceId?: string;
+    amount: number;
+    method?: string;
+    reference?: string;
+  }) {
+    return this.request('/sales/payments', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
   createPurchaseOrder(payload: {
     branchId: string;
     supplierId: string;
@@ -521,6 +726,31 @@ export class ApiClient {
 
   receivePurchaseOrder(id: string) {
     return this.request(`/purchasing/orders/${id}/receive`, { method: 'POST' });
+  }
+
+  recordSupplierPayment(payload: {
+    branchId: string;
+    supplierId: string;
+    purchaseOrderId?: string;
+    amount: number;
+    method?: string;
+    reference?: string;
+  }) {
+    return this.request('/purchasing/payments', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
+  returnPurchaseOrder(id: string) {
+    return this.request(`/purchasing/orders/${id}/return`, { method: 'POST' });
+  }
+
+  transferStock(payload: {
+    fromWarehouseId: string;
+    toWarehouseId: string;
+    productId: string;
+    quantity: number;
+    notes?: string;
+  }) {
+    return this.request('/inventory/transfer', { method: 'POST', body: JSON.stringify(payload) });
   }
 
   adjustInventory(payload: {

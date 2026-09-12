@@ -23,7 +23,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     await this.authService.assertSessionActive(payload.sessionId, payload.sub);
 
+    const liveUser = await this.authService.validateAccessUser(payload.sub, payload.tenantId);
     const permissions = await this.authService.getUserPermissions(payload.sub);
-    return { ...payload, permissions };
+
+    return {
+      ...payload,
+      tenantId: liveUser.tenantId,
+      branchId: liveUser.branchId ?? undefined,
+      isPlatformAdmin: liveUser.isPlatformAdmin,
+      allowedBranchIds: liveUser.allowedBranchIds,
+      allowedWarehouseIds: liveUser.allowedWarehouseIds,
+      permissions,
+    };
   }
 }

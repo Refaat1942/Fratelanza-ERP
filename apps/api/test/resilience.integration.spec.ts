@@ -1,5 +1,6 @@
 import { randomUUID } from 'crypto';
 import type { INestApplication } from '@nestjs/common';
+import { PrismaService } from '../src/database/prisma.service';
 import { createTestApp, loginAdmin, request } from './test-app';
 
 describe('Resilience integration (Phase 0)', () => {

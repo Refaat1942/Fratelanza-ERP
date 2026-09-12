@@ -12,4 +12,12 @@ export class HealthController {
     const data = await this.systemService.getHealthSummary();
     return { success: true, data };
   }
+
+  @Public()
+  @Get('ready')
+  async ready() {
+    const data = await this.systemService.getHealthSummary();
+    const ready = data.database === 'ok';
+    return { success: ready, data: { ready, ...data } };
+  }
 }

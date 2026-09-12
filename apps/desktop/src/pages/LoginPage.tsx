@@ -99,6 +99,17 @@ export function LoginPage() {
             {loading ? t('common.loading') : t('auth.login')}
           </button>
         </form>
+
+        <div className="login-demo-links">
+          <p className="login-demo-title">{t('demo.tryInteractive')}</p>
+          <div className="login-demo-grid">
+            {['trading', 'construction', 'restaurant', 'services'].map((slug) => (
+              <a key={slug} href={`/demo/${slug}`} className="login-demo-link">
+                {t(`demo.slugs.${slug}`)}
+              </a>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

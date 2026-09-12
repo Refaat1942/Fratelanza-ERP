@@ -5,8 +5,10 @@ import {
   IsString, IsOptional, IsBoolean, IsNumber, Min, IsEmail,
 } from 'class-validator';
 import { CustomersService } from './customers.service';
-import { TenantId, RequirePermissions } from '../../common/decorators';
+import { TenantAccessService } from '../../common/services/tenant-access.service';
+import { TenantId, CurrentUser, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
+import type { JwtPayload } from '@fratelanza/types';
 
 class CreateCustomerDto {
   @IsString() code!: string;
@@ -31,20 +33,30 @@ class UpdateCustomerDto {
 }
 
 @Controller('customers')
-@UseGuards(PermissionsGuard)export class CustomersController {
-  constructor(private customersService: CustomersService) {}
+@UseGuards(PermissionsGuard)
+export class CustomersController {
+  constructor(
+    private customersService: CustomersService,
+    private tenantAccess: TenantAccessService,
+  ) {}
 
   @Get()
   @RequirePermissions('customers:customers:read')
-  async findAll(@TenantId() tenantId: string) {
-    const data = await this.customersService.findAll(tenantId);
+  async findAll(@TenantId() tenantId: string, @CurrentUser() user: JwtPayload) {
+    const branchWhere = this.tenantAccess.buildCustomerListWhere(user);
+    const data = await this.customersService.findAll(tenantId, branchWhere);
     return { success: true, data };
   }
 
   @Get(':id')
   @RequirePermissions('customers:customers:read')
-  async findOne(@TenantId() tenantId: string, @Param('id') id: string) {
+  async findOne(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
     const data = await this.customersService.findById(tenantId, id);
+    this.tenantAccess.assertBranchInScope(user, data.branchId);
     return { success: true, data };
   }
 

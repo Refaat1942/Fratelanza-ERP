@@ -3,6 +3,7 @@ import { PrismaService } from '../src/database/prisma.service';
 import { createIsolatedTenant } from './pms-test.helpers';
 import {
   loadInventoryTestContext,
+  seedStockBalance,
   type InventoryTestContext,
 } from './inventory-test.helpers';
 import { createTestApp, loginAdmin, request } from './test-app';

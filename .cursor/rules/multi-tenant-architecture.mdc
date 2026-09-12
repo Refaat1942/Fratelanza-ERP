@@ -1,0 +1,60 @@
+---
+description: CRITICAL — True multi-tenant + multi-branch ERP architecture for Fratelanza Business Platform
+alwaysApply: true
+---
+
+# CRITICAL — TRUE MULTI-TENANT + MULTI-BRANCH ARCHITECTURE
+
+The ERP must use a **true multi-tenant database architecture**. This is core platform design, not an optional add-on.
+
+## Model
+
+- **Tenant** = independent customer organization (company). Strict data isolation between tenants.
+- **Branch** = branch/site belonging to a tenant. Never a separate database.
+- **Country** (`EG` / `SA`) belongs to the **tenant**. Branches inherit tenant country unless explicitly designed otherwise.
+- Demo tenants use the **same architecture** as production customers. No demo-only data model.
+
+```
+Fratelanza Platform
+├── Tenant: ABC Pharmacy Group
+│   ├── Cairo Branch → warehouses, cashboxes, users, transactions
+│   ├── Giza Branch
+│   └── Alexandria Branch
+├── Tenant: XYZ Trading
+│   ├── Riyadh Branch
+│   └── Jeddah Branch
+```
+
+## Mandatory rules
+
+1. **Every major entity** must be owned by `tenantId`. Branch-scoped data must also carry `branchId` where applicable:
+   users, roles, customers, suppliers, parties, products, inventory, warehouses, sales, purchases, invoices, payments, cashboxes, accounting, journal entries, projects, construction, restaurant, audit logs, government/tax documents.
+
+2. **Backend enforcement is mandatory.** Never rely on frontend filtering alone. All API controllers/services/repositories must filter by JWT `tenantId`. Branch-scoped users must be filtered/enforced server-side.
+
+3. **Authorization layers work together:** JWT tenant context → session validation → RBAC permissions → branch scope → module access.
+
+4. **Cross-tenant access must be impossible** even if a user manipulates IDs, URLs, API payloads, or browser state. Return 404/403, never leak foreign tenant data.
+
+5. **Inter-branch operations** stay inside the same tenant (e.g. stock transfer). Cross-tenant transfers are forbidden.
+
+6. **Updates must use composite keys** where possible: `where: { id, tenantId }`, not `where: { id }` alone after a prior lookup.
+
+7. **Composite unique constraints** must include `tenantId` for codes, document numbers, emails, etc.
+
+8. **Reporting** must support: whole tenant, single branch, multiple branches, consolidated tenant views.
+
+9. **Do not create a separate database per branch.** One platform DB, many tenants, many branches per tenant. Must scale from 1 branch to 100+ without redesign.
+
+10. **When adding features**, audit schema, services, guards, queries, reports, background jobs, tax integrations, inventory ledger, accounting engine, and audit for tenant/branch isolation end-to-end.
+
+## Implementation references
+
+- `TenantAccessService` — tenant/branch scope helpers
+- `@TenantId()` / `@CurrentUser()` decorators — never trust client-supplied tenantId
+- `UserBranchAccess` — optional multi-branch user assignments
+- `apps/api/test/tenant-isolation.integration.spec.ts` — acceptance tests (two tenants, multiple branches)
+
+## Acceptance bar
+
+Create at least two tenants with multiple branches each. Automated API tests must prove Tenant A users cannot read, modify, report on, transfer, or otherwise access Tenant B data.

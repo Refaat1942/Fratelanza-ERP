@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ConnectivityStatus } from '@fratelanza/types';
@@ -117,6 +118,17 @@ export function SettingsPage() {
           <div className="settings-row">
             <span className="settings-label">{t('settings.companyName')}</span>
             <span>{user.tenantName}</span>
+          </div>
+          {user.countryCode && (
+            <div className="settings-row">
+              <span className="settings-label">{t('integrations.country')}</span>
+              <span>{user.countryCode} · {user.currency}</span>
+            </div>
+          )}
+          <div className="settings-row">
+            <Link className="btn btn-secondary btn--sm" to="/settings/integrations">
+              {t('nav.integrations')}
+            </Link>
           </div>
           {user.branchName && (
             <div className="settings-row">

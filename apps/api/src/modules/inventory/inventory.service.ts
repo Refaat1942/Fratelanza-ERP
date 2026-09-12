@@ -1,6 +1,5 @@
-import {
-  Injectable, BadRequestException,
-} from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { InventoryLedgerService } from '../../common/services/inventory-ledger.service';
 import { AuditService } from '../audit/audit.service';
@@ -15,7 +14,11 @@ export class InventoryService {
 
   async listMovements(
     tenantId: string,
-    filters?: { warehouseId?: string; productId?: string },
+    filters?: {
+      warehouseId?: string;
+      productId?: string;
+      warehouseFilter?: { warehouseId?: string | { in: string[] } };
+    },
   ) {
     if (filters?.warehouseId) {
       await this.assertWarehouseForTenant(tenantId, filters.warehouseId);
@@ -29,6 +32,7 @@ export class InventoryService {
         tenantId,
         ...(filters?.warehouseId && { warehouseId: filters.warehouseId }),
         ...(filters?.productId && { productId: filters.productId }),
+        ...(filters?.warehouseFilter && !filters?.warehouseId ? filters.warehouseFilter : {}),
       },
       include: {
         product: { select: { id: true, sku: true, name: true } },
@@ -39,7 +43,11 @@ export class InventoryService {
     });
   }
 
-  async getBalances(tenantId: string, warehouseId?: string) {
+  async getBalances(
+    tenantId: string,
+    warehouseId?: string,
+    warehouseFilter?: { warehouseId?: string | { in: string[] } },
+  ) {
     if (warehouseId) {
       await this.assertWarehouseForTenant(tenantId, warehouseId);
     }
@@ -48,6 +56,7 @@ export class InventoryService {
       where: {
         tenantId,
         ...(warehouseId && { warehouseId }),
+        ...(warehouseFilter && !warehouseId ? warehouseFilter : {}),
       },
       include: {
         product: { select: { id: true, sku: true, name: true, salePrice: true } },
@@ -121,6 +130,101 @@ export class InventoryService {
     });
 
     return movement;
+  }
+
+  async transferStock(
+    tenantId: string,
+    data: {
+      fromWarehouseId: string;
+      toWarehouseId: string;
+      productId: string;
+      quantity: number;
+      branchId?: string;
+      notes?: string;
+      createdById?: string;
+    },
+  ) {
+    if (data.fromWarehouseId === data.toWarehouseId) {
+      throw new BadRequestException('Source and destination warehouses must differ');
+    }
+    if (data.quantity <= 0) {
+      throw new BadRequestException('Transfer quantity must be positive');
+    }
+
+    const fromWarehouse = await this.assertWarehouseForTenant(tenantId, data.fromWarehouseId);
+    const toWarehouse = await this.assertWarehouseForTenant(tenantId, data.toWarehouseId);
+    await this.assertProductForTenant(tenantId, data.productId);
+
+    const branchId = data.branchId ?? fromWarehouse.branchId;
+    if (fromWarehouse.branchId !== branchId || toWarehouse.branchId !== branchId) {
+      throw new BadRequestException('Both warehouses must belong to the same branch');
+    }
+
+    const balance = await this.prisma.stockBalance.findUnique({
+      where: {
+        tenantId_warehouseId_productId: {
+          tenantId,
+          warehouseId: data.fromWarehouseId,
+          productId: data.productId,
+        },
+      },
+    });
+    const unitCost = balance ? Number(balance.avgCost) : 0;
+
+    const transferRef = randomUUID();
+
+    const [outMovement, inMovement] = await this.prisma.$transaction(async (tx) => {
+      const outMv = await this.inventoryLedger.applyMovement(
+        {
+          tenantId,
+          branchId,
+          warehouseId: data.fromWarehouseId,
+          productId: data.productId,
+          movementType: 'transfer_out',
+          quantity: -data.quantity,
+          unitCost,
+          referenceType: 'stock_transfer',
+          referenceId: transferRef,
+          notes: data.notes,
+          createdById: data.createdById,
+        },
+        tx,
+      );
+      const inMv = await this.inventoryLedger.applyMovement(
+        {
+          tenantId,
+          branchId,
+          warehouseId: data.toWarehouseId,
+          productId: data.productId,
+          movementType: 'transfer_in',
+          quantity: data.quantity,
+          unitCost,
+          referenceType: 'stock_transfer',
+          referenceId: transferRef,
+          notes: data.notes,
+          createdById: data.createdById,
+        },
+        tx,
+      );
+      return [outMv, inMv];
+    });
+
+    await this.audit.log({
+      tenantId,
+      branchId,
+      userId: data.createdById,
+      entity: 'inventory_movement',
+      entityId: outMovement.id,
+      action: 'inventory.transfer.completed',
+      newValue: {
+        fromWarehouseId: data.fromWarehouseId,
+        toWarehouseId: data.toWarehouseId,
+        productId: data.productId,
+        quantity: data.quantity,
+      },
+    });
+
+    return { outMovement, inMovement };
   }
 
   private async assertWarehouseForTenant(tenantId: string, warehouseId: string) {

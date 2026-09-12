@@ -43,10 +43,14 @@ export class PermissionsGuard implements CanActivate {
     if (!required || required.length === 0) return true;
 
     const request = context.switchToHttp().getRequest<{
-      user: { permissions: string[] };
+      user: { permissions: string[]; isPlatformAdmin?: boolean };
     }>();
+    if (request.user?.isPlatformAdmin) return true;
+
     const userPermissions = request.user?.permissions ?? [];
 
     return required.every((p) => userPermissions.includes(p));
   }
 }
+
+export { ModuleAccessGuard } from './module-access.guard';

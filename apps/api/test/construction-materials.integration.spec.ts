@@ -13,6 +13,7 @@ import {
   restoreDemoTenantLicense,
 } from './construction-test.helpers';
 import { createIsolatedTenant } from './pms-test.helpers';
+import { seedStockBalance } from './inventory-test.helpers';
 import { createTestApp, request } from './test-app';
 
 describe('Construction materials (Phase 9.6)', () => {

@@ -6,8 +6,9 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { PurchasingService } from './purchasing.service';
-import { TenantId, CurrentUser, RequirePermissions } from '../../common/decorators';
-import { PermissionsGuard } from '../../common/guards';
+import { TenantId, CurrentUser, RequirePermissions, RequireModule } from '../../common/decorators';
+import { PermissionsGuard, ModuleAccessGuard } from '../../common/guards';
+import { TenantAccessService } from '../../common/services/tenant-access.service';
 import { PurchasingPartyRoutingGuard } from './guards/purchasing-party-routing.guard';
 import type { JwtPayload } from '@fratelanza/types';
 
@@ -17,6 +18,7 @@ class PoLineDto {
   @IsNumber() @Min(0.0001) quantity!: number;
   @IsNumber() @Min(0) unitPrice!: number;
   @IsOptional() @IsNumber() @Min(0) taxRate?: number;
+  @IsOptional() @IsString() taxCategoryId?: string;
 }
 
 class CreatePoDto {
@@ -53,35 +55,71 @@ class ReceivePurchaseOrderDto {
   dimensions?: ReceiveDimensionsDto;
 }
 
+class RecordSupplierPaymentDto {
+  @IsString() branchId!: string;
+  @IsString() supplierId!: string;
+  @IsOptional() @IsString() purchaseOrderId?: string;
+  @IsNumber() @Min(0.01) amount!: number;
+  @IsOptional() @IsString() method?: string;
+  @IsOptional() @IsString() paymentDate?: string;
+  @IsOptional() @IsString() reference?: string;
+}
+
 @Controller('purchasing')
-@UseGuards(PermissionsGuard)export class PurchasingController {
-  constructor(private purchasingService: PurchasingService) {}
+@UseGuards(PermissionsGuard, ModuleAccessGuard)
+@RequireModule('purchasing')
+export class PurchasingController {
+  constructor(
+    private purchasingService: PurchasingService,
+    private tenantAccess: TenantAccessService,
+  ) {}
 
-  @Get('orders')  @RequirePermissions('purchasing:orders:read')
-  async listOrders(@TenantId() tenantId: string) {
-    const data = await this.purchasingService.findAll(tenantId);
+  @Get('orders')
+  @RequirePermissions('purchasing:orders:read')
+  async listOrders(@TenantId() tenantId: string, @CurrentUser() user: JwtPayload) {
+    const data = await this.purchasingService.findAll(
+      tenantId,
+      this.tenantAccess.buildBranchWhere(user),
+    );
     return { success: true, data };
   }
 
-  @Get('orders/:id')  @RequirePermissions('purchasing:orders:read')
-  async getOrder(@TenantId() tenantId: string, @Param('id') id: string) {
-    const data = await this.purchasingService.findById(tenantId, id);
+  @Get('orders/:id')
+  @RequirePermissions('purchasing:orders:read')
+  async getOrder(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    const data = await this.purchasingService.findById(
+      tenantId,
+      id,
+      this.tenantAccess.buildBranchWhere(user),
+    );
     return { success: true, data };
   }
 
-  @Post('orders')  @RequirePermissions('purchasing:orders:create')
-  async createOrder(@TenantId() tenantId: string, @Body() dto: CreatePoDto) {
+  @Post('orders')
+  @RequirePermissions('purchasing:orders:create')
+  async createOrder(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: CreatePoDto,
+  ) {
+    this.tenantAccess.assertBranchAccess(user, dto.branchId);
     const data = await this.purchasingService.createOrder(tenantId, dto);
     return { success: true, data };
   }
 
   @Post('orders/from-party')
-  @UseGuards(PurchasingPartyRoutingGuard)  @RequirePermissions('purchasing:orders:create')
+  @UseGuards(PurchasingPartyRoutingGuard)
+  @RequirePermissions('purchasing:orders:create')
   async createOrderFromParty(
     @TenantId() tenantId: string,
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreatePoFromPartyDto,
   ) {
+    this.tenantAccess.assertBranchAccess(user, dto.branchId);
     const data = await this.purchasingService.createOrderFromParty(tenantId, {
       ...dto,
       createdById: user.sub,
@@ -89,12 +127,15 @@ class ReceivePurchaseOrderDto {
     return { success: true, data };
   }
 
-  @Post('orders/:id/receive')  @RequirePermissions('purchasing:orders:receive')
+  @Post('orders/:id/receive')
+  @RequirePermissions('purchasing:orders:receive')
   async receiveOrder(
     @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
     @Param('id') id: string,
     @Body() dto?: ReceivePurchaseOrderDto,
   ) {
+    await this.tenantAccess.assertPurchaseOrderAccess(tenantId, user, id);
     const dimensions = dto?.dimensions
       ? {
           ...(dto.dimensions.projectId ? { projectId: dto.dimensions.projectId } : {}),
@@ -105,7 +146,35 @@ class ReceivePurchaseOrderDto {
       tenantId,
       id,
       dimensions && Object.keys(dimensions).length > 0 ? dimensions : undefined,
+      user.sub,
     );
+    return { success: true, data };
+  }
+
+  @Post('payments')
+  @RequirePermissions('purchasing:orders:receive')
+  async recordPayment(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: RecordSupplierPaymentDto,
+  ) {
+    this.tenantAccess.assertBranchAccess(user, dto.branchId);
+    const data = await this.purchasingService.recordSupplierPayment(tenantId, {
+      ...dto,
+      actorUserId: user.sub,
+    });
+    return { success: true, data };
+  }
+
+  @Post('orders/:id/return')
+  @RequirePermissions('purchasing:orders:receive')
+  async returnOrder(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    await this.tenantAccess.assertPurchaseOrderAccess(tenantId, user, id);
+    const data = await this.purchasingService.returnReceivedOrder(tenantId, id, user.sub);
     return { success: true, data };
   }
 }

@@ -6,9 +6,14 @@ import { PrismaService } from '../../database/prisma.service';
 export class CustomersService {
   constructor(private prisma: PrismaService) {}
 
-  async findAll(tenantId: string) {
+  async findAll(
+    tenantId: string,
+    branchWhere?: {
+      OR?: Array<{ branchId: null } | { branchId: string } | { branchId: { in: string[] } }>;
+    },
+  ) {
     return this.prisma.customer.findMany({
-      where: { tenantId, deletedAt: null },
+      where: { tenantId, deletedAt: null, ...branchWhere },
       orderBy: { name: 'asc' },
     });
   }
