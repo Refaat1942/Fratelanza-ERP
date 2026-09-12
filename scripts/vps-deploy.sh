@@ -19,7 +19,11 @@ git pull origin main
 echo "==> Install dependencies (includes devDependencies for tsc/vite)"
 echo "    IMPORTANT: run from repo root, not apps/web"
 unset NODE_ENV
-npm ci
+export NODE_ENV=
+if ! npm ci; then
+  echo "WARN: npm ci failed (lock file drift). Running npm install once to sync..."
+  npm install
+fi
 
 if [[ ! -d node_modules/react ]]; then
   echo "ERROR: node_modules missing after npm ci. Check disk space and npm errors above."
