@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuthStore } from '../stores';
 import { isOnboardingComplete, markOnboardingComplete } from '../pages/OnboardingPage';
@@ -11,11 +10,10 @@ export function OnboardingGate() {
   const tenantId = user?.tenantId;
   const tenantCode = user?.tenantCode ?? '';
 
-  useEffect(() => {
-    if (tenantId && tenantCode.endsWith(DEMO_TENANT_SUFFIX)) {
-      markOnboardingComplete(tenantId);
-    }
-  }, [tenantId, tenantCode]);
+  // Demo tenants skip onboarding synchronously (avoid redirect flash / stuck navigation).
+  if (tenantId && tenantCode.endsWith(DEMO_TENANT_SUFFIX) && !isOnboardingComplete(tenantId)) {
+    markOnboardingComplete(tenantId);
+  }
 
   if (tenantId && !isOnboardingComplete(tenantId)) {
     return <Navigate to="/onboarding" replace />;

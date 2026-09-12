@@ -3,7 +3,12 @@ import { AppRouter } from './lib/app-router';
 import { useEffect } from 'react';
 import { useAuthStore, useAppStore } from './stores';
 import { syncElectronAccessToken } from './lib/auth-session';
-import { AuthHydrationGate, ProtectedRoute } from './components/AuthGate';
+import {
+  AuthHydrationGate,
+  AuthSessionListener,
+  GuestOnly,
+  RequireAuth,
+} from './components/AuthGate';
 import { PlatformAdminRoute } from './components/PlatformAdminRoute';
 import { LoginPage } from './pages/LoginPage';
 import { DemoEntryPage } from './pages/DemoEntryPage';
@@ -37,6 +42,7 @@ import { OrganizationsPage } from './pages/control/OrganizationsPage';
 import { DemoManagementPage } from './pages/control/DemoManagementPage';
 import { ModuleManagementPage } from './pages/control/ModuleManagementPage';
 import { AuthorizationMatrixPage } from './pages/control/AuthorizationMatrixPage';
+import { ReportsPage } from './pages/ReportsPage';
 
 function AuthBootstrap() {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -57,83 +63,58 @@ function AuthBootstrap() {
 }
 
 function AppRoutes() {
-  const accessToken = useAuthStore((s) => s.accessToken);
-
   return (
     <Routes>
-      <Route
-        path="/login"
-        element={accessToken ? <Navigate to="/" replace /> : <LoginPage />}
-      />
-      <Route
-        path="/onboarding"
-        element={
-          accessToken ? (
-            <ProtectedRoute>
-              <OnboardingPage />
-            </ProtectedRoute>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      />
-      <Route
-        path="/"
-        element={
-          accessToken ? (
-            <ProtectedRoute>
-              <OnboardingGate />
-            </ProtectedRoute>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      >
-        <Route element={<AppLayout />}>
-        <Route index element={<ModuleHubPage />} />
-        <Route path="dashboard" element={<DashboardPage />} />
-        <Route path="parties" element={<PartiesPage />} />
-        <Route path="products" element={<ProductsPage />} />
-        <Route path="customers" element={<CustomersPage />} />
-        <Route path="suppliers" element={<SuppliersPage />} />
-        <Route path="warehouses" element={<WarehousesPage />} />
-        <Route path="inventory" element={<InventoryPage />} />
-        <Route path="sales" element={<SalesPage />} />
-        <Route path="purchasing" element={<PurchasingPage />} />
-        <Route path="projects" element={<ProjectsPage />} />
-        <Route path="cost-centers" element={<CostCentersPage />} />
-        <Route path="construction/contracts" element={<ConstructionContractsPage />} />
-        <Route path="construction/boq/:contractId" element={<ConstructionBoqPage />} />
-        <Route path="construction/progress" element={<ConstructionProgressPage />} />
-        <Route path="accounting" element={<AccountingPage />} />
-        <Route path="pos" element={<PosPage />} />
-        <Route path="users" element={<UsersPage />} />
-        <Route path="branches" element={<BranchesPage />} />
-        <Route path="settings" element={<SettingsPage />} />
-        <Route path="settings/integrations" element={<IntegrationsPage />} />
+      <Route element={<GuestOnly />}>
+        <Route path="/login" element={<LoginPage />} />
+      </Route>
+
+      <Route element={<RequireAuth />}>
+        <Route path="/onboarding" element={<OnboardingPage />} />
+        <Route element={<OnboardingGate />}>
+          <Route element={<AppLayout />}>
+            <Route index element={<ModuleHubPage />} />
+            <Route path="dashboard" element={<DashboardPage />} />
+            <Route path="parties" element={<PartiesPage />} />
+            <Route path="products" element={<ProductsPage />} />
+            <Route path="customers" element={<CustomersPage />} />
+            <Route path="suppliers" element={<SuppliersPage />} />
+            <Route path="warehouses" element={<WarehousesPage />} />
+            <Route path="inventory" element={<InventoryPage />} />
+            <Route path="sales" element={<SalesPage />} />
+            <Route path="purchasing" element={<PurchasingPage />} />
+            <Route path="projects" element={<ProjectsPage />} />
+            <Route path="cost-centers" element={<CostCentersPage />} />
+            <Route path="construction/contracts" element={<ConstructionContractsPage />} />
+            <Route path="construction/boq/:contractId" element={<ConstructionBoqPage />} />
+            <Route path="construction/progress" element={<ConstructionProgressPage />} />
+            <Route path="accounting" element={<AccountingPage />} />
+            <Route path="reports" element={<ReportsPage />} />
+            <Route path="pos" element={<PosPage />} />
+            <Route path="users" element={<UsersPage />} />
+            <Route path="branches" element={<BranchesPage />} />
+            <Route path="settings" element={<SettingsPage />} />
+            <Route path="settings/integrations" element={<IntegrationsPage />} />
+          </Route>
+        </Route>
+
+        <Route
+          path="/control"
+          element={
+            <PlatformAdminRoute>
+              <ControlCenterLayout />
+            </PlatformAdminRoute>
+          }
+        >
+          <Route index element={<ControlCenterDashboardPage />} />
+          <Route path="organizations" element={<OrganizationsPage />} />
+          <Route path="demos" element={<DemoManagementPage />} />
+          <Route path="modules" element={<ModuleManagementPage />} />
+          <Route path="authorization" element={<AuthorizationMatrixPage />} />
         </Route>
       </Route>
+
       <Route path="/demo/*" element={<DemoEntryPage />} />
-      <Route
-        path="/control"
-        element={
-          accessToken ? (
-            <ProtectedRoute>
-              <PlatformAdminRoute>
-                <ControlCenterLayout />
-              </PlatformAdminRoute>
-            </ProtectedRoute>
-          ) : (
-            <Navigate to="/login" replace />
-          )
-        }
-      >
-        <Route index element={<ControlCenterDashboardPage />} />
-        <Route path="organizations" element={<OrganizationsPage />} />
-        <Route path="demos" element={<DemoManagementPage />} />
-        <Route path="modules" element={<ModuleManagementPage />} />
-        <Route path="authorization" element={<AuthorizationMatrixPage />} />
-      </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
@@ -144,6 +125,7 @@ export function App() {
     <AppRouter>
       <AuthHydrationGate>
         <AuthBootstrap />
+        <AuthSessionListener />
         <AppRoutes />
       </AuthHydrationGate>
     </AppRouter>

@@ -12,6 +12,9 @@ const defaultApiUrl =
   import.meta.env.VITE_API_BASE_URL ??
   (import.meta.env.DEV ? '' : `${window.location.origin}`);
 
+// Override stale persisted localhost before first render / fetch.
+useAppStore.setState({ apiUrl: defaultApiUrl });
+
 function WebBootstrap() {
   const locale = useAppStore((s) => s.locale);
   const theme = useAppStore((s) => s.theme);

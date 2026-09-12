@@ -81,6 +81,7 @@ export const ar: TranslationSchema = {
     sales: 'المبيعات',
     purchasing: 'المشتريات',
     accounting: 'المحاسبة',
+    reports: 'التقارير',
     pos: 'نقطة البيع',
     projects: 'المشاريع',
     costCenters: 'مراكز التكلفة',
@@ -260,7 +261,8 @@ export const ar: TranslationSchema = {
   warehouses: { code: 'الرمز', name: 'الاسم', address: 'العنوان', create: 'مستودع جديد', branchRequired: 'اختر الفرع للمستودع' },
   sales: { number: 'رقم الفاتورة', total: 'الإجمالي', post: 'ترحيل', posted: 'تم ترحيل الفاتورة', create: 'فاتورة مبيعات جديدة', created: 'تم إنشاء الفاتورة', buyerMode: 'مصدر المشتري' },
   purchasing: { number: 'رقم أمر الشراء', receive: 'استلام', received: 'تم استلام أمر الشراء', create: 'أمر شراء جديد', created: 'تم إنشاء أمر الشراء', requiredFields: 'اختر المورد والمستودع', supplierMode: 'مصدر المورد' },
-  accounting: { trialBalance: 'ميزان المراجعة', code: 'رمز الحساب', name: 'اسم الحساب', debit: 'مدين', credit: 'دائن', seedCoa: 'إنشاء دليل الحسابات', seeded: 'تم إنشاء {{count}} حساب' },
+  accounting: { trialBalance: 'ميزان المراجعة', code: 'رمز الحساب', name: 'اسم الحساب', debit: 'مدين', credit: 'دائن', seedCoa: 'إنشاء دليل الحسابات', seeded: 'تم إنشاء {{count}} حساب', journals: 'قيود اليومية', journalNumber: 'رقم القيد', journalDate: 'التاريخ', description: 'الوصف' },
+  reports: { subtitle: 'ملخص مالي وتشغيلي للمنشأة', metric: 'المؤشر', value: 'القيمة' },
   pos: { searchPlaceholder: 'بحث عن منتج أو مسح باركود...', cart: 'السلة', total: 'الإجمالي', checkout: 'إتمام البيع', saleComplete: 'تم البيع بنجاح', shiftOpen: 'الوردية مفتوحة', shiftOffline: 'وردية دون اتصال — ستُزامَن المبيعات عند الاتصال', noBranch: 'المستخدم غير مرتبط بفرع. تواصل مع المسؤول.' },
   lineItems: { selectProduct: 'اختر منتج', addLine: 'إضافة سطر', total: 'إجمالي الأسطر', required: 'أضف سطراً واحداً على الأقل' },
   integrations: {

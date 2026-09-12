@@ -1,6 +1,10 @@
 import { pathToFileURL } from 'node:url';
 import { PrismaClient } from '../generated/server';
 import bcrypt from 'bcryptjs';
+import {
+  generateAllVerticalDemoVolumes,
+} from './demo-generator';
+import { assertSeedableDatabase } from './seed-guard';
 
 const prisma = new PrismaClient();
 
@@ -208,19 +212,7 @@ const DEFAULT_TENANT_SETTINGS = {
 };
 
 function assertEvalDatabase(): void {
-  const databaseUrl = process.env.DATABASE_URL ?? '';
-  if (!databaseUrl.includes('fratelanza_eval')) {
-    throw new Error(
-      'Refusing to seed: DATABASE_URL must contain "fratelanza_eval". ' +
-        'Use scripts/Setup-Eval-Database.cmd or point DATABASE_URL at the evaluation database.',
-    );
-  }
-  if (databaseUrl.includes('fratelanza_erp')) {
-    throw new Error(
-      'Refusing to seed: DATABASE_URL must NOT contain "fratelanza_erp". ' +
-        'This seed is only for the evaluation database.',
-    );
-  }
+  assertSeedableDatabase();
 }
 
 function permKey(p: PermissionDef): string {
@@ -1374,8 +1366,8 @@ async function seedDemoEnvironments(): Promise<void> {
     {
       slug: 'egypt/construction',
       name: 'Cairo Construction Demo',
-      tenantCode: 'TRADING_DEMO',
-      demoUserEmail: 'admin@fratelanza.local',
+      tenantCode: 'CONSTRUCTION_DEMO',
+      demoUserEmail: 'constr-admin@fratelanza.local',
       modules: ['dashboard', 'projects', 'construction', 'purchasing', 'inventory', 'accounting', 'reports'],
     },
     {
@@ -1388,8 +1380,8 @@ async function seedDemoEnvironments(): Promise<void> {
     {
       slug: 'saudi/trading',
       name: 'Riyadh Trading Company',
-      tenantCode: 'SERVICES_DEMO',
-      demoUserEmail: 'serv-admin@fratelanza.local',
+      tenantCode: 'TRADING_DEMO',
+      demoUserEmail: 'admin@fratelanza.local',
       modules: ['dashboard', 'sales', 'purchasing', 'inventory', 'customers', 'suppliers', 'accounting', 'reports'],
     },
     {
@@ -1402,8 +1394,8 @@ async function seedDemoEnvironments(): Promise<void> {
     {
       slug: 'saudi/restaurant',
       name: 'Saudi Restaurant Demo',
-      tenantCode: 'SERVICES_DEMO',
-      demoUserEmail: 'serv-admin@fratelanza.local',
+      tenantCode: 'TRADING_DEMO',
+      demoUserEmail: 'admin@fratelanza.local',
       modules: ['dashboard', 'restaurant', 'pos', 'inventory', 'sales', 'reports'],
     },
     {
@@ -1500,6 +1492,16 @@ export async function main(): Promise<void> {
   await seedDemoEnvironments();
 
   console.log('');
+  console.log('Generating realistic demo volume (all verticals)...');
+  const volumeStats = await generateAllVerticalDemoVolumes(prisma);
+  for (const [code, stats] of Object.entries(volumeStats)) {
+    if (typeof stats === 'number') continue;
+    console.log(
+      `  [VOLUME/${code}] products=${stats.products} customers=${stats.customers} invoices=${stats.salesInvoices} POs=${stats.purchaseOrders} payments=${stats.customerPayments} movements=${stats.inventoryMovements}${stats.posSales ? ` pos=${stats.posSales}` : ''}`,
+    );
+  }
+
+  console.log('');
   console.log('Evaluation seed completed.');
   console.log('  Tenants: TRADING_DEMO, CONSTRUCTION_DEMO, SERVICES_DEMO, FRATELANZA_PLATFORM');
   console.log(`  Password (all demo users): ${demoPassword}`);
@@ -1507,7 +1509,10 @@ export async function main(): Promise<void> {
   console.log('  Construction admin: constr-admin');
   console.log('  Services admin: serv-admin');
   console.log('  Platform admin: platform-admin');
-  console.log('  Demo links: /demo/trading /demo/construction /demo/restaurant /demo/services');
+  console.log('  Demo links:');
+  console.log('    /demo/egypt/trading  /demo/egypt/construction  /demo/egypt/restaurant');
+  console.log('    /demo/saudi/trading  /demo/saudi/construction  /demo/saudi/restaurant');
+  console.log('    /demo/trading  /demo/construction  /demo/restaurant  /demo/services');
 }
 
 function isExecutedDirectly(): boolean {

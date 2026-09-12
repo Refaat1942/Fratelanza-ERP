@@ -44,13 +44,22 @@ export const useAuthStore = create<AuthState>()(
         set({ accessToken, refreshToken, user }),
       updateAccessToken: (accessToken) => set({ accessToken }),
       updateTokens: (accessToken, refreshToken) => set({ accessToken, refreshToken }),
-      clearAuth: () => set({ accessToken: null, refreshToken: null, user: null }),
+      clearAuth: () => {
+        set({ accessToken: null, refreshToken: null, user: null });
+        window.dispatchEvent(new Event('frz:auth-cleared'));
+      },
     }),
     {
       name: 'fratelanza-auth',
     },
   ),
 );
+
+const WEB_DEFAULT_API_URL =
+  import.meta.env.VITE_WEB_APP === 'true'
+    ? (import.meta.env.VITE_API_BASE_URL ??
+        (import.meta.env.DEV ? '' : typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000'))
+    : 'http://localhost:3000';
 
 interface AppState {
   locale: Locale;
@@ -73,7 +82,7 @@ export const useAppStore = create<AppState>()(
       locale: 'en',
       theme: 'system',
       connectivity: ConnectivityStatus.OFFLINE,
-      apiUrl: 'http://localhost:3000',
+      apiUrl: WEB_DEFAULT_API_URL,
       deviceFingerprint: null,
       deviceId: null,
       setLocale: (locale) => set({ locale }),
@@ -83,6 +92,15 @@ export const useAppStore = create<AppState>()(
       setDeviceFingerprint: (deviceFingerprint) => set({ deviceFingerprint }),
       setDeviceId: (deviceId) => set({ deviceId }),
     }),
-    { name: 'fratelanza-app' },
+    {
+      name: 'fratelanza-app',
+      merge: (persisted, current) => {
+        const state = { ...current, ...(persisted as Partial<AppState>) };
+        if (import.meta.env.VITE_WEB_APP === 'true') {
+          state.apiUrl = WEB_DEFAULT_API_URL;
+        }
+        return state;
+      },
+    },
   ),
 );

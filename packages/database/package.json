@@ -29,8 +29,8 @@
     "reset:server": "prisma migrate reset --force --schema=./prisma/schema.server.prisma",
     "migrate:local": "prisma db push --schema=./prisma/schema.local.prisma --skip-generate",
     "push:local": "prisma db push --schema=./prisma/schema.local.prisma --skip-generate",
-    "seed": "tsx prisma/seed.ts",
-    "seed:eval": "tsx prisma/seed-eval.ts",
+    "seed": "npx --yes tsx prisma/seed.ts",
+    "seed:eval": "npx --yes tsx prisma/seed-eval.ts",
     "studio:server": "prisma studio --schema=./prisma/schema.server.prisma"
   },
   "dependencies": {
@@ -44,6 +44,6 @@
     "typescript": "^5.7.3"
   },
   "prisma": {
-    "seed": "tsx prisma/seed-eval.ts"
+    "seed": "npx --yes tsx prisma/seed-eval.ts"
   }
 }

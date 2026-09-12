@@ -79,6 +79,7 @@ export const en = {
     sales: 'Sales',
     purchasing: 'Purchasing',
     accounting: 'Accounting',
+    reports: 'Reports',
     pos: 'POS',
     projects: 'Projects',
     costCenters: 'Cost Centers',
@@ -213,11 +214,30 @@ export const en = {
       name: 'Name',
       code: 'Code',
       status: 'Status',
+      country: 'Country',
       users: 'Users',
       branches: 'Branches',
       module: 'Module',
       enabled: 'Enabled',
+      actions: 'Actions',
     },
+    createOrganization: 'Create organization',
+    createDemo: 'Create demo',
+    editDemo: 'Edit demo',
+    demoSlug: 'Demo slug',
+    demoModules: 'Modules',
+    displayName: 'Display name',
+    selectOrganization: 'Organization',
+    suspend: 'Suspend',
+    activate: 'Activate',
+    enable: 'Enable',
+    disable: 'Disable',
+    regenerateLink: 'Regenerate link',
+    customerDemoLinks: 'Customer demo links',
+    customerDemoLinksHint: 'Share these URLs with prospects. Each link opens the demo tenant with the correct modules.',
+    customerLink: 'Link',
+    copyLink: 'Copy link',
+    copyAllDemoLinks: 'Copy all links for customers',
   },
   demo: {
     loadingTitle: 'Opening {{name}} demo...',
@@ -411,6 +431,15 @@ export const en = {
     credit: 'Credit',
     seedCoa: 'Seed Chart of Accounts',
     seeded: 'Seeded {{count}} accounts',
+    journals: 'Journal entries',
+    journalNumber: 'Journal #',
+    journalDate: 'Date',
+    description: 'Description',
+  },
+  reports: {
+    subtitle: 'Financial and operational summary for your organization',
+    metric: 'Metric',
+    value: 'Value',
   },
   pos: {
     searchPlaceholder: 'Search products or scan barcode...',
@@ -499,6 +528,7 @@ export type TranslationSchema = {
   sales: Record<string, string>;
   purchasing: Record<string, string>;
   accounting: Record<string, string>;
+  reports: Record<string, string>;
   pos: Record<string, string>;
   construction: Record<string, string>;
   lineItems: Record<string, string>;

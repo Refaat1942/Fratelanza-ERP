@@ -35,6 +35,7 @@ services:
       APP_URL: ${APP_URL:-https://g-erp.fratelanza.com}
       FRONTEND_URL: ${FRONTEND_URL:-https://g-erp.fratelanza.com}
       CORS_ORIGINS: ${CORS_ORIGINS:-https://g-erp.fratelanza.com}
+      DEMO_SEED_PASSWORD: ${DEMO_SEED_PASSWORD:-Eval@2026!Demo}
     depends_on:
       postgres:
         condition: service_healthy
@@ -47,9 +48,9 @@ services:
     image: nginx:1.27-alpine
     container_name: fratelanza-web
     restart: unless-stopped
+    # Bind locally only — host nginx on :80/:443 routes g-erp here (9080 avoids conflict with existing sites on 8080).
     ports:
-      - '80:80'
-      - '443:443'
+      - '127.0.0.1:9080:80'
     volumes:
       - ../../apps/web/dist:/usr/share/nginx/html:ro
       - ../nginx/g-erp.conf:/etc/nginx/conf.d/default.conf:ro

@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import { Navigate, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuthStore } from '../stores';
 
@@ -39,8 +40,44 @@ export function AuthHydrationGate({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 
+/** Stable layout guard — never renders blank when session expires. */
+export function RequireAuth() {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  if (!accessToken) {
+    return <Navigate to="/login" replace state={{ reason: 'session-expired' }} />;
+  }
+  return <Outlet />;
+}
+
+/** Redirect authenticated users away from guest-only routes (login). */
+export function GuestOnly() {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  if (accessToken) {
+    return <Navigate to="/" replace />;
+  }
+  return <Outlet />;
+}
+
+/** @deprecated Use RequireAuth layout route instead. */
 export function ProtectedRoute({ children }: { children: ReactNode }) {
   const accessToken = useAuthStore((s) => s.accessToken);
-  if (!accessToken) return null;
+  if (!accessToken) {
+    return <Navigate to="/login" replace state={{ reason: 'session-expired' }} />;
+  }
   return <>{children}</>;
+}
+
+/** Navigates to login whenever clearAuth() runs (token refresh failure, 401, etc.). */
+export function AuthSessionListener() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const onAuthCleared = () => {
+      navigate('/login', { replace: true, state: { reason: 'session-expired' } });
+    };
+    window.addEventListener('frz:auth-cleared', onAuthCleared);
+    return () => window.removeEventListener('frz:auth-cleared', onAuthCleared);
+  }, [navigate]);
+
+  return null;
 }

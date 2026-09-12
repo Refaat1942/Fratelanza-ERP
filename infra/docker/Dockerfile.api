@@ -36,7 +36,8 @@ COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/
 COPY packages ./packages
 
-RUN npm ci --workspace=@fratelanza/api --workspace=@fratelanza/database --include-workspace-root --omit=dev
+RUN npm ci --workspace=@fratelanza/api --workspace=@fratelanza/database --include-workspace-root --omit=dev \
+ && npm install --no-save tsx@^4.19.2 prisma@^6.3.1 --workspace=@fratelanza/database
 
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/packages/database/generated ./packages/database/generated

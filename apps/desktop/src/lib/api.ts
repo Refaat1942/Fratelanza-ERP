@@ -517,6 +517,75 @@ export class ApiClient {
     );
   }
 
+  getPlatformModuleCatalog() {
+    return this.request<Array<{ id: string; nameKey: string; route?: string }>>('/platform/modules/catalog');
+  }
+
+  createPlatformOrganization(payload: {
+    name: string;
+    code: string;
+    displayName?: string;
+    businessType?: string;
+    country?: string;
+    currency?: string;
+    language?: string;
+  }) {
+    return this.request('/platform/organizations', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
+  updatePlatformOrganization(
+    id: string,
+    payload: {
+      name?: string;
+      displayName?: string;
+      businessType?: string;
+      country?: string;
+      currency?: string;
+      language?: string;
+      status?: 'ACTIVE' | 'SUSPENDED' | 'ARCHIVED';
+    },
+  ) {
+    return this.request(`/platform/organizations/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  createPlatformDemo(payload: {
+    slug: string;
+    name: string;
+    tenantCode: string;
+    modules?: string[];
+    demoUserEmail?: string;
+  }) {
+    return this.request('/platform/demos', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
+  updatePlatformDemo(
+    id: string,
+    payload: { name?: string; enabled?: boolean; modules?: string[]; demoUserId?: string },
+  ) {
+    return this.request(`/platform/demos/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  regeneratePlatformDemoLink(id: string) {
+    return this.request<{ linkToken: string }>(`/platform/demos/${id}/regenerate-link`, { method: 'POST' });
+  }
+
+  setPlatformTenantModule(tenantId: string, moduleId: string, enabled: boolean) {
+    return this.request(`/platform/modules/${tenantId}/${moduleId}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ enabled }),
+    });
+  }
+
+  getJournalEntries(params?: { page?: number; limit?: number }) {
+    const q = new URLSearchParams();
+    if (params?.page) q.set('page', String(params.page));
+    if (params?.limit) q.set('limit', String(params.limit));
+    const suffix = q.toString() ? `?${q}` : '';
+    return this.request<Array<{ id: string; number: string; entryDate: string; description: string }>>(
+      `/accounting/journal-entries${suffix}`,
+    );
+  }
+
   getAssignableRoles() {
     return this.request<Array<{ id: string; name: string; code: string }>>('/roles/assignable/list');
   }

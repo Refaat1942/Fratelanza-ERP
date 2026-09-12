@@ -1,4 +1,4 @@
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { COUNTRY_PROFILES, type CountryCode } from '@fratelanza/shared';
@@ -45,7 +45,10 @@ const NAV_GROUPS: NavGroup[] = [
   },
   {
     labelKey: 'nav.groups.finance',
-    items: [{ to: '/accounting', labelKey: 'nav.accounting' }],
+    items: [
+      { to: '/accounting', labelKey: 'nav.accounting' },
+      { to: '/reports', labelKey: 'nav.reports' },
+    ],
   },
   {
     labelKey: 'nav.groups.projects',
@@ -74,6 +77,7 @@ const NAV_GROUPS: NavGroup[] = [
 
 export function AppLayout() {
   const { t } = useTranslation();
+  const location = useLocation();
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -180,7 +184,7 @@ export function AppLayout() {
         </header>
         <main className="page-content">
           <div className="page-content-inner">
-            <Outlet />
+            <Outlet key={location.pathname} />
           </div>
         </main>
       </div>
