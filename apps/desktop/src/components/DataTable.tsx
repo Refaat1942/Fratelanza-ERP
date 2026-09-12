@@ -3,12 +3,15 @@ import { useTranslation } from 'react-i18next';
 import { createApiClient, resolveApiBaseUrl } from '../lib/api';
 import { useAppStore, useAuthStore } from '../stores';
 import { PageState } from './PageState';
+import { exportRowsToExcel } from '../lib/excel-export';
 
 interface Column<T> {
   key: keyof T | string;
   label: string;
   render?: (row: T) => ReactNode;
   align?: 'start' | 'end';
+  /** Plain value used for Excel export when `render` produces JSX. Falls back to the raw field at `key`. */
+  exportValue?: (row: T) => string | number | boolean | null | undefined;
 }
 
 interface DataTableProps<T extends { id: string }> {
@@ -16,6 +19,8 @@ interface DataTableProps<T extends { id: string }> {
   fetchData: (client: ReturnType<typeof createApiClient>) => Promise<T[]>;
   emptyMessage?: string;
   refreshKey?: number;
+  /** File base name (no extension) — when set, renders an "Export to Excel" button above the table. */
+  exportFilename?: string;
 }
 
 export function DataTable<T extends { id: string }>({
@@ -23,6 +28,7 @@ export function DataTable<T extends { id: string }>({
   fetchData,
   emptyMessage,
   refreshKey = 0,
+  exportFilename,
 }: DataTableProps<T>) {
   const { t } = useTranslation();
   const apiUrl = useAppStore((s) => s.apiUrl);
@@ -51,6 +57,19 @@ export function DataTable<T extends { id: string }>({
   useEffect(() => {
     void load();
   }, [load, refreshKey]);
+
+  const handleExport = useCallback(() => {
+    if (!exportFilename) return;
+    exportRowsToExcel(
+      exportFilename,
+      columns.map((col) => ({
+        header: col.label,
+        key: col.key,
+        value: col.exportValue,
+      })),
+      rows,
+    );
+  }, [exportFilename, columns, rows]);
 
   if (loading) {
     return <PageState variant="loading" />;
@@ -81,6 +100,13 @@ export function DataTable<T extends { id: string }>({
 
   return (
     <div className="card card--flat data-table">
+      {exportFilename && (
+        <div className="data-table__toolbar">
+          <button type="button" className="btn btn-ghost btn--sm" onClick={handleExport}>
+            {t('common.exportExcel')}
+          </button>
+        </div>
+      )}
       <table>
         <thead>
           <tr>

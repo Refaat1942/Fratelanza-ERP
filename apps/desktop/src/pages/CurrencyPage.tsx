@@ -1,82 +1,52 @@
-import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader, useApiClient } from '../components/DataTable';
+import { DataTable, PageHeader } from '../components/DataTable';
+import type { CurrencyRow, ExchangeRateRow } from '../lib/api';
 
 export function CurrencyPage() {
   const { t } = useTranslation();
-  const client = useApiClient();
-  const [currencies, setCurrencies] = useState<Array<{ id: string; code: string; name: string; symbol?: string | null; isBase: boolean }>>([]);
-  const [rates, setRates] = useState<Array<{ fromCurrency: string; toCurrency: string; rate: number | string; asOfDate: string }>>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [currencyRows, rateRows] = await Promise.all([client.getCurrencies(), client.getCurrencyRates()]);
-      setCurrencies(currencyRows);
-      setRates(rateRows);
-    } finally {
-      setLoading(false);
-    }
-  }, [client]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   return (
     <div>
       <PageHeader title={t('nav.currency')} subtitle={t('modules.currency.description')} />
-      {loading ? (
-        <p>{t('common.loading')}</p>
-      ) : (
-        <>
-          <h2 className="module-card-title">{t('currency.currencies')}</h2>
-          <div className="table-wrap" style={{ marginBottom: '2rem' }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>{t('customers.code')}</th>
-                  <th>{t('customers.name')}</th>
-                  <th>{t('currency.base')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {currencies.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.code}</td>
-                    <td>{row.name}</td>
-                    <td>{row.isBase ? t('common.yes') : t('common.no')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <h2 className="module-card-title">{t('currency.rates')}</h2>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>{t('currency.from')}</th>
-                  <th>{t('currency.to')}</th>
-                  <th>{t('currency.rate')}</th>
-                  <th>{t('accounting.journalDate')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rates.map((row, index) => (
-                  <tr key={`${row.fromCurrency}-${row.toCurrency}-${index}`}>
-                    <td>{row.fromCurrency}</td>
-                    <td>{row.toCurrency}</td>
-                    <td className="stat-card-value">{Number(row.rate)}</td>
-                    <td>{row.asOfDate.slice(0, 10)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+      <h2 className="module-card-title">{t('currency.currencies')}</h2>
+      <div style={{ marginBottom: '2rem' }}>
+        <DataTable<CurrencyRow>
+          exportFilename="currencies"
+          fetchData={(c) => c.getCurrencies()}
+          columns={[
+            { key: 'code', label: t('customers.code') },
+            { key: 'name', label: t('customers.name') },
+            {
+              key: 'isBase',
+              label: t('currency.base'),
+              render: (row) => (row.isBase ? t('common.yes') : t('common.no')),
+              exportValue: (row) => (row.isBase ? t('common.yes') : t('common.no')),
+            },
+          ]}
+        />
+      </div>
+      <h2 className="module-card-title">{t('currency.rates')}</h2>
+      <DataTable<ExchangeRateRow>
+        exportFilename="exchange-rates"
+        fetchData={(c) => c.getCurrencyRates()}
+        columns={[
+          { key: 'fromCurrency', label: t('currency.from') },
+          { key: 'toCurrency', label: t('currency.to') },
+          {
+            key: 'rate',
+            label: t('currency.rate'),
+            align: 'end',
+            render: (row) => Number(row.rate),
+            exportValue: (row) => Number(row.rate),
+          },
+          {
+            key: 'asOfDate',
+            label: t('accounting.journalDate'),
+            render: (row) => row.asOfDate.slice(0, 10),
+            exportValue: (row) => row.asOfDate.slice(0, 10),
+          },
+        ]}
+      />
     </div>
   );
 }

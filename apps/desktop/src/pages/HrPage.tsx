@@ -1,60 +1,43 @@
-import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader, useApiClient } from '../components/DataTable';
+import { DataTable, PageHeader, StatusBadge } from '../components/DataTable';
 import { formatCurrency } from '../lib/format';
 import { useAuthStore } from '../stores';
+import type { HrEmployeeRow } from '../lib/api';
 
 export function HrPage() {
   const { t } = useTranslation();
-  const client = useApiClient();
   const user = useAuthStore((s) => s.user);
-  const [rows, setRows] = useState<Array<{ id: string; code: string; firstName: string; lastName: string; status: string; basicSalary: number | string; department?: { name: string } | null }>>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      setRows(await client.getHrEmployees());
-    } finally {
-      setLoading(false);
-    }
-  }, [client]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   return (
     <div>
       <PageHeader title={t('nav.hr')} subtitle={t('modules.hr.description')} />
-      {loading ? (
-        <p>{t('common.loading')}</p>
-      ) : (
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>{t('customers.code')}</th>
-                <th>{t('users.name')}</th>
-                <th>{t('users.role')}</th>
-                <th>{t('common.status')}</th>
-                <th>{t('hr.salary')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.code}</td>
-                  <td>{`${row.firstName} ${row.lastName}`}</td>
-                  <td>{row.department?.name ?? '—'}</td>
-                  <td>{row.status}</td>
-                  <td className="stat-card-value">{formatCurrency(Number(row.basicSalary), user?.currency ?? 'EGP')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable<HrEmployeeRow>
+        exportFilename="employees"
+        fetchData={(c) => c.getHrEmployees()}
+        columns={[
+          { key: 'code', label: t('customers.code') },
+          {
+            key: 'name',
+            label: t('users.name'),
+            render: (row) => `${row.firstName} ${row.lastName}`,
+            exportValue: (row) => `${row.firstName} ${row.lastName}`,
+          },
+          {
+            key: 'department',
+            label: t('users.role'),
+            render: (row) => row.department?.name ?? '—',
+            exportValue: (row) => row.department?.name ?? '',
+          },
+          { key: 'status', label: t('common.status'), render: (row) => <StatusBadge status={row.status} /> },
+          {
+            key: 'basicSalary',
+            label: t('hr.salary'),
+            align: 'end',
+            render: (row) => formatCurrency(Number(row.basicSalary), user?.currency ?? 'EGP'),
+            exportValue: (row) => Number(row.basicSalary),
+          },
+        ]}
+      />
     </div>
   );
 }

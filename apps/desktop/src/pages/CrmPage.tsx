@@ -1,40 +1,30 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { FormActions, FormField, Modal, PageHeader, useApiClient } from '../components/DataTable';
+import { DataTable, FormActions, FormField, Modal, PageHeader, StatusBadge, useApiClient } from '../components/DataTable';
 import { formatCurrency } from '../lib/format';
 import { useAuthStore } from '../stores';
+import type { CrmLeadRow, CrmOpportunityRow } from '../lib/api';
 
 export function CrmPage() {
   const { t } = useTranslation();
   const client = useApiClient();
   const user = useAuthStore((s) => s.user);
-  const [leads, setLeads] = useState<Array<{ id: string; code: string; contactName: string; companyName?: string | null; status: string }>>([]);
-  const [opportunities, setOpportunities] = useState<Array<{ id: string; code: string; name: string; stage: string; amount: number | string }>>([]);
-  const [loading, setLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState('');
   const [form, setForm] = useState({ contactName: '', companyName: '', email: '', phone: '' });
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const [leadRows, oppRows] = await Promise.all([client.getCrmLeads(), client.getCrmOpportunities()]);
-      setLeads(leadRows);
-      setOpportunities(oppRows);
-    } finally {
-      setLoading(false);
-    }
-  }, [client]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
-    await client.createCrmLead(form);
-    setOpen(false);
-    setForm({ contactName: '', companyName: '', email: '', phone: '' });
-    await load();
+    setError('');
+    try {
+      await client.createCrmLead(form);
+      setOpen(false);
+      setForm({ contactName: '', companyName: '', email: '', phone: '' });
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('errors.generic'));
+    }
   }
 
   return (
@@ -48,58 +38,44 @@ export function CrmPage() {
           </button>
         }
       />
-      {loading ? (
-        <p>{t('common.loading')}</p>
-      ) : (
-        <>
-          <h2 className="module-card-title">{t('crm.leads')}</h2>
-          <div className="table-wrap" style={{ marginBottom: '2rem' }}>
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>{t('customers.code')}</th>
-                  <th>{t('customers.name')}</th>
-                  <th>{t('common.status')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {leads.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.code}</td>
-                    <td>{row.companyName ? `${row.contactName} · ${row.companyName}` : row.contactName}</td>
-                    <td>{row.status}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-          <h2 className="module-card-title">{t('crm.opportunities')}</h2>
-          <div className="table-wrap">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>{t('customers.code')}</th>
-                  <th>{t('customers.name')}</th>
-                  <th>{t('common.status')}</th>
-                  <th>{t('sales.total')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {opportunities.map((row) => (
-                  <tr key={row.id}>
-                    <td>{row.code}</td>
-                    <td>{row.name}</td>
-                    <td>{row.stage}</td>
-                    <td className="stat-card-value">{formatCurrency(Number(row.amount), user?.currency ?? 'EGP')}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
-      )}
+      <h2 className="module-card-title">{t('crm.leads')}</h2>
+      <div style={{ marginBottom: '2rem' }}>
+        <DataTable<CrmLeadRow>
+          refreshKey={refreshKey}
+          exportFilename="crm-leads"
+          fetchData={(c) => c.getCrmLeads()}
+          columns={[
+            { key: 'code', label: t('customers.code') },
+            {
+              key: 'contactName',
+              label: t('customers.name'),
+              render: (row) => (row.companyName ? `${row.contactName} · ${row.companyName}` : row.contactName),
+              exportValue: (row) => (row.companyName ? `${row.contactName} · ${row.companyName}` : row.contactName),
+            },
+            { key: 'status', label: t('common.status'), render: (row) => <StatusBadge status={row.status} /> },
+          ]}
+        />
+      </div>
+      <h2 className="module-card-title">{t('crm.opportunities')}</h2>
+      <DataTable<CrmOpportunityRow>
+        exportFilename="crm-opportunities"
+        fetchData={(c) => c.getCrmOpportunities()}
+        columns={[
+          { key: 'code', label: t('customers.code') },
+          { key: 'name', label: t('customers.name') },
+          { key: 'stage', label: t('common.status'), render: (row) => <StatusBadge status={row.stage} /> },
+          {
+            key: 'amount',
+            label: t('sales.total'),
+            align: 'end',
+            render: (row) => formatCurrency(Number(row.amount), row.currencyCode ?? user?.currency ?? 'EGP'),
+            exportValue: (row) => Number(row.amount),
+          },
+        ]}
+      />
       <Modal open={open} title={t('crm.createLead')} onClose={() => setOpen(false)}>
         <form onSubmit={(e) => void handleCreate(e)}>
+          {error && <p className="form-error">{error}</p>}
           <FormField label={t('customers.name')} required>
             <input className="form-input" value={form.contactName} onChange={(e) => setForm({ ...form, contactName: e.target.value })} required />
           </FormField>

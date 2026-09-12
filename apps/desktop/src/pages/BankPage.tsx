@@ -1,56 +1,35 @@
-import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { PageHeader, useApiClient } from '../components/DataTable';
+import { DataTable, PageHeader } from '../components/DataTable';
 import { formatCurrency } from '../lib/format';
+import type { BankAccountRow } from '../lib/api';
 
 export function BankPage() {
   const { t } = useTranslation();
-  const client = useApiClient();
-  const [rows, setRows] = useState<Array<{ id: string; name: string; bankName: string; accountNumber?: string | null; currencyCode?: string | null; openingBalance?: number | string }>>([]);
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      setRows(await client.getBankAccounts());
-    } finally {
-      setLoading(false);
-    }
-  }, [client]);
-
-  useEffect(() => {
-    void load();
-  }, [load]);
 
   return (
     <div>
       <PageHeader title={t('nav.bank')} subtitle={t('modules.bank.description')} />
-      {loading ? (
-        <p>{t('common.loading')}</p>
-      ) : (
-        <div className="table-wrap">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>{t('bank.account')}</th>
-                <th>{t('bank.bankName')}</th>
-                <th>{t('bank.accountNumber')}</th>
-                <th>{t('customers.balance')}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.id}>
-                  <td>{row.name}</td>
-                  <td>{row.bankName}</td>
-                  <td>{row.accountNumber ?? '—'}</td>
-                  <td className="stat-card-value">{formatCurrency(Number(row.openingBalance ?? 0), row.currencyCode ?? 'EGP')}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <DataTable<BankAccountRow>
+        exportFilename="bank-accounts"
+        fetchData={(c) => c.getBankAccounts()}
+        columns={[
+          { key: 'name', label: t('bank.account') },
+          { key: 'bankName', label: t('bank.bankName') },
+          {
+            key: 'accountNumber',
+            label: t('bank.accountNumber'),
+            render: (row) => row.accountNumber ?? '—',
+            exportValue: (row) => row.accountNumber ?? '',
+          },
+          {
+            key: 'openingBalance',
+            label: t('customers.balance'),
+            align: 'end',
+            render: (row) => formatCurrency(Number(row.openingBalance ?? 0), row.currencyCode ?? 'EGP'),
+            exportValue: (row) => Number(row.openingBalance ?? 0),
+          },
+        ]}
+      />
     </div>
   );
 }

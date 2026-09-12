@@ -189,6 +189,12 @@
 .toolbar .input { max-width: 320px; }
 
 .data-table { padding: 0 !important; overflow: auto; }
+.data-table__toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: var(--frz-space-2) var(--frz-space-3);
+  border-bottom: 1px solid var(--frz-color-border);
+}
 .data-table table { width: 100%; border-collapse: collapse; }
 .data-table thead th {
   position: sticky;
@@ -435,6 +441,25 @@ html[dir='rtl'] .toast-container { left: var(--frz-space-4); }
 .matrix-table td:first-child {
   text-align: left;
   min-width: 220px;
+}
+
+.matrix-table td.permission-chip-row {
+  text-align: start;
+}
+
+.permission-chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--frz-space-3);
+}
+
+.permission-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--frz-space-1);
+  font-weight: normal;
+  cursor: pointer;
+  white-space: nowrap;
 }
 
 .login-demo-links {

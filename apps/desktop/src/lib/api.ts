@@ -104,6 +104,78 @@ export type SyncConflictRow = {
   serverVersion: Record<string, unknown>;
   createdAt: string;
 };
+export type CrmLeadRow = {
+  id: string;
+  code: string;
+  contactName: string;
+  companyName?: string | null;
+  email?: string | null;
+  phone?: string | null;
+  status: string;
+};
+export type CrmOpportunityRow = {
+  id: string;
+  code: string;
+  name: string;
+  stage: string;
+  amount: number | string;
+  currencyCode?: string | null;
+};
+export type HrEmployeeRow = {
+  id: string;
+  code: string;
+  firstName: string;
+  lastName: string;
+  status: string;
+  basicSalary: number | string;
+  department?: { name: string } | null;
+};
+export type AssetRow = {
+  id: string;
+  code: string;
+  name: string;
+  status: string;
+  acquisitionCost: number | string;
+  bookValue?: number | string;
+};
+export type BankAccountRow = {
+  id: string;
+  name: string;
+  bankName: string;
+  accountNumber?: string | null;
+  currencyCode?: string | null;
+  openingBalance?: number | string;
+};
+export type CurrencyRow = {
+  id: string;
+  code: string;
+  name: string;
+  symbol?: string | null;
+  isBase: boolean;
+  isActive: boolean;
+};
+export type ExchangeRateRow = {
+  id: string;
+  fromCurrency: string;
+  toCurrency: string;
+  rate: number | string;
+  asOfDate: string;
+};
+export type ApprovalWorkflowRow = {
+  id: string;
+  name: string;
+  sourceModule: string;
+  sourceType: string;
+  isActive: boolean;
+};
+export type ApprovalRequestRow = {
+  id: string;
+  sourceModule: string;
+  sourceType: string;
+  sourceId: string;
+  status: string;
+  currentStepSequence?: number;
+};
 
 export function resolveApiBaseUrl(storedUrl: string): string {
   if (import.meta.env.VITE_API_BASE_URL) {
@@ -1015,7 +1087,7 @@ export class ApiClient {
   }
 
   getCrmLeads() {
-    return this.request<Array<{ id: string; code: string; contactName: string; companyName?: string | null; status: string; email?: string | null }>>('/crm/leads');
+    return this.request<CrmLeadRow[]>('/crm/leads');
   }
 
   createCrmLead(payload: { contactName: string; companyName?: string; email?: string; phone?: string; source?: string }) {
@@ -1023,35 +1095,35 @@ export class ApiClient {
   }
 
   getCrmOpportunities() {
-    return this.request<Array<{ id: string; code: string; name: string; stage: string; amount: number | string; currencyCode?: string | null }>>('/crm/opportunities');
+    return this.request<CrmOpportunityRow[]>('/crm/opportunities');
   }
 
   getHrEmployees() {
-    return this.request<Array<{ id: string; code: string; firstName: string; lastName: string; status: string; basicSalary: number | string; department?: { name: string } | null }>>('/hr/employees');
+    return this.request<HrEmployeeRow[]>('/hr/employees');
   }
 
   getAssets() {
-    return this.request<Array<{ id: string; code: string; name: string; status: string; acquisitionCost: number | string; netBookValue?: number | string }>>('/assets');
+    return this.request<AssetRow[]>('/assets');
   }
 
   getBankAccounts() {
-    return this.request<Array<{ id: string; name: string; bankName: string; accountNumber?: string | null; currencyCode?: string | null; openingBalance?: number | string }>>('/bank/accounts');
+    return this.request<BankAccountRow[]>('/bank/accounts');
   }
 
   getCurrencies() {
-    return this.request<Array<{ id: string; code: string; name: string; symbol?: string | null; isBase: boolean; isActive: boolean }>>('/currency');
+    return this.request<CurrencyRow[]>('/currency');
   }
 
   getCurrencyRates() {
-    return this.request<Array<{ id: string; fromCurrency: string; toCurrency: string; rate: number | string; asOfDate: string }>>('/currency/rates');
+    return this.request<ExchangeRateRow[]>('/currency/rates');
   }
 
   getApprovalWorkflows() {
-    return this.request<Array<{ id: string; name: string; sourceModule: string; sourceType: string; isActive: boolean }>>('/approvals/workflows');
+    return this.request<ApprovalWorkflowRow[]>('/approvals/workflows');
   }
 
   getPendingApprovals() {
-    return this.request<Array<{ id: string; sourceModule: string; sourceType: string; sourceId: string; status: string; currentStep?: number }>>('/approvals/requests/pending');
+    return this.request<ApprovalRequestRow[]>('/approvals/requests/pending');
   }
 }
 
