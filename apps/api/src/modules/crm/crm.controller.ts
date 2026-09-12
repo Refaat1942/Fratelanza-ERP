@@ -92,8 +92,11 @@ export class CrmController {
     @CurrentUser() user: JwtPayload,
     @Body() dto: CreateLeadDto,
   ) {
-    if (dto.branchId) this.tenantAccess.assertBranchAccess(user, dto.branchId);
-    const data = await this.crmService.createLead(tenantId, dto);
+    // Leads need a branch to be convertible into a customer + opportunity later,
+    // so default to the requesting user's branch when the caller omits one.
+    const branchId = dto.branchId ?? user.branchId;
+    if (branchId) this.tenantAccess.assertBranchAccess(user, branchId);
+    const data = await this.crmService.createLead(tenantId, { ...dto, branchId });
     return { success: true, data };
   }
 
