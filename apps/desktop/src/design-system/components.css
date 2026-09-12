@@ -166,7 +166,14 @@
   padding: var(--frz-space-5);
 }
 .stat-card-label { font-size: var(--frz-text-sm); color: var(--frz-color-text-secondary); margin-bottom: var(--frz-space-2); }
-.stat-card-value { font-size: var(--frz-text-display); font-weight: var(--frz-weight-bold); font-variant-numeric: tabular-nums; }
+.stat-card-value {
+  font-size: var(--frz-text-display);
+  font-weight: var(--frz-weight-bold);
+  font-variant-numeric: tabular-nums;
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: start;
+}
 
 .toolbar {
   display: flex;
