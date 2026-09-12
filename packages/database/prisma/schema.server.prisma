@@ -34,46 +34,46 @@ model Tenant {
   updatedAt    DateTime     @updatedAt
   deletedAt    DateTime?
 
-  branches       Branch[]
-  users          User[]
-  roles          Role[]
-  devices        Device[]
-  auditLogs      AuditLog[]
-  numberSequences NumberSequence[]
-  demoEnvironments DemoEnvironment[]
-  moduleAccess   TenantModuleAccess[]
-  governmentIntegrationLogs GovernmentIntegrationLog[]
-  pmsPatients         Patient[]
-  pmsPatientAccounts  PatientAccount[]
-  pmsServiceCategories ServiceCategory[]
-  pmsServices         Service[]
-  pmsEncounters       Encounter[]
-  pmsCharges          Charge[]
-  pmsPayments         Payment[]
-  pmsRefunds          Refund[]
-  pmsAdjustments      Adjustment[]
-  pmsLedgerEntries    LedgerEntry[]
-  parties             Party[]
-  projects            Project[]
-  costCenters         CostCenter[]
-  constructionProjectProfiles ConstructionProjectProfile[]
-  constructionCostEntries   ConstructionCostEntry[]
-  constructionContracts     ConstructionContract[]
-  constructionBoqs          ConstructionBoq[]
-  constructionBoqSections   ConstructionBoqSection[]
-  constructionBoqItems      ConstructionBoqItem[]
-  constructionProgress      ConstructionProgress[]
-  constructionProgressItems ConstructionProgressItem[]
-  constructionVariations    ConstructionVariation[]
-  constructionVariationItems ConstructionVariationItem[]
-  constructionRetentionEntries ConstructionRetentionEntry[]
-  constructionAdvanceEntries ConstructionAdvanceEntry[]
-  constructionSubcontractorProfiles ConstructionSubcontractorProfile[]
+  branches                             Branch[]
+  users                                User[]
+  roles                                Role[]
+  devices                              Device[]
+  auditLogs                            AuditLog[]
+  numberSequences                      NumberSequence[]
+  demoEnvironments                     DemoEnvironment[]
+  moduleAccess                         TenantModuleAccess[]
+  governmentIntegrationLogs            GovernmentIntegrationLog[]
+  pmsPatients                          Patient[]
+  pmsPatientAccounts                   PatientAccount[]
+  pmsServiceCategories                 ServiceCategory[]
+  pmsServices                          Service[]
+  pmsEncounters                        Encounter[]
+  pmsCharges                           Charge[]
+  pmsPayments                          Payment[]
+  pmsRefunds                           Refund[]
+  pmsAdjustments                       Adjustment[]
+  pmsLedgerEntries                     LedgerEntry[]
+  parties                              Party[]
+  projects                             Project[]
+  costCenters                          CostCenter[]
+  constructionProjectProfiles          ConstructionProjectProfile[]
+  constructionCostEntries              ConstructionCostEntry[]
+  constructionContracts                ConstructionContract[]
+  constructionBoqs                     ConstructionBoq[]
+  constructionBoqSections              ConstructionBoqSection[]
+  constructionBoqItems                 ConstructionBoqItem[]
+  constructionProgress                 ConstructionProgress[]
+  constructionProgressItems            ConstructionProgressItem[]
+  constructionVariations               ConstructionVariation[]
+  constructionVariationItems           ConstructionVariationItem[]
+  constructionRetentionEntries         ConstructionRetentionEntry[]
+  constructionAdvanceEntries           ConstructionAdvanceEntry[]
+  constructionSubcontractorProfiles    ConstructionSubcontractorProfile[]
   constructionSubcontractorAssignments ConstructionSubcontractorAssignment[]
-  constructionMaterialIssues ConstructionMaterialIssue[]
-  constructionMaterialIssueLines ConstructionMaterialIssueLine[]
-  constructionBillings ConstructionBilling[]
-  constructionBillingLines ConstructionBillingLine[]
+  constructionMaterialIssues           ConstructionMaterialIssue[]
+  constructionMaterialIssueLines       ConstructionMaterialIssueLine[]
+  constructionBillings                 ConstructionBilling[]
+  constructionBillingLines             ConstructionBillingLine[]
 
   @@map("tenants")
 }
@@ -93,33 +93,33 @@ model Branch {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  tenant      Tenant       @relation(fields: [tenantId], references: [id])
-  warehouses  Warehouse[]
-  users       User[]
-  devices     Device[]
-  auditLogs   AuditLog[]
-  customers   Customer[]
-  salesInvoices SalesInvoice[]
-  purchaseOrders PurchaseOrder[]
-  posShifts   PosShift[]
-  pmsPatients    Patient[]
-  pmsEncounters  Encounter[]
-  pmsCharges     Charge[]
-  pmsPayments    Payment[]
-  pmsRefunds     Refund[]
-  pmsAdjustments Adjustment[]
-  pmsLedgerEntries LedgerEntry[]
-  projects         Project[]
-  costCenters      CostCenter[]
-  constructionCostEntries ConstructionCostEntry[]
-  constructionContracts ConstructionContract[]
-  constructionProgress ConstructionProgress[]
-  constructionVariations ConstructionVariation[]
+  tenant                       Tenant                       @relation(fields: [tenantId], references: [id])
+  warehouses                   Warehouse[]
+  users                        User[]
+  devices                      Device[]
+  auditLogs                    AuditLog[]
+  customers                    Customer[]
+  salesInvoices                SalesInvoice[]
+  purchaseOrders               PurchaseOrder[]
+  posShifts                    PosShift[]
+  pmsPatients                  Patient[]
+  pmsEncounters                Encounter[]
+  pmsCharges                   Charge[]
+  pmsPayments                  Payment[]
+  pmsRefunds                   Refund[]
+  pmsAdjustments               Adjustment[]
+  pmsLedgerEntries             LedgerEntry[]
+  projects                     Project[]
+  costCenters                  CostCenter[]
+  constructionCostEntries      ConstructionCostEntry[]
+  constructionContracts        ConstructionContract[]
+  constructionProgress         ConstructionProgress[]
+  constructionVariations       ConstructionVariation[]
   constructionRetentionEntries ConstructionRetentionEntry[]
-  constructionAdvanceEntries ConstructionAdvanceEntry[]
-  constructionMaterialIssues ConstructionMaterialIssue[]
-  constructionBillings ConstructionBilling[]
-  userBranchAccess UserBranchAccess[]
+  constructionAdvanceEntries   ConstructionAdvanceEntry[]
+  constructionMaterialIssues   ConstructionMaterialIssue[]
+  constructionBillings         ConstructionBilling[]
+  userBranchAccess             UserBranchAccess[]
 
   @@unique([tenantId, code])
   @@index([tenantId])
@@ -138,12 +138,12 @@ model Warehouse {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
-  branch Branch @relation(fields: [branchId], references: [id])
-  stockBalances StockBalance[]
-  inventoryMovements InventoryMovement[]
-  purchaseOrders PurchaseOrder[]
+  branch                     Branch                      @relation(fields: [branchId], references: [id])
+  stockBalances              StockBalance[]
+  inventoryMovements         InventoryMovement[]
+  purchaseOrders             PurchaseOrder[]
   constructionMaterialIssues ConstructionMaterialIssue[]
-  userAccess UserWarehouseAccess[]
+  userAccess                 UserWarehouseAccess[]
 
   @@unique([tenantId, code])
   @@index([tenantId, branchId])
@@ -151,56 +151,56 @@ model Warehouse {
 }
 
 model User {
-  id               String    @id @default(uuid()) @db.Uuid
-  tenantId         String    @db.Uuid
-  branchId         String?   @db.Uuid
-  roleId           String    @db.Uuid
-  email            String
-  passwordHash     String
-  firstName        String
-  lastName         String
-  phone            String?
-  locale           String    @default("en")
-  isActive         Boolean   @default(true)
-  isPlatformAdmin  Boolean   @default(false)
-  lastLoginAt      DateTime?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  deletedAt        DateTime?
+  id              String    @id @default(uuid()) @db.Uuid
+  tenantId        String    @db.Uuid
+  branchId        String?   @db.Uuid
+  roleId          String    @db.Uuid
+  email           String
+  passwordHash    String
+  firstName       String
+  lastName        String
+  phone           String?
+  locale          String    @default("en")
+  isActive        Boolean   @default(true)
+  isPlatformAdmin Boolean   @default(false)
+  lastLoginAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  deletedAt       DateTime?
 
-  tenant    Tenant     @relation(fields: [tenantId], references: [id])
-  branch    Branch?    @relation(fields: [branchId], references: [id])
-  role      Role       @relation(fields: [roleId], references: [id])
-  sessions  Session[]
-  auditLogs AuditLog[]
-  demoEnvironments DemoEnvironment[]
-  pmsEncountersAsProvider Encounter[] @relation("EncounterProvider")
-  managedProjects         Project[]   @relation("ProjectManager")
-  constructionProfilesCreated ConstructionProjectProfile[] @relation("ConstructionProfileCreator")
-  constructionCostEntriesCreated ConstructionCostEntry[] @relation("ConstructionCostEntryCreator")
-  constructionContractsCreated ConstructionContract[] @relation("ConstructionContractCreator")
-  constructionBoqsCreated ConstructionBoq[] @relation("ConstructionBoqCreator")
-  constructionBoqsApproved ConstructionBoq[] @relation("ConstructionBoqApprover")
-  constructionProgressCreated ConstructionProgress[] @relation("ConstructionProgressCreator")
-  constructionProgressSubmitted ConstructionProgress[] @relation("ConstructionProgressSubmitter")
-  constructionProgressApproved ConstructionProgress[] @relation("ConstructionProgressApprover")
-  constructionProgressRejected ConstructionProgress[] @relation("ConstructionProgressRejecter")
-  constructionVariationsCreated ConstructionVariation[] @relation("ConstructionVariationCreator")
-  constructionVariationsSubmitted ConstructionVariation[] @relation("ConstructionVariationSubmitter")
-  constructionVariationsApproved ConstructionVariation[] @relation("ConstructionVariationApprover")
-  constructionVariationsRejected ConstructionVariation[] @relation("ConstructionVariationRejecter")
-  constructionRetentionEntriesCreated ConstructionRetentionEntry[] @relation("ConstructionRetentionEntryCreator")
-  constructionAdvanceEntriesCreated ConstructionAdvanceEntry[] @relation("ConstructionAdvanceEntryCreator")
-  constructionSubcontractorProfilesCreated ConstructionSubcontractorProfile[] @relation("ConstructionSubcontractorProfileCreator")
+  tenant                                      Tenant                                @relation(fields: [tenantId], references: [id])
+  branch                                      Branch?                               @relation(fields: [branchId], references: [id])
+  role                                        Role                                  @relation(fields: [roleId], references: [id])
+  sessions                                    Session[]
+  auditLogs                                   AuditLog[]
+  demoEnvironments                            DemoEnvironment[]
+  pmsEncountersAsProvider                     Encounter[]                           @relation("EncounterProvider")
+  managedProjects                             Project[]                             @relation("ProjectManager")
+  constructionProfilesCreated                 ConstructionProjectProfile[]          @relation("ConstructionProfileCreator")
+  constructionCostEntriesCreated              ConstructionCostEntry[]               @relation("ConstructionCostEntryCreator")
+  constructionContractsCreated                ConstructionContract[]                @relation("ConstructionContractCreator")
+  constructionBoqsCreated                     ConstructionBoq[]                     @relation("ConstructionBoqCreator")
+  constructionBoqsApproved                    ConstructionBoq[]                     @relation("ConstructionBoqApprover")
+  constructionProgressCreated                 ConstructionProgress[]                @relation("ConstructionProgressCreator")
+  constructionProgressSubmitted               ConstructionProgress[]                @relation("ConstructionProgressSubmitter")
+  constructionProgressApproved                ConstructionProgress[]                @relation("ConstructionProgressApprover")
+  constructionProgressRejected                ConstructionProgress[]                @relation("ConstructionProgressRejecter")
+  constructionVariationsCreated               ConstructionVariation[]               @relation("ConstructionVariationCreator")
+  constructionVariationsSubmitted             ConstructionVariation[]               @relation("ConstructionVariationSubmitter")
+  constructionVariationsApproved              ConstructionVariation[]               @relation("ConstructionVariationApprover")
+  constructionVariationsRejected              ConstructionVariation[]               @relation("ConstructionVariationRejecter")
+  constructionRetentionEntriesCreated         ConstructionRetentionEntry[]          @relation("ConstructionRetentionEntryCreator")
+  constructionAdvanceEntriesCreated           ConstructionAdvanceEntry[]            @relation("ConstructionAdvanceEntryCreator")
+  constructionSubcontractorProfilesCreated    ConstructionSubcontractorProfile[]    @relation("ConstructionSubcontractorProfileCreator")
   constructionSubcontractorAssignmentsCreated ConstructionSubcontractorAssignment[] @relation("ConstructionSubcontractorAssignmentCreator")
-  constructionMaterialIssuesCreated ConstructionMaterialIssue[] @relation("ConstructionMaterialIssueCreator")
-  constructionMaterialIssuesIssued ConstructionMaterialIssue[] @relation("ConstructionMaterialIssueIssuer")
-  constructionBillingsCreated ConstructionBilling[] @relation("ConstructionBillingCreator")
-  constructionBillingsApproved ConstructionBilling[] @relation("ConstructionBillingApprover")
-  constructionBillingsPosted ConstructionBilling[] @relation("ConstructionBillingPoster")
-  constructionBillingsCancelled ConstructionBilling[] @relation("ConstructionBillingCanceller")
-  branchAccess UserBranchAccess[]
-  warehouseAccess UserWarehouseAccess[]
+  constructionMaterialIssuesCreated           ConstructionMaterialIssue[]           @relation("ConstructionMaterialIssueCreator")
+  constructionMaterialIssuesIssued            ConstructionMaterialIssue[]           @relation("ConstructionMaterialIssueIssuer")
+  constructionBillingsCreated                 ConstructionBilling[]                 @relation("ConstructionBillingCreator")
+  constructionBillingsApproved                ConstructionBilling[]                 @relation("ConstructionBillingApprover")
+  constructionBillingsPosted                  ConstructionBilling[]                 @relation("ConstructionBillingPoster")
+  constructionBillingsCancelled               ConstructionBilling[]                 @relation("ConstructionBillingCanceller")
+  branchAccess                                UserBranchAccess[]
+  warehouseAccess                             UserWarehouseAccess[]
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -278,9 +278,9 @@ model DemoEnvironment {
 }
 
 model TenantModuleAccess {
-  tenantId  String  @db.Uuid
-  moduleId  String
-  enabled   Boolean @default(true)
+  tenantId String  @db.Uuid
+  moduleId String
+  enabled  Boolean @default(true)
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -376,18 +376,18 @@ model Device {
 }
 
 model AuditLog {
-  id         String   @id @default(uuid()) @db.Uuid
-  tenantId   String   @db.Uuid
-  branchId   String?  @db.Uuid
-  userId     String?  @db.Uuid
-  deviceId   String?  @db.Uuid
-  entity     String
-  entityId   String
-  action     String
-  oldValue   Json?
-  newValue   Json?
-  ipAddress  String?
-  createdAt  DateTime @default(now())
+  id        String   @id @default(uuid()) @db.Uuid
+  tenantId  String   @db.Uuid
+  branchId  String?  @db.Uuid
+  userId    String?  @db.Uuid
+  deviceId  String?  @db.Uuid
+  entity    String
+  entityId  String
+  action    String
+  oldValue  Json?
+  newValue  Json?
+  ipAddress String?
+  createdAt DateTime @default(now())
 
   tenant Tenant  @relation(fields: [tenantId], references: [id])
   branch Branch? @relation(fields: [branchId], references: [id])
@@ -399,14 +399,14 @@ model AuditLog {
 }
 
 model NumberSequence {
-  id           String @id @default(uuid()) @db.Uuid
-  tenantId     String @db.Uuid
+  id           String  @id @default(uuid()) @db.Uuid
+  tenantId     String  @db.Uuid
   branchId     String? @db.Uuid
   documentType String
   prefix       String
   fiscalYear   Int?
-  nextNumber   Int    @default(1)
-  padding      Int    @default(6)
+  nextNumber   Int     @default(1)
+  padding      Int     @default(6)
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
@@ -417,16 +417,17 @@ model NumberSequence {
 // ─── ERP Business Models ───────────────────────────────────────────
 
 model UnitOfMeasure {
-  id        String   @id @default(uuid()) @db.Uuid
-  tenantId  String   @db.Uuid
-  name      String
-  code      String
-  symbol    String?
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  products  Product[]
+  id                   String                @id @default(uuid()) @db.Uuid
+  tenantId             String                @db.Uuid
+  name                 String
+  code                 String
+  symbol               String?
+  isActive             Boolean               @default(true)
+  createdAt            DateTime              @default(now())
+  updatedAt            DateTime              @updatedAt
+  products             Product[]
   constructionBoqItems ConstructionBoqItem[]
+
   @@unique([tenantId, code])
   @@index([tenantId])
   @@map("units_of_measure")
@@ -443,88 +444,92 @@ model ProductCategory {
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
   products  Product[]
+
   @@unique([tenantId, code])
   @@index([tenantId])
   @@map("product_categories")
 }
 
 model Product {
-  id             String    @id @default(uuid()) @db.Uuid
-  tenantId       String    @db.Uuid
-  categoryId     String?   @db.Uuid
-  unitId         String    @db.Uuid
-  sku            String
-  name           String
-  description    String?
-  barcode        String?
-  type           String    @default("product")
-  costPrice      Decimal   @default(0) @db.Decimal(18, 4)
-  salePrice      Decimal   @default(0) @db.Decimal(18, 4)
-  taxRate        Decimal   @default(0) @db.Decimal(8, 4)
-  trackInventory Boolean   @default(true)
-  isActive       Boolean   @default(true)
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  deletedAt      DateTime?
-  category       ProductCategory?   @relation(fields: [categoryId], references: [id])
-  unit           UnitOfMeasure      @relation(fields: [unitId], references: [id])
-  stockBalances  StockBalance[]
-  inventoryMovements InventoryMovement[]
-  salesInvoiceLines  SalesInvoiceLine[]
-  purchaseOrderLines PurchaseOrderLine[]
-  posSaleLines   PosSaleLine[]
-  constructionBoqItems ConstructionBoqItem[]
+  id                             String                          @id @default(uuid()) @db.Uuid
+  tenantId                       String                          @db.Uuid
+  categoryId                     String?                         @db.Uuid
+  unitId                         String                          @db.Uuid
+  sku                            String
+  name                           String
+  description                    String?
+  barcode                        String?
+  type                           String                          @default("product")
+  costPrice                      Decimal                         @default(0) @db.Decimal(18, 4)
+  salePrice                      Decimal                         @default(0) @db.Decimal(18, 4)
+  taxRate                        Decimal                         @default(0) @db.Decimal(8, 4)
+  trackInventory                 Boolean                         @default(true)
+  isActive                       Boolean                         @default(true)
+  createdAt                      DateTime                        @default(now())
+  updatedAt                      DateTime                        @updatedAt
+  deletedAt                      DateTime?
+  category                       ProductCategory?                @relation(fields: [categoryId], references: [id])
+  unit                           UnitOfMeasure                   @relation(fields: [unitId], references: [id])
+  stockBalances                  StockBalance[]
+  inventoryMovements             InventoryMovement[]
+  salesInvoiceLines              SalesInvoiceLine[]
+  purchaseOrderLines             PurchaseOrderLine[]
+  posSaleLines                   PosSaleLine[]
+  constructionBoqItems           ConstructionBoqItem[]
   constructionMaterialIssueLines ConstructionMaterialIssueLine[]
+
   @@unique([tenantId, sku])
   @@index([tenantId, barcode])
   @@map("products")
 }
 
 model Customer {
-  id               String    @id @default(uuid()) @db.Uuid
-  tenantId         String    @db.Uuid
-  branchId         String?   @db.Uuid
-  partyId          String?   @unique @db.Uuid
+  id               String            @id @default(uuid()) @db.Uuid
+  tenantId         String            @db.Uuid
+  branchId         String?           @db.Uuid
+  partyId          String?           @unique @db.Uuid
   code             String
   name             String
   email            String?
   phone            String?
   address          String?
   taxNumber        String?
-  creditLimit      Decimal   @default(0) @db.Decimal(18, 4)
-  balance          Decimal   @default(0) @db.Decimal(18, 4)
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  creditLimit      Decimal           @default(0) @db.Decimal(18, 4)
+  balance          Decimal           @default(0) @db.Decimal(18, 4)
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
   deletedAt        DateTime?
-  branch           Branch?   @relation(fields: [branchId], references: [id])
-  party            Party?    @relation(fields: [partyId], references: [id])
+  branch           Branch?           @relation(fields: [branchId], references: [id])
+  party            Party?            @relation(fields: [partyId], references: [id])
   salesInvoices    SalesInvoice[]
   customerPayments CustomerPayment[]
   posSales         PosSale[]
+
   @@unique([tenantId, code])
   @@index([tenantId, name])
   @@map("customers")
 }
 
 model Supplier {
-  id               String    @id @default(uuid()) @db.Uuid
-  tenantId         String    @db.Uuid
-  partyId          String?   @unique @db.Uuid
+  id               String            @id @default(uuid()) @db.Uuid
+  tenantId         String            @db.Uuid
+  partyId          String?           @unique @db.Uuid
   code             String
   name             String
   email            String?
   phone            String?
   address          String?
   taxNumber        String?
-  balance          Decimal   @default(0) @db.Decimal(18, 4)
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  balance          Decimal           @default(0) @db.Decimal(18, 4)
+  isActive         Boolean           @default(true)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
   deletedAt        DateTime?
-  party            Party?    @relation(fields: [partyId], references: [id])
+  party            Party?            @relation(fields: [partyId], references: [id])
   purchaseOrders   PurchaseOrder[]
   supplierPayments SupplierPayment[]
+
   @@unique([tenantId, code])
   @@index([tenantId, name])
   @@map("suppliers")
@@ -579,15 +584,15 @@ model Party {
   updatedAt   DateTime    @updatedAt
   deletedAt   DateTime?
 
-  tenant      Tenant            @relation(fields: [tenantId], references: [id])
-  roles       PartyRole[]
-  contacts    PartyContact[]
-  addresses   PartyAddress[]
-  identifiers PartyIdentifier[]
-  customer    Customer?
-  supplier    Supplier?
-  customerProjects Project[] @relation("ProjectCustomerParty")
-  constructionContracts ConstructionContract[]
+  tenant                            Tenant                             @relation(fields: [tenantId], references: [id])
+  roles                             PartyRole[]
+  contacts                          PartyContact[]
+  addresses                         PartyAddress[]
+  identifiers                       PartyIdentifier[]
+  customer                          Customer?
+  supplier                          Supplier?
+  customerProjects                  Project[]                          @relation("ProjectCustomerParty")
+  constructionContracts             ConstructionContract[]
   constructionSubcontractorProfiles ConstructionSubcontractorProfile[]
 
   @@unique([tenantId, code])
@@ -607,38 +612,38 @@ enum ProjectStatus {
 }
 
 model Project {
-  id                String        @id @default(uuid()) @db.Uuid
-  tenantId          String        @db.Uuid
-  branchId          String?       @db.Uuid
-  code              String
-  name              String
-  description       String?
-  status            ProjectStatus @default(draft)
-  startDate         DateTime?     @db.Date
-  endDate           DateTime?     @db.Date
-  customerPartyId   String?       @db.Uuid
-  managerUserId     String?       @db.Uuid
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
-  deletedAt         DateTime?
+  id              String        @id @default(uuid()) @db.Uuid
+  tenantId        String        @db.Uuid
+  branchId        String?       @db.Uuid
+  code            String
+  name            String
+  description     String?
+  status          ProjectStatus @default(draft)
+  startDate       DateTime?     @db.Date
+  endDate         DateTime?     @db.Date
+  customerPartyId String?       @db.Uuid
+  managerUserId   String?       @db.Uuid
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  deletedAt       DateTime?
 
-  tenant        Tenant      @relation(fields: [tenantId], references: [id])
-  branch        Branch?     @relation(fields: [branchId], references: [id])
-  customerParty Party?      @relation("ProjectCustomerParty", fields: [customerPartyId], references: [id], onDelete: SetNull)
-  manager       User?       @relation("ProjectManager", fields: [managerUserId], references: [id], onDelete: SetNull)
-  costCenters   CostCenter[]
-  journalLines  JournalLine[]
-  constructionProfile ConstructionProjectProfile?
-  constructionCostEntries ConstructionCostEntry[]
-  constructionContracts ConstructionContract[]
-  constructionBoqs ConstructionBoq[]
-  constructionProgress ConstructionProgress[]
-  constructionVariations ConstructionVariation[]
-  constructionRetentionEntries ConstructionRetentionEntry[]
-  constructionAdvanceEntries ConstructionAdvanceEntry[]
+  tenant                               Tenant                                @relation(fields: [tenantId], references: [id])
+  branch                               Branch?                               @relation(fields: [branchId], references: [id])
+  customerParty                        Party?                                @relation("ProjectCustomerParty", fields: [customerPartyId], references: [id], onDelete: SetNull)
+  manager                              User?                                 @relation("ProjectManager", fields: [managerUserId], references: [id], onDelete: SetNull)
+  costCenters                          CostCenter[]
+  journalLines                         JournalLine[]
+  constructionProfile                  ConstructionProjectProfile?
+  constructionCostEntries              ConstructionCostEntry[]
+  constructionContracts                ConstructionContract[]
+  constructionBoqs                     ConstructionBoq[]
+  constructionProgress                 ConstructionProgress[]
+  constructionVariations               ConstructionVariation[]
+  constructionRetentionEntries         ConstructionRetentionEntry[]
+  constructionAdvanceEntries           ConstructionAdvanceEntry[]
   constructionSubcontractorAssignments ConstructionSubcontractorAssignment[]
-  constructionMaterialIssues ConstructionMaterialIssue[]
-  constructionBillings ConstructionBilling[]
+  constructionMaterialIssues           ConstructionMaterialIssue[]
+  constructionBillings                 ConstructionBilling[]
 
   @@unique([tenantId, code])
   @@index([tenantId, status])
@@ -647,32 +652,32 @@ model Project {
 }
 
 model CostCenter {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @db.Uuid
-  branchId    String?  @db.Uuid
-  parentId    String?  @db.Uuid
-  projectId   String?  @db.Uuid
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  branchId    String?   @db.Uuid
+  parentId    String?   @db.Uuid
+  projectId   String?   @db.Uuid
   code        String
   name        String
   description String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
 
-  tenant   Tenant       @relation(fields: [tenantId], references: [id])
-  branch   Branch?      @relation(fields: [branchId], references: [id])
-  parent   CostCenter?  @relation("CostCenterHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
-  children CostCenter[] @relation("CostCenterHierarchy")
-  project  Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  journalLines JournalLine[]
-  constructionCostEntries ConstructionCostEntry[]
-  constructionBoqItems ConstructionBoqItem[]
-  constructionProgressItems ConstructionProgressItem[]
-  constructionVariationItems ConstructionVariationItem[]
-  constructionMaterialIssues ConstructionMaterialIssue[]
+  tenant                         Tenant                          @relation(fields: [tenantId], references: [id])
+  branch                         Branch?                         @relation(fields: [branchId], references: [id])
+  parent                         CostCenter?                     @relation("CostCenterHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children                       CostCenter[]                    @relation("CostCenterHierarchy")
+  project                        Project?                        @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  journalLines                   JournalLine[]
+  constructionCostEntries        ConstructionCostEntry[]
+  constructionBoqItems           ConstructionBoqItem[]
+  constructionProgressItems      ConstructionProgressItem[]
+  constructionVariationItems     ConstructionVariationItem[]
+  constructionMaterialIssues     ConstructionMaterialIssue[]
   constructionMaterialIssueLines ConstructionMaterialIssueLine[]
-  constructionBillingLines ConstructionBillingLine[]
+  constructionBillingLines       ConstructionBillingLine[]
 
   @@unique([tenantId, code])
   @@index([tenantId, projectId])
@@ -792,18 +797,18 @@ model ConstructionContract {
   createdAt           DateTime                         @default(now())
   updatedAt           DateTime                         @updatedAt
 
-  tenant    Tenant  @relation(fields: [tenantId], references: [id])
-  project   Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  branch    Branch  @relation(fields: [branchId], references: [id])
-  party     Party   @relation(fields: [partyId], references: [id])
-  createdBy User?   @relation("ConstructionContractCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  boqs      ConstructionBoq[]
-  progress  ConstructionProgress[]
-  variations ConstructionVariation[]
-  retentionEntries ConstructionRetentionEntry[]
-  advanceEntries ConstructionAdvanceEntry[]
+  tenant                   Tenant                                @relation(fields: [tenantId], references: [id])
+  project                  Project                               @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch                   Branch                                @relation(fields: [branchId], references: [id])
+  party                    Party                                 @relation(fields: [partyId], references: [id])
+  createdBy                User?                                 @relation("ConstructionContractCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  boqs                     ConstructionBoq[]
+  progress                 ConstructionProgress[]
+  variations               ConstructionVariation[]
+  retentionEntries         ConstructionRetentionEntry[]
+  advanceEntries           ConstructionAdvanceEntry[]
   subcontractorAssignments ConstructionSubcontractorAssignment[]
-  billings ConstructionBilling[]
+  billings                 ConstructionBilling[]
 
   @@unique([tenantId, number])
   @@index([tenantId, projectId])
@@ -830,18 +835,18 @@ model ConstructionBoq {
   createdAt           DateTime              @default(now())
   updatedAt           DateTime              @updatedAt
 
-  tenant      Tenant              @relation(fields: [tenantId], references: [id])
-  project     Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  contract    ConstructionContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  supersedes  ConstructionBoq?    @relation("ConstructionBoqRevisionChain", fields: [supersedesBoqId], references: [id], onDelete: SetNull)
-  supersededBy ConstructionBoq[]  @relation("ConstructionBoqRevisionChain")
-  approvedBy  User?               @relation("ConstructionBoqApprover", fields: [approvedById], references: [id], onDelete: SetNull)
-  createdBy   User?               @relation("ConstructionBoqCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  sections    ConstructionBoqSection[]
-  items       ConstructionBoqItem[]
-  progress    ConstructionProgress[]
-  variations  ConstructionVariation[]
-  billings    ConstructionBilling[]
+  tenant       Tenant                   @relation(fields: [tenantId], references: [id])
+  project      Project                  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  contract     ConstructionContract     @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  supersedes   ConstructionBoq?         @relation("ConstructionBoqRevisionChain", fields: [supersedesBoqId], references: [id], onDelete: SetNull)
+  supersededBy ConstructionBoq[]        @relation("ConstructionBoqRevisionChain")
+  approvedBy   User?                    @relation("ConstructionBoqApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  createdBy    User?                    @relation("ConstructionBoqCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  sections     ConstructionBoqSection[]
+  items        ConstructionBoqItem[]
+  progress     ConstructionProgress[]
+  variations   ConstructionVariation[]
+  billings     ConstructionBilling[]
 
   @@unique([tenantId, contractId, revisionNumber])
   @@index([tenantId, contractId, status])
@@ -861,11 +866,11 @@ model ConstructionBoqSection {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  tenant       Tenant                  @relation(fields: [tenantId], references: [id])
-  boq          ConstructionBoq         @relation(fields: [boqId], references: [id], onDelete: Cascade)
-  parent       ConstructionBoqSection? @relation("ConstructionBoqSectionHierarchy", fields: [parentSectionId], references: [id], onDelete: SetNull)
-  children     ConstructionBoqSection[] @relation("ConstructionBoqSectionHierarchy")
-  items        ConstructionBoqItem[]
+  tenant   Tenant                   @relation(fields: [tenantId], references: [id])
+  boq      ConstructionBoq          @relation(fields: [boqId], references: [id], onDelete: Cascade)
+  parent   ConstructionBoqSection?  @relation("ConstructionBoqSectionHierarchy", fields: [parentSectionId], references: [id], onDelete: SetNull)
+  children ConstructionBoqSection[] @relation("ConstructionBoqSectionHierarchy")
+  items    ConstructionBoqItem[]
 
   @@unique([tenantId, boqId, code])
   @@index([tenantId, boqId, sequence])
@@ -893,16 +898,16 @@ model ConstructionBoqItem {
   createdAt       DateTime                  @default(now())
   updatedAt       DateTime                  @updatedAt
 
-  tenant     Tenant                  @relation(fields: [tenantId], references: [id])
-  boq        ConstructionBoq         @relation(fields: [boqId], references: [id], onDelete: Cascade)
-  section    ConstructionBoqSection? @relation(fields: [sectionId], references: [id], onDelete: SetNull)
-  unit       UnitOfMeasure?          @relation(fields: [unitId], references: [id], onDelete: SetNull)
-  costCenter CostCenter?             @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
-  product    Product?                @relation(fields: [productId], references: [id], onDelete: SetNull)
-  progressItems ConstructionProgressItem[]
+  tenant         Tenant                      @relation(fields: [tenantId], references: [id])
+  boq            ConstructionBoq             @relation(fields: [boqId], references: [id], onDelete: Cascade)
+  section        ConstructionBoqSection?     @relation(fields: [sectionId], references: [id], onDelete: SetNull)
+  unit           UnitOfMeasure?              @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  costCenter     CostCenter?                 @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  product        Product?                    @relation(fields: [productId], references: [id], onDelete: SetNull)
+  progressItems  ConstructionProgressItem[]
   variationItems ConstructionVariationItem[]
   materialIssues ConstructionMaterialIssue[]
-  billingLines ConstructionBillingLine[]
+  billingLines   ConstructionBillingLine[]
 
   @@index([tenantId, boqId, lineNumber])
   @@index([tenantId, sectionId])
@@ -943,15 +948,15 @@ model ConstructionProgress {
   createdAt             DateTime                   @default(now())
   updatedAt             DateTime                   @updatedAt
 
-  tenant      Tenant               @relation(fields: [tenantId], references: [id])
-  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  branch      Branch               @relation(fields: [branchId], references: [id])
-  contract    ConstructionContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  boq         ConstructionBoq      @relation(fields: [boqId], references: [id], onDelete: Cascade)
-  submittedBy User?                @relation("ConstructionProgressSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
-  approvedBy  User?                @relation("ConstructionProgressApprover", fields: [approvedById], references: [id], onDelete: SetNull)
-  rejectedBy  User?                @relation("ConstructionProgressRejecter", fields: [rejectedById], references: [id], onDelete: SetNull)
-  createdBy   User?                @relation("ConstructionProgressCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  tenant      Tenant                     @relation(fields: [tenantId], references: [id])
+  project     Project                    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch      Branch                     @relation(fields: [branchId], references: [id])
+  contract    ConstructionContract       @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  boq         ConstructionBoq            @relation(fields: [boqId], references: [id], onDelete: Cascade)
+  submittedBy User?                      @relation("ConstructionProgressSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
+  approvedBy  User?                      @relation("ConstructionProgressApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  rejectedBy  User?                      @relation("ConstructionProgressRejecter", fields: [rejectedById], references: [id], onDelete: SetNull)
+  createdBy   User?                      @relation("ConstructionProgressCreator", fields: [createdById], references: [id], onDelete: SetNull)
   items       ConstructionProgressItem[]
   billings    ConstructionBilling[]
 
@@ -973,17 +978,17 @@ model ConstructionProgressItem {
   cumulativeQuantity         Decimal  @db.Decimal(18, 4)
   unitRateSnapshot           Decimal  @db.Decimal(18, 4)
   currentPeriodAmount        Decimal  @db.Decimal(18, 4)
-  cumulativeAmount             Decimal  @db.Decimal(18, 4)
+  cumulativeAmount           Decimal  @db.Decimal(18, 4)
   costCenterId               String?  @db.Uuid
   costCode                   String?
   notes                      String?
   createdAt                  DateTime @default(now())
   updatedAt                  DateTime @updatedAt
 
-  tenant     Tenant              @relation(fields: [tenantId], references: [id])
-  progress   ConstructionProgress @relation(fields: [progressId], references: [id], onDelete: Cascade)
-  boqItem    ConstructionBoqItem @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
-  costCenter CostCenter?         @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  tenant       Tenant                    @relation(fields: [tenantId], references: [id])
+  progress     ConstructionProgress      @relation(fields: [progressId], references: [id], onDelete: Cascade)
+  boqItem      ConstructionBoqItem       @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
+  costCenter   CostCenter?               @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
   billingLines ConstructionBillingLine[]
 
   @@unique([tenantId, progressId, boqItemId])
@@ -1032,16 +1037,16 @@ model ConstructionVariation {
   createdAt        DateTime                    @default(now())
   updatedAt        DateTime                    @updatedAt
 
-  tenant      Tenant               @relation(fields: [tenantId], references: [id])
-  project     Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  branch      Branch               @relation(fields: [branchId], references: [id])
-  contract    ConstructionContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  boq         ConstructionBoq      @relation(fields: [boqId], references: [id], onDelete: Cascade)
-  submittedBy User?                @relation("ConstructionVariationSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
-  approvedBy  User?                @relation("ConstructionVariationApprover", fields: [approvedById], references: [id], onDelete: SetNull)
-  rejectedBy  User?                @relation("ConstructionVariationRejecter", fields: [rejectedById], references: [id], onDelete: SetNull)
-  createdBy   User?                @relation("ConstructionVariationCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  items       ConstructionVariationItem[]
+  tenant       Tenant                      @relation(fields: [tenantId], references: [id])
+  project      Project                     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch       Branch                      @relation(fields: [branchId], references: [id])
+  contract     ConstructionContract        @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  boq          ConstructionBoq             @relation(fields: [boqId], references: [id], onDelete: Cascade)
+  submittedBy  User?                       @relation("ConstructionVariationSubmitter", fields: [submittedById], references: [id], onDelete: SetNull)
+  approvedBy   User?                       @relation("ConstructionVariationApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  rejectedBy   User?                       @relation("ConstructionVariationRejecter", fields: [rejectedById], references: [id], onDelete: SetNull)
+  createdBy    User?                       @relation("ConstructionVariationCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  items        ConstructionVariationItem[]
   billingLines ConstructionBillingLine[]
 
   @@unique([tenantId, number])
@@ -1068,10 +1073,10 @@ model ConstructionVariationItem {
   createdAt     DateTime                  @default(now())
   updatedAt     DateTime                  @updatedAt
 
-  tenant     Tenant                 @relation(fields: [tenantId], references: [id])
-  variation  ConstructionVariation  @relation(fields: [variationId], references: [id], onDelete: Cascade)
-  boqItem    ConstructionBoqItem?   @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
-  costCenter CostCenter?            @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  tenant     Tenant                @relation(fields: [tenantId], references: [id])
+  variation  ConstructionVariation @relation(fields: [variationId], references: [id], onDelete: Cascade)
+  boqItem    ConstructionBoqItem?  @relation(fields: [boqItemId], references: [id], onDelete: Restrict)
+  costCenter CostCenter?           @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, variationId, lineNumber])
   @@index([tenantId, boqItemId])
@@ -1131,22 +1136,22 @@ model ConstructionRetentionEntry {
 }
 
 model ConstructionAdvanceEntry {
-  id           String                       @id @default(uuid()) @db.Uuid
-  tenantId     String                       @db.Uuid
-  projectId    String                       @db.Uuid
-  branchId     String                       @db.Uuid
-  contractId   String                       @db.Uuid
+  id           String                         @id @default(uuid()) @db.Uuid
+  tenantId     String                         @db.Uuid
+  projectId    String                         @db.Uuid
+  branchId     String                         @db.Uuid
+  contractId   String                         @db.Uuid
   partyType    ConstructionSubledgerPartyType
   entryType    ConstructionAdvanceEntryType
-  sourceModule String                       @default("construction")
+  sourceModule String                         @default("construction")
   sourceType   String
-  sourceId     String?                      @db.Uuid
+  sourceId     String?                        @db.Uuid
   sourceEvent  String
-  amount       Decimal                      @db.Decimal(18, 4)
-  balanceAfter Decimal                      @db.Decimal(18, 4)
+  amount       Decimal                        @db.Decimal(18, 4)
+  balanceAfter Decimal                        @db.Decimal(18, 4)
   notes        String?
-  createdById  String?                      @db.Uuid
-  createdAt    DateTime                     @default(now())
+  createdById  String?                        @db.Uuid
+  createdAt    DateTime                       @default(now())
 
   tenant    Tenant               @relation(fields: [tenantId], references: [id])
   project   Project              @relation(fields: [projectId], references: [id], onDelete: Cascade)
@@ -1172,20 +1177,20 @@ enum ConstructionSubcontractorAssignmentStatus {
 }
 
 model ConstructionSubcontractorProfile {
-  id               String                               @id @default(uuid()) @db.Uuid
-  tenantId         String                               @db.Uuid
-  partyId          String                               @db.Uuid
-  trade            String?
-  specialty        String?
-  complianceNotes  String?
-  status           ConstructionSubcontractorProfileStatus @default(active)
-  createdById      String?                              @db.Uuid
-  createdAt        DateTime                             @default(now())
-  updatedAt        DateTime                             @updatedAt
+  id              String                                 @id @default(uuid()) @db.Uuid
+  tenantId        String                                 @db.Uuid
+  partyId         String                                 @db.Uuid
+  trade           String?
+  specialty       String?
+  complianceNotes String?
+  status          ConstructionSubcontractorProfileStatus @default(active)
+  createdById     String?                                @db.Uuid
+  createdAt       DateTime                               @default(now())
+  updatedAt       DateTime                               @updatedAt
 
-  tenant      Tenant                              @relation(fields: [tenantId], references: [id])
-  party       Party                               @relation(fields: [partyId], references: [id])
-  createdBy   User?                               @relation("ConstructionSubcontractorProfileCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  tenant      Tenant                                @relation(fields: [tenantId], references: [id])
+  party       Party                                 @relation(fields: [partyId], references: [id])
+  createdBy   User?                                 @relation("ConstructionSubcontractorProfileCreator", fields: [createdById], references: [id], onDelete: SetNull)
   assignments ConstructionSubcontractorAssignment[]
 
   @@unique([tenantId, partyId])
@@ -1194,23 +1199,23 @@ model ConstructionSubcontractorProfile {
 }
 
 model ConstructionSubcontractorAssignment {
-  id          String                                  @id @default(uuid()) @db.Uuid
-  tenantId    String                                  @db.Uuid
-  profileId   String                                  @db.Uuid
-  projectId   String                                  @db.Uuid
-  contractId  String?                                 @db.Uuid
+  id          String                                    @id @default(uuid()) @db.Uuid
+  tenantId    String                                    @db.Uuid
+  profileId   String                                    @db.Uuid
+  projectId   String                                    @db.Uuid
+  contractId  String?                                   @db.Uuid
   status      ConstructionSubcontractorAssignmentStatus @default(active)
-  assignedAt  DateTime                                @default(now())
+  assignedAt  DateTime                                  @default(now())
   notes       String?
-  createdById String?                                 @db.Uuid
-  createdAt   DateTime                                @default(now())
-  updatedAt   DateTime                                @updatedAt
+  createdById String?                                   @db.Uuid
+  createdAt   DateTime                                  @default(now())
+  updatedAt   DateTime                                  @updatedAt
 
-  tenant    Tenant                         @relation(fields: [tenantId], references: [id])
+  tenant    Tenant                           @relation(fields: [tenantId], references: [id])
   profile   ConstructionSubcontractorProfile @relation(fields: [profileId], references: [id], onDelete: Cascade)
-  project   Project                        @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  contract  ConstructionContract?          @relation(fields: [contractId], references: [id], onDelete: SetNull)
-  createdBy User?                          @relation("ConstructionSubcontractorAssignmentCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  project   Project                          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  contract  ConstructionContract?            @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  createdBy User?                            @relation("ConstructionSubcontractorAssignmentCreator", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@unique([tenantId, profileId, projectId, contractId])
   @@index([tenantId, projectId])
@@ -1248,14 +1253,14 @@ model ConstructionMaterialIssue {
   createdAt    DateTime                        @default(now())
   updatedAt    DateTime                        @updatedAt
 
-  tenant     Tenant                  @relation(fields: [tenantId], references: [id])
-  project    Project                 @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  branch     Branch                  @relation(fields: [branchId], references: [id])
-  warehouse  Warehouse               @relation(fields: [warehouseId], references: [id])
-  boqItem    ConstructionBoqItem?    @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
-  costCenter CostCenter?             @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
-  issuedBy   User?                   @relation("ConstructionMaterialIssueIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
-  createdBy  User?                   @relation("ConstructionMaterialIssueCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  tenant     Tenant                          @relation(fields: [tenantId], references: [id])
+  project    Project                         @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch     Branch                          @relation(fields: [branchId], references: [id])
+  warehouse  Warehouse                       @relation(fields: [warehouseId], references: [id])
+  boqItem    ConstructionBoqItem?            @relation(fields: [boqItemId], references: [id], onDelete: SetNull)
+  costCenter CostCenter?                     @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  issuedBy   User?                           @relation("ConstructionMaterialIssueIssuer", fields: [issuedById], references: [id], onDelete: SetNull)
+  createdBy  User?                           @relation("ConstructionMaterialIssueCreator", fields: [createdById], references: [id], onDelete: SetNull)
   lines      ConstructionMaterialIssueLine[]
 
   @@unique([tenantId, number])
@@ -1280,11 +1285,11 @@ model ConstructionMaterialIssueLine {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  tenant            Tenant                  @relation(fields: [tenantId], references: [id])
+  tenant            Tenant                    @relation(fields: [tenantId], references: [id])
   issue             ConstructionMaterialIssue @relation(fields: [issueId], references: [id], onDelete: Cascade)
-  product           Product                 @relation(fields: [productId], references: [id])
-  costCenter        CostCenter?             @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
-  inventoryMovement InventoryMovement?      @relation(fields: [inventoryMovementId], references: [id], onDelete: SetNull)
+  product           Product                   @relation(fields: [productId], references: [id])
+  costCenter        CostCenter?               @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  inventoryMovement InventoryMovement?        @relation(fields: [inventoryMovementId], references: [id], onDelete: SetNull)
 
   @@index([tenantId, issueId])
   @@index([tenantId, productId])
@@ -1299,50 +1304,50 @@ enum ConstructionBillingStatus {
 }
 
 model ConstructionBilling {
-  id                    String                    @id @default(uuid()) @db.Uuid
-  tenantId              String                    @db.Uuid
-  projectId             String                    @db.Uuid
-  branchId              String                    @db.Uuid
-  contractId            String                    @db.Uuid
-  progressId            String?                   @db.Uuid
-  boqId                 String?                   @db.Uuid
-  salesInvoiceId        String?                   @unique @db.Uuid
-  number                String
-  status                ConstructionBillingStatus @default(draft)
-  currency              String                    @default("EGP")
-  grossAmount           Decimal                   @default(0) @db.Decimal(18, 4)
-  retentionAmount       Decimal                   @default(0) @db.Decimal(18, 4)
-  advanceRecoveryAmount Decimal                   @default(0) @db.Decimal(18, 4)
-  netBillableAmount     Decimal                   @default(0) @db.Decimal(18, 4)
-  retentionPercent      Decimal?                  @db.Decimal(8, 4)
-  advanceRecoveryPercent Decimal?                 @db.Decimal(8, 4)
-  sourceModule          String                    @default("construction")
-  sourceType            String
-  sourceId              String                    @db.Uuid
-  sourceEvent           String                    @default("bill")
-  idempotencyKey        String?
-  notes                 String?
-  approvedAt            DateTime?
-  approvedById          String?                   @db.Uuid
-  postedAt              DateTime?
-  postedById            String?                   @db.Uuid
-  cancelledAt           DateTime?
-  cancelledById         String?                   @db.Uuid
-  createdById           String?                   @db.Uuid
-  createdAt             DateTime                  @default(now())
-  updatedAt             DateTime                  @updatedAt
+  id                     String                    @id @default(uuid()) @db.Uuid
+  tenantId               String                    @db.Uuid
+  projectId              String                    @db.Uuid
+  branchId               String                    @db.Uuid
+  contractId             String                    @db.Uuid
+  progressId             String?                   @db.Uuid
+  boqId                  String?                   @db.Uuid
+  salesInvoiceId         String?                   @unique @db.Uuid
+  number                 String
+  status                 ConstructionBillingStatus @default(draft)
+  currency               String                    @default("EGP")
+  grossAmount            Decimal                   @default(0) @db.Decimal(18, 4)
+  retentionAmount        Decimal                   @default(0) @db.Decimal(18, 4)
+  advanceRecoveryAmount  Decimal                   @default(0) @db.Decimal(18, 4)
+  netBillableAmount      Decimal                   @default(0) @db.Decimal(18, 4)
+  retentionPercent       Decimal?                  @db.Decimal(8, 4)
+  advanceRecoveryPercent Decimal?                  @db.Decimal(8, 4)
+  sourceModule           String                    @default("construction")
+  sourceType             String
+  sourceId               String                    @db.Uuid
+  sourceEvent            String                    @default("bill")
+  idempotencyKey         String?
+  notes                  String?
+  approvedAt             DateTime?
+  approvedById           String?                   @db.Uuid
+  postedAt               DateTime?
+  postedById             String?                   @db.Uuid
+  cancelledAt            DateTime?
+  cancelledById          String?                   @db.Uuid
+  createdById            String?                   @db.Uuid
+  createdAt              DateTime                  @default(now())
+  updatedAt              DateTime                  @updatedAt
 
-  tenant       Tenant                @relation(fields: [tenantId], references: [id])
-  project      Project               @relation(fields: [projectId], references: [id], onDelete: Cascade)
-  branch       Branch                @relation(fields: [branchId], references: [id])
-  contract     ConstructionContract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  progress     ConstructionProgress? @relation(fields: [progressId], references: [id], onDelete: SetNull)
-  boq          ConstructionBoq?      @relation(fields: [boqId], references: [id], onDelete: SetNull)
-  salesInvoice SalesInvoice?         @relation(fields: [salesInvoiceId], references: [id], onDelete: SetNull)
-  approvedBy   User?                 @relation("ConstructionBillingApprover", fields: [approvedById], references: [id], onDelete: SetNull)
-  postedBy     User?                 @relation("ConstructionBillingPoster", fields: [postedById], references: [id], onDelete: SetNull)
-  cancelledBy  User?                 @relation("ConstructionBillingCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
-  createdBy    User?                 @relation("ConstructionBillingCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  tenant       Tenant                    @relation(fields: [tenantId], references: [id])
+  project      Project                   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  branch       Branch                    @relation(fields: [branchId], references: [id])
+  contract     ConstructionContract      @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  progress     ConstructionProgress?     @relation(fields: [progressId], references: [id], onDelete: SetNull)
+  boq          ConstructionBoq?          @relation(fields: [boqId], references: [id], onDelete: SetNull)
+  salesInvoice SalesInvoice?             @relation(fields: [salesInvoiceId], references: [id], onDelete: SetNull)
+  approvedBy   User?                     @relation("ConstructionBillingApprover", fields: [approvedById], references: [id], onDelete: SetNull)
+  postedBy     User?                     @relation("ConstructionBillingPoster", fields: [postedById], references: [id], onDelete: SetNull)
+  cancelledBy  User?                     @relation("ConstructionBillingCanceller", fields: [cancelledById], references: [id], onDelete: SetNull)
+  createdBy    User?                     @relation("ConstructionBillingCreator", fields: [createdById], references: [id], onDelete: SetNull)
   lines        ConstructionBillingLine[]
 
   @@unique([tenantId, number])
@@ -1467,146 +1472,157 @@ model PartyIdentifier {
 }
 
 model StockBalance {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @db.Uuid
-  warehouseId String   @db.Uuid
-  productId   String   @db.Uuid
-  quantity    Decimal  @default(0) @db.Decimal(18, 4)
-  avgCost     Decimal  @default(0) @db.Decimal(18, 4)
-  updatedAt   DateTime @updatedAt
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  warehouseId String    @db.Uuid
+  productId   String    @db.Uuid
+  quantity    Decimal   @default(0) @db.Decimal(18, 4)
+  avgCost     Decimal   @default(0) @db.Decimal(18, 4)
+  updatedAt   DateTime  @updatedAt
   warehouse   Warehouse @relation(fields: [warehouseId], references: [id])
   product     Product   @relation(fields: [productId], references: [id])
+
   @@unique([tenantId, warehouseId, productId])
   @@map("stock_balances")
 }
 
 model InventoryMovement {
-  id            String   @id @default(uuid()) @db.Uuid
-  tenantId      String   @db.Uuid
-  branchId      String?  @db.Uuid
-  warehouseId   String   @db.Uuid
-  productId     String   @db.Uuid
-  movementType  String
-  quantity      Decimal  @db.Decimal(18, 4)
-  unitCost      Decimal  @default(0) @db.Decimal(18, 4)
-  referenceType String?
-  referenceId   String?
-  notes         String?
-  createdAt     DateTime @default(now())
-  createdById   String?  @db.Uuid
-  warehouse     Warehouse @relation(fields: [warehouseId], references: [id])
-  product       Product   @relation(fields: [productId], references: [id])
+  id                            String                         @id @default(uuid()) @db.Uuid
+  tenantId                      String                         @db.Uuid
+  branchId                      String?                        @db.Uuid
+  warehouseId                   String                         @db.Uuid
+  productId                     String                         @db.Uuid
+  movementType                  String
+  quantity                      Decimal                        @db.Decimal(18, 4)
+  unitCost                      Decimal                        @default(0) @db.Decimal(18, 4)
+  referenceType                 String?
+  referenceId                   String?
+  notes                         String?
+  createdAt                     DateTime                       @default(now())
+  createdById                   String?                        @db.Uuid
+  warehouse                     Warehouse                      @relation(fields: [warehouseId], references: [id])
+  product                       Product                        @relation(fields: [productId], references: [id])
   constructionMaterialIssueLine ConstructionMaterialIssueLine?
+
   @@index([tenantId, warehouseId, productId])
   @@index([tenantId, referenceType, referenceId])
   @@map("inventory_movements")
 }
 
 model SalesInvoice {
-  id             String    @id @default(uuid()) @db.Uuid
-  tenantId       String    @db.Uuid
-  branchId       String    @db.Uuid
-  customerId     String?   @db.Uuid
-  warehouseId    String?   @db.Uuid
-  number         String
-  status         String    @default("draft")
-  invoiceDate    DateTime  @default(now())
-  dueDate        DateTime?
-  subtotal       Decimal   @default(0) @db.Decimal(18, 4)
-  taxAmount      Decimal   @default(0) @db.Decimal(18, 4)
-  discountAmount Decimal   @default(0) @db.Decimal(18, 4)
-  total          Decimal   @default(0) @db.Decimal(18, 4)
-  paidAmount     Decimal   @default(0) @db.Decimal(18, 4)
-  notes          String?
-  postedAt       DateTime?
-  createdById    String?   @db.Uuid
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  deletedAt      DateTime?
-  customer       Customer? @relation(fields: [customerId], references: [id])
-  branch         Branch    @relation(fields: [branchId], references: [id])
-  lines          SalesInvoiceLine[]
-  payments       CustomerPayment[]
+  id                  String               @id @default(uuid()) @db.Uuid
+  tenantId            String               @db.Uuid
+  branchId            String               @db.Uuid
+  customerId          String?              @db.Uuid
+  warehouseId         String?              @db.Uuid
+  number              String
+  status              String               @default("draft")
+  invoiceDate         DateTime             @default(now())
+  dueDate             DateTime?
+  subtotal            Decimal              @default(0) @db.Decimal(18, 4)
+  taxAmount           Decimal              @default(0) @db.Decimal(18, 4)
+  discountAmount      Decimal              @default(0) @db.Decimal(18, 4)
+  total               Decimal              @default(0) @db.Decimal(18, 4)
+  paidAmount          Decimal              @default(0) @db.Decimal(18, 4)
+  currencyCode        String?
+  exchangeRate        Decimal?             @db.Decimal(18, 8)
+  notes               String?
+  postedAt            DateTime?
+  createdById         String?              @db.Uuid
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  deletedAt           DateTime?
+  customer            Customer?            @relation(fields: [customerId], references: [id])
+  branch              Branch               @relation(fields: [branchId], references: [id])
+  lines               SalesInvoiceLine[]
+  payments            CustomerPayment[]
   constructionBilling ConstructionBilling?
+
   @@unique([tenantId, number])
   @@index([tenantId, status, invoiceDate])
   @@map("sales_invoices")
 }
 
 model SalesInvoiceLine {
-  id          String  @id @default(uuid()) @db.Uuid
-  invoiceId   String  @db.Uuid
-  productId   String? @db.Uuid
+  id          String       @id @default(uuid()) @db.Uuid
+  invoiceId   String       @db.Uuid
+  productId   String?      @db.Uuid
   description String
-  quantity    Decimal @db.Decimal(18, 4)
-  unitPrice   Decimal @db.Decimal(18, 4)
-  discount    Decimal @default(0) @db.Decimal(18, 4)
-  taxRate     Decimal @default(0) @db.Decimal(8, 4)
-  taxAmount   Decimal @default(0) @db.Decimal(18, 4)
-  lineTotal   Decimal @default(0) @db.Decimal(18, 4)
+  quantity    Decimal      @db.Decimal(18, 4)
+  unitPrice   Decimal      @db.Decimal(18, 4)
+  discount    Decimal      @default(0) @db.Decimal(18, 4)
+  taxRate     Decimal      @default(0) @db.Decimal(8, 4)
+  taxAmount   Decimal      @default(0) @db.Decimal(18, 4)
+  lineTotal   Decimal      @default(0) @db.Decimal(18, 4)
   invoice     SalesInvoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   product     Product?     @relation(fields: [productId], references: [id])
+
   @@index([invoiceId])
   @@map("sales_invoice_lines")
 }
 
 model CustomerPayment {
-  id          String   @id @default(uuid()) @db.Uuid
-  tenantId    String   @db.Uuid
-  branchId    String   @db.Uuid
-  customerId  String   @db.Uuid
-  invoiceId   String?  @db.Uuid
+  id          String        @id @default(uuid()) @db.Uuid
+  tenantId    String        @db.Uuid
+  branchId    String        @db.Uuid
+  customerId  String        @db.Uuid
+  invoiceId   String?       @db.Uuid
   number      String
-  amount      Decimal  @db.Decimal(18, 4)
-  paymentDate DateTime @default(now())
-  method      String   @default("cash")
+  amount      Decimal       @db.Decimal(18, 4)
+  paymentDate DateTime      @default(now())
+  method      String        @default("cash")
   reference   String?
-  createdAt   DateTime @default(now())
+  createdAt   DateTime      @default(now())
   customer    Customer      @relation(fields: [customerId], references: [id])
   invoice     SalesInvoice? @relation(fields: [invoiceId], references: [id])
+
   @@unique([tenantId, number])
   @@index([tenantId, customerId])
   @@map("customer_payments")
 }
 
 model PurchaseOrder {
-  id           String    @id @default(uuid()) @db.Uuid
-  tenantId     String    @db.Uuid
-  branchId     String    @db.Uuid
-  supplierId   String    @db.Uuid
-  warehouseId  String    @db.Uuid
+  id           String              @id @default(uuid()) @db.Uuid
+  tenantId     String              @db.Uuid
+  branchId     String              @db.Uuid
+  supplierId   String              @db.Uuid
+  warehouseId  String              @db.Uuid
   number       String
-  status       String    @default("draft")
-  orderDate    DateTime  @default(now())
+  status       String              @default("draft")
+  orderDate    DateTime            @default(now())
   expectedDate DateTime?
-  subtotal     Decimal   @default(0) @db.Decimal(18, 4)
-  taxAmount    Decimal   @default(0) @db.Decimal(18, 4)
-  total        Decimal   @default(0) @db.Decimal(18, 4)
+  subtotal     Decimal             @default(0) @db.Decimal(18, 4)
+  taxAmount    Decimal             @default(0) @db.Decimal(18, 4)
+  total        Decimal             @default(0) @db.Decimal(18, 4)
+  currencyCode String?
+  exchangeRate Decimal?            @db.Decimal(18, 8)
   notes        String?
   receivedAt   DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  supplier     Supplier  @relation(fields: [supplierId], references: [id])
-  branch       Branch    @relation(fields: [branchId], references: [id])
-  warehouse    Warehouse @relation(fields: [warehouseId], references: [id])
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  supplier     Supplier            @relation(fields: [supplierId], references: [id])
+  branch       Branch              @relation(fields: [branchId], references: [id])
+  warehouse    Warehouse           @relation(fields: [warehouseId], references: [id])
   lines        PurchaseOrderLine[]
+
   @@unique([tenantId, number])
   @@index([tenantId, status])
   @@map("purchase_orders")
 }
 
 model PurchaseOrderLine {
-  id          String  @id @default(uuid()) @db.Uuid
-  orderId     String  @db.Uuid
-  productId   String  @db.Uuid
+  id          String        @id @default(uuid()) @db.Uuid
+  orderId     String        @db.Uuid
+  productId   String        @db.Uuid
   description String
-  quantity    Decimal @db.Decimal(18, 4)
-  receivedQty Decimal @default(0) @db.Decimal(18, 4)
-  unitPrice   Decimal @db.Decimal(18, 4)
-  taxRate     Decimal @default(0) @db.Decimal(8, 4)
-  lineTotal   Decimal @default(0) @db.Decimal(18, 4)
+  quantity    Decimal       @db.Decimal(18, 4)
+  receivedQty Decimal       @default(0) @db.Decimal(18, 4)
+  unitPrice   Decimal       @db.Decimal(18, 4)
+  taxRate     Decimal       @default(0) @db.Decimal(8, 4)
+  lineTotal   Decimal       @default(0) @db.Decimal(18, 4)
   order       PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product     Product       @relation(fields: [productId], references: [id])
+
   @@index([orderId])
   @@map("purchase_order_lines")
 }
@@ -1622,6 +1638,7 @@ model SupplierPayment {
   reference   String?
   createdAt   DateTime @default(now())
   supplier    Supplier @relation(fields: [supplierId], references: [id])
+
   @@unique([tenantId, number])
   @@map("supplier_payments")
 }
@@ -1663,6 +1680,8 @@ model JournalEntry {
   sourceEvent    String?
   idempotencyKey String?
   status         String        @default("posted")
+  currencyCode   String?
+  exchangeRate   Decimal?      @db.Decimal(18, 8)
   postedAt       DateTime      @default(now())
   createdAt      DateTime      @default(now())
   lines          JournalLine[]
@@ -1677,20 +1696,23 @@ model JournalEntry {
 }
 
 model JournalLine {
-  id           String  @id @default(uuid()) @db.Uuid
-  entryId      String  @db.Uuid
-  accountId    String  @db.Uuid
-  branchId     String? @db.Uuid
-  projectId    String? @db.Uuid
-  costCenterId String? @db.Uuid
-  department   String?
-  debit        Decimal @default(0) @db.Decimal(18, 4)
-  credit       Decimal @default(0) @db.Decimal(18, 4)
-  description  String?
-  entry        JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  account      Account      @relation(fields: [accountId], references: [id])
-  project      Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
-  costCenter   CostCenter?  @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
+  id            String       @id @default(uuid()) @db.Uuid
+  entryId       String       @db.Uuid
+  accountId     String       @db.Uuid
+  branchId      String?      @db.Uuid
+  projectId     String?      @db.Uuid
+  costCenterId  String?      @db.Uuid
+  department    String?
+  debit         Decimal      @default(0) @db.Decimal(18, 4)
+  credit        Decimal      @default(0) @db.Decimal(18, 4)
+  currencyCode  String?
+  foreignDebit  Decimal?     @db.Decimal(18, 4)
+  foreignCredit Decimal?     @db.Decimal(18, 4)
+  description   String?
+  entry         JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  account       Account      @relation(fields: [accountId], references: [id])
+  project       Project?     @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  costCenter    CostCenter?  @relation(fields: [costCenterId], references: [id], onDelete: SetNull)
 
   @@index([entryId])
   @@index([accountId])
@@ -1733,15 +1755,15 @@ model AccountRoleMapping {
 }
 
 model PostingRule {
-  id           String   @id @default(uuid()) @db.Uuid
-  tenantId     String   @db.Uuid
+  id           String            @id @default(uuid()) @db.Uuid
+  tenantId     String            @db.Uuid
   sourceModule String
   sourceType   String
   event        String
   description  String?
-  isActive     Boolean  @default(true)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
   lines        PostingRuleLine[]
 
   @@unique([tenantId, sourceModule, sourceType, event])
@@ -1794,28 +1816,30 @@ model PosShift {
   totalSales  Decimal   @default(0) @db.Decimal(18, 4)
   branch      Branch    @relation(fields: [branchId], references: [id])
   sales       PosSale[]
+
   @@index([tenantId, branchId, status])
   @@map("pos_shifts")
 }
 
 model PosSale {
-  id         String   @id @default(uuid()) @db.Uuid
-  tenantId   String   @db.Uuid
-  branchId   String   @db.Uuid
-  shiftId    String   @db.Uuid
-  customerId String?  @db.Uuid
+  id         String        @id @default(uuid()) @db.Uuid
+  tenantId   String        @db.Uuid
+  branchId   String        @db.Uuid
+  shiftId    String        @db.Uuid
+  customerId String?       @db.Uuid
   number     String
-  status     String   @default("completed")
-  subtotal   Decimal  @default(0) @db.Decimal(18, 4)
-  taxAmount  Decimal  @default(0) @db.Decimal(18, 4)
-  discount   Decimal  @default(0) @db.Decimal(18, 4)
-  total      Decimal  @default(0) @db.Decimal(18, 4)
-  saleDate   DateTime @default(now())
-  syncStatus String   @default("synced")
-  shift      PosShift     @relation(fields: [shiftId], references: [id])
-  customer   Customer?    @relation(fields: [customerId], references: [id])
+  status     String        @default("completed")
+  subtotal   Decimal       @default(0) @db.Decimal(18, 4)
+  taxAmount  Decimal       @default(0) @db.Decimal(18, 4)
+  discount   Decimal       @default(0) @db.Decimal(18, 4)
+  total      Decimal       @default(0) @db.Decimal(18, 4)
+  saleDate   DateTime      @default(now())
+  syncStatus String        @default("synced")
+  shift      PosShift      @relation(fields: [shiftId], references: [id])
+  customer   Customer?     @relation(fields: [customerId], references: [id])
   lines      PosSaleLine[]
   payments   PosPayment[]
+
   @@unique([tenantId, number])
   @@index([tenantId, shiftId])
   @@map("pos_sales")
@@ -1831,6 +1855,7 @@ model PosSaleLine {
   lineTotal   Decimal @default(0) @db.Decimal(18, 4)
   sale        PosSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
   product     Product @relation(fields: [productId], references: [id])
+
   @@index([saleId])
   @@map("pos_sale_lines")
 }
@@ -1841,6 +1866,7 @@ model PosPayment {
   method String
   amount Decimal @db.Decimal(18, 4)
   sale   PosSale @relation(fields: [saleId], references: [id], onDelete: Cascade)
+
   @@index([saleId])
   @@map("pos_payments")
 }
@@ -1962,15 +1988,15 @@ model Patient {
   updatedAt    DateTime       @updatedAt
   deletedAt    DateTime?
 
-  tenant     Tenant          @relation(fields: [tenantId], references: [id])
-  branch     Branch?         @relation(fields: [branchId], references: [id])
-  profile    PatientProfile?
-  account    PatientAccount?
-  encounters Encounter[]
-  charges    Charge[]
-  payments   Payment[]
-  refunds    Refund[]
-  adjustments Adjustment[]
+  tenant       Tenant          @relation(fields: [tenantId], references: [id])
+  branch       Branch?         @relation(fields: [branchId], references: [id])
+  profile      PatientProfile?
+  account      PatientAccount?
+  encounters   Encounter[]
+  charges      Charge[]
+  payments     Payment[]
+  refunds      Refund[]
+  adjustments  Adjustment[]
   patientNotes PatientNote[]
 
   @@unique([tenantId, code])
@@ -1981,15 +2007,15 @@ model Patient {
 }
 
 model PatientProfile {
-  id                   String  @id @default(uuid()) @db.Uuid
-  patientId            String  @unique @db.Uuid
-  preferredLocale      String?
-  referralSource       String?
-  emergencyContactName String?
+  id                    String   @id @default(uuid()) @db.Uuid
+  patientId             String   @unique @db.Uuid
+  preferredLocale       String?
+  referralSource        String?
+  emergencyContactName  String?
   emergencyContactPhone String?
-  metadata             Json    @default("{}")
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  metadata              Json     @default("{}")
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   patient Patient @relation(fields: [patientId], references: [id], onDelete: Cascade)
 
@@ -2072,8 +2098,8 @@ model Service {
   updatedAt       DateTime  @updatedAt
   deletedAt       DateTime?
 
-  tenant     Tenant           @relation(fields: [tenantId], references: [id])
-  category   ServiceCategory? @relation(fields: [categoryId], references: [id])
+  tenant      Tenant           @relation(fields: [tenantId], references: [id])
+  category    ServiceCategory? @relation(fields: [categoryId], references: [id])
   chargeLines ChargeLine[]
 
   @@unique([tenantId, code])
@@ -2101,10 +2127,10 @@ model Encounter {
   updatedAt     DateTime        @updatedAt
   deletedAt     DateTime?
 
-  tenant   Tenant   @relation(fields: [tenantId], references: [id])
-  branch   Branch   @relation(fields: [branchId], references: [id])
-  patient  Patient  @relation(fields: [patientId], references: [id])
-  provider User?    @relation("EncounterProvider", fields: [providerId], references: [id])
+  tenant   Tenant    @relation(fields: [tenantId], references: [id])
+  branch   Branch    @relation(fields: [branchId], references: [id])
+  patient  Patient   @relation(fields: [patientId], references: [id])
+  provider User?     @relation("EncounterProvider", fields: [providerId], references: [id])
   charges  Charge[]
   payments Payment[]
 
@@ -2115,36 +2141,36 @@ model Encounter {
 }
 
 model Charge {
-  id              String       @id @default(uuid()) @db.Uuid
-  tenantId        String       @db.Uuid
-  branchId        String       @db.Uuid
-  patientId       String       @db.Uuid
-  accountId       String       @db.Uuid
-  encounterId     String?      @db.Uuid
-  number          String
-  status          ChargeStatus @default(draft)
-  chargeDate      DateTime     @db.Date
-  subtotal        Decimal      @default(0) @db.Decimal(18, 4)
-  discountTotal   Decimal      @default(0) @db.Decimal(18, 4)
-  headerDiscount  Decimal      @default(0) @db.Decimal(18, 4)
-  total           Decimal      @default(0) @db.Decimal(18, 4)
-  paidAmount      Decimal      @default(0) @db.Decimal(18, 4)
-  notes           String?
-  postedAt        DateTime?
-  postedById      String?      @db.Uuid
-  voidedAt        DateTime?
-  voidedById      String?      @db.Uuid
-  voidReason      String?
-  createdById     String?      @db.Uuid
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id             String       @id @default(uuid()) @db.Uuid
+  tenantId       String       @db.Uuid
+  branchId       String       @db.Uuid
+  patientId      String       @db.Uuid
+  accountId      String       @db.Uuid
+  encounterId    String?      @db.Uuid
+  number         String
+  status         ChargeStatus @default(draft)
+  chargeDate     DateTime     @db.Date
+  subtotal       Decimal      @default(0) @db.Decimal(18, 4)
+  discountTotal  Decimal      @default(0) @db.Decimal(18, 4)
+  headerDiscount Decimal      @default(0) @db.Decimal(18, 4)
+  total          Decimal      @default(0) @db.Decimal(18, 4)
+  paidAmount     Decimal      @default(0) @db.Decimal(18, 4)
+  notes          String?
+  postedAt       DateTime?
+  postedById     String?      @db.Uuid
+  voidedAt       DateTime?
+  voidedById     String?      @db.Uuid
+  voidReason     String?
+  createdById    String?      @db.Uuid
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-  tenant     Tenant              @relation(fields: [tenantId], references: [id])
-  branch     Branch              @relation(fields: [branchId], references: [id])
-  patient    Patient             @relation(fields: [patientId], references: [id])
-  account    PatientAccount      @relation(fields: [accountId], references: [id])
-  encounter  Encounter?          @relation(fields: [encounterId], references: [id])
-  lines      ChargeLine[]
+  tenant      Tenant              @relation(fields: [tenantId], references: [id])
+  branch      Branch              @relation(fields: [branchId], references: [id])
+  patient     Patient             @relation(fields: [patientId], references: [id])
+  account     PatientAccount      @relation(fields: [accountId], references: [id])
+  encounter   Encounter?          @relation(fields: [encounterId], references: [id])
+  lines       ChargeLine[]
   allocations PaymentAllocation[]
 
   @@unique([tenantId, number])
@@ -2216,10 +2242,10 @@ model Payment {
 }
 
 model PaymentAllocation {
-  id        String  @id @default(uuid()) @db.Uuid
-  paymentId String  @db.Uuid
-  chargeId  String  @db.Uuid
-  amount    Decimal @db.Decimal(18, 4)
+  id        String   @id @default(uuid()) @db.Uuid
+  paymentId String   @db.Uuid
+  chargeId  String   @db.Uuid
+  amount    Decimal  @db.Decimal(18, 4)
   createdAt DateTime @default(now())
 
   payment Payment @relation(fields: [paymentId], references: [id], onDelete: Cascade)
@@ -2231,23 +2257,23 @@ model PaymentAllocation {
 }
 
 model Refund {
-  id          String       @id @default(uuid()) @db.Uuid
-  tenantId    String       @db.Uuid
-  branchId    String       @db.Uuid
-  patientId   String       @db.Uuid
-  accountId   String       @db.Uuid
-  paymentId   String       @db.Uuid
-  number      String
-  amount      Decimal      @db.Decimal(18, 4)
-  reason      String
-  method      PaymentMethod @default(cash)
-  status      RefundStatus @default(posted)
-  refundDate  DateTime     @db.Date
-  postedAt    DateTime     @default(now())
-  postedById  String?      @db.Uuid
-  voidedAt    DateTime?
-  voidedById  String?      @db.Uuid
-  createdAt   DateTime     @default(now())
+  id         String        @id @default(uuid()) @db.Uuid
+  tenantId   String        @db.Uuid
+  branchId   String        @db.Uuid
+  patientId  String        @db.Uuid
+  accountId  String        @db.Uuid
+  paymentId  String        @db.Uuid
+  number     String
+  amount     Decimal       @db.Decimal(18, 4)
+  reason     String
+  method     PaymentMethod @default(cash)
+  status     RefundStatus  @default(posted)
+  refundDate DateTime      @db.Date
+  postedAt   DateTime      @default(now())
+  postedById String?       @db.Uuid
+  voidedAt   DateTime?
+  voidedById String?       @db.Uuid
+  createdAt  DateTime      @default(now())
 
   tenant  Tenant         @relation(fields: [tenantId], references: [id])
   branch  Branch         @relation(fields: [branchId], references: [id])
@@ -2326,20 +2352,20 @@ model LedgerEntry {
 // ─── Synchronization ───────────────────────────────────────────────
 
 model SyncQueue {
-  id           String    @id @default(uuid()) @db.Uuid
-  tenantId     String    @db.Uuid
-  deviceId     String    @db.Uuid
-  entityType   String
-  entityId     String
-  operation    String
-  payload      Json
-  version      Int       @default(1)
-  status       String    @default("pending")
-  retryCount   Int       @default(0)
-  lastError    String?
-  idempotencyKey String  @unique
-  createdAt    DateTime  @default(now())
-  processedAt  DateTime?
+  id             String    @id @default(uuid()) @db.Uuid
+  tenantId       String    @db.Uuid
+  deviceId       String    @db.Uuid
+  entityType     String
+  entityId       String
+  operation      String
+  payload        Json
+  version        Int       @default(1)
+  status         String    @default("pending")
+  retryCount     Int       @default(0)
+  lastError      String?
+  idempotencyKey String    @unique
+  createdAt      DateTime  @default(now())
+  processedAt    DateTime?
 
   @@index([tenantId, deviceId, status])
   @@index([status, createdAt])
@@ -2347,15 +2373,15 @@ model SyncQueue {
 }
 
 model SyncLog {
-  id         String   @id @default(uuid()) @db.Uuid
-  tenantId   String   @db.Uuid
-  deviceId   String   @db.Uuid
-  direction  String
-  entityType String?
-  recordCount Int     @default(0)
-  status     String
-  message    String?
-  startedAt  DateTime @default(now())
+  id          String    @id @default(uuid()) @db.Uuid
+  tenantId    String    @db.Uuid
+  deviceId    String    @db.Uuid
+  direction   String
+  entityType  String?
+  recordCount Int       @default(0)
+  status      String
+  message     String?
+  startedAt   DateTime  @default(now())
   completedAt DateTime?
 
   @@index([tenantId, deviceId, startedAt])
@@ -2363,16 +2389,16 @@ model SyncLog {
 }
 
 model SyncConflict {
-  id           String    @id @default(uuid()) @db.Uuid
-  tenantId     String    @db.Uuid
-  deviceId     String    @db.Uuid
-  entityType   String
-  entityId     String
-  localVersion Json
+  id            String    @id @default(uuid()) @db.Uuid
+  tenantId      String    @db.Uuid
+  deviceId      String    @db.Uuid
+  entityType    String
+  entityId      String
+  localVersion  Json
   serverVersion Json
-  resolution   String?
-  resolvedAt   DateTime?
-  createdAt    DateTime  @default(now())
+  resolution    String?
+  resolvedAt    DateTime?
+  createdAt     DateTime  @default(now())
 
   @@index([tenantId, entityType, entityId])
   @@map("sync_conflicts")
@@ -2388,4 +2414,561 @@ model SyncCursor {
 
   @@unique([tenantId, deviceId, entityType])
   @@map("sync_cursors")
+}
+
+// ─── Multi-Currency / FX ───────────────────────────────────────────
+
+enum ExchangeRateSource {
+  manual
+  system
+}
+
+model Currency {
+  id            String   @id @default(uuid()) @db.Uuid
+  tenantId      String   @db.Uuid
+  code          String
+  name          String
+  symbol        String?
+  decimalPlaces Int      @default(2)
+  isBase        Boolean  @default(false)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@unique([tenantId, code])
+  @@index([tenantId, isActive])
+  @@map("currencies")
+}
+
+model ExchangeRate {
+  id           String             @id @default(uuid()) @db.Uuid
+  tenantId     String             @db.Uuid
+  fromCurrency String
+  toCurrency   String
+  rate         Decimal            @db.Decimal(18, 8)
+  asOfDate     DateTime           @db.Date
+  source       ExchangeRateSource @default(manual)
+  createdById  String?            @db.Uuid
+  createdAt    DateTime           @default(now())
+
+  @@unique([tenantId, fromCurrency, toCurrency, asOfDate])
+  @@index([tenantId, fromCurrency, toCurrency, asOfDate])
+  @@map("exchange_rates")
+}
+
+// ─── Fixed Assets ───────────────────────────────────────────────────
+
+enum AssetDepreciationMethod {
+  straight_line
+  declining_balance
+}
+
+enum AssetStatus {
+  draft
+  active
+  disposed
+  written_off
+}
+
+model AssetCategory {
+  id                                 String                  @id @default(uuid()) @db.Uuid
+  tenantId                           String                  @db.Uuid
+  code                               String
+  name                               String
+  defaultUsefulLifeMonths            Int                     @default(60)
+  defaultDepreciationMethod          AssetDepreciationMethod @default(straight_line)
+  defaultDecliningRate               Decimal?                @db.Decimal(6, 4)
+  assetAccountRole                   String                  @default("fixed_assets")
+  depreciationExpenseAccountRole     String                  @default("depreciation_expense")
+  accumulatedDepreciationAccountRole String                  @default("accumulated_depreciation")
+  isActive                           Boolean                 @default(true)
+  createdAt                          DateTime                @default(now())
+  updatedAt                          DateTime                @updatedAt
+  assets                             Asset[]
+
+  @@unique([tenantId, code])
+  @@map("asset_categories")
+}
+
+model Asset {
+  id                      String                   @id @default(uuid()) @db.Uuid
+  tenantId                String                   @db.Uuid
+  branchId                String?                  @db.Uuid
+  categoryId              String                   @db.Uuid
+  costCenterId            String?                  @db.Uuid
+  projectId               String?                  @db.Uuid
+  code                    String
+  name                    String
+  description             String?
+  acquisitionDate         DateTime                 @db.Date
+  acquisitionCost         Decimal                  @db.Decimal(18, 4)
+  salvageValue            Decimal                  @default(0) @db.Decimal(18, 4)
+  usefulLifeMonths        Int
+  depreciationMethod      AssetDepreciationMethod  @default(straight_line)
+  decliningRate           Decimal?                 @db.Decimal(6, 4)
+  accumulatedDepreciation Decimal                  @default(0) @db.Decimal(18, 4)
+  bookValue               Decimal                  @db.Decimal(18, 4)
+  status                  AssetStatus              @default(active)
+  lastDepreciationDate    DateTime?                @db.Date
+  disposalDate            DateTime?                @db.Date
+  disposalProceeds        Decimal?                 @db.Decimal(18, 4)
+  disposalJournalEntryId  String?                  @db.Uuid
+  serialNumber            String?
+  location                String?
+  notes                   String?
+  createdById             String?                  @db.Uuid
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  category                AssetCategory            @relation(fields: [categoryId], references: [id])
+  depreciationEntries     AssetDepreciationEntry[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@index([tenantId, categoryId])
+  @@map("assets")
+}
+
+model AssetDepreciationEntry {
+  id                      String   @id @default(uuid()) @db.Uuid
+  tenantId                String   @db.Uuid
+  assetId                 String   @db.Uuid
+  periodDate              DateTime @db.Date
+  depreciationAmount      Decimal  @db.Decimal(18, 4)
+  accumulatedDepreciation Decimal  @db.Decimal(18, 4)
+  bookValue               Decimal  @db.Decimal(18, 4)
+  journalEntryId          String?  @db.Uuid
+  createdAt               DateTime @default(now())
+  asset                   Asset    @relation(fields: [assetId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, assetId, periodDate])
+  @@index([tenantId, assetId])
+  @@map("asset_depreciation_entries")
+}
+
+// ─── CRM: Leads / Opportunities / Activities ───────────────────────
+
+enum LeadStatus {
+  new
+  contacted
+  qualified
+  unqualified
+  converted
+}
+
+enum OpportunityStage {
+  prospecting
+  qualification
+  proposal
+  negotiation
+  won
+  lost
+}
+
+enum CrmActivityType {
+  call
+  meeting
+  email
+  task
+  note
+}
+
+enum CrmActivityStatus {
+  open
+  completed
+  cancelled
+}
+
+model Lead {
+  id                     String        @id @default(uuid()) @db.Uuid
+  tenantId               String        @db.Uuid
+  branchId               String?       @db.Uuid
+  code                   String
+  companyName            String?
+  contactName            String
+  email                  String?
+  phone                  String?
+  source                 String?
+  status                 LeadStatus    @default(new)
+  ownerId                String?       @db.Uuid
+  notes                  String?
+  convertedPartyId       String?       @db.Uuid
+  convertedOpportunityId String?       @db.Uuid
+  convertedAt            DateTime?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  opportunities          Opportunity[]
+  activities             CrmActivity[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@index([tenantId, ownerId])
+  @@map("crm_leads")
+}
+
+model Opportunity {
+  id                String           @id @default(uuid()) @db.Uuid
+  tenantId          String           @db.Uuid
+  branchId          String?          @db.Uuid
+  leadId            String?          @db.Uuid
+  partyId           String?          @db.Uuid
+  code              String
+  name              String
+  stage             OpportunityStage @default(prospecting)
+  amount            Decimal          @default(0) @db.Decimal(18, 4)
+  currencyCode      String?
+  probability       Int              @default(0)
+  expectedCloseDate DateTime?        @db.Date
+  ownerId           String?          @db.Uuid
+  wonAt             DateTime?
+  lostAt            DateTime?
+  lostReason        String?
+  notes             String?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  lead              Lead?            @relation(fields: [leadId], references: [id])
+  activities        CrmActivity[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, stage])
+  @@index([tenantId, ownerId])
+  @@map("crm_opportunities")
+}
+
+model CrmActivity {
+  id            String            @id @default(uuid()) @db.Uuid
+  tenantId      String            @db.Uuid
+  leadId        String?           @db.Uuid
+  opportunityId String?           @db.Uuid
+  partyId       String?           @db.Uuid
+  type          CrmActivityType   @default(task)
+  subject       String
+  notes         String?
+  dueDate       DateTime?
+  status        CrmActivityStatus @default(open)
+  ownerId       String?           @db.Uuid
+  completedAt   DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  lead          Lead?             @relation(fields: [leadId], references: [id])
+  opportunity   Opportunity?      @relation(fields: [opportunityId], references: [id])
+
+  @@index([tenantId, ownerId, status])
+  @@index([tenantId, dueDate])
+  @@map("crm_activities")
+}
+
+// ─── HR: Departments / Employees / Leave / Payroll ─────────────────
+
+enum EmployeeStatus {
+  active
+  on_leave
+  terminated
+}
+
+enum LeaveRequestStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum PayrollRunStatus {
+  draft
+  approved
+  posted
+  cancelled
+}
+
+model Department {
+  id        String     @id @default(uuid()) @db.Uuid
+  tenantId  String     @db.Uuid
+  branchId  String?    @db.Uuid
+  code      String
+  name      String
+  managerId String?    @db.Uuid
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  positions Position[]
+  employees Employee[]
+
+  @@unique([tenantId, code])
+  @@map("hr_departments")
+}
+
+model Position {
+  id           String      @id @default(uuid()) @db.Uuid
+  tenantId     String      @db.Uuid
+  departmentId String?     @db.Uuid
+  code         String
+  title        String
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  department   Department? @relation(fields: [departmentId], references: [id])
+  employees    Employee[]
+
+  @@unique([tenantId, code])
+  @@map("hr_positions")
+}
+
+model Employee {
+  id              String           @id @default(uuid()) @db.Uuid
+  tenantId        String           @db.Uuid
+  branchId        String?          @db.Uuid
+  userId          String?          @db.Uuid
+  departmentId    String?          @db.Uuid
+  positionId      String?          @db.Uuid
+  managerId       String?          @db.Uuid
+  code            String
+  firstName       String
+  lastName        String
+  email           String?
+  phone           String?
+  nationalId      String?
+  hireDate        DateTime         @db.Date
+  terminationDate DateTime?        @db.Date
+  status          EmployeeStatus   @default(active)
+  basicSalary     Decimal          @default(0) @db.Decimal(18, 4)
+  currencyCode    String?
+  notes           String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  department      Department?      @relation(fields: [departmentId], references: [id])
+  position        Position?        @relation(fields: [positionId], references: [id])
+  leaveRequests   LeaveRequest[]
+  payrollLines    PayrollRunLine[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@index([tenantId, departmentId])
+  @@map("hr_employees")
+}
+
+model LeaveType {
+  id            String         @id @default(uuid()) @db.Uuid
+  tenantId      String         @db.Uuid
+  code          String
+  name          String
+  paidLeave     Boolean        @default(true)
+  daysPerYear   Int?
+  isActive      Boolean        @default(true)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  leaveRequests LeaveRequest[]
+
+  @@unique([tenantId, code])
+  @@map("hr_leave_types")
+}
+
+model LeaveRequest {
+  id           String             @id @default(uuid()) @db.Uuid
+  tenantId     String             @db.Uuid
+  employeeId   String             @db.Uuid
+  leaveTypeId  String             @db.Uuid
+  startDate    DateTime           @db.Date
+  endDate      DateTime           @db.Date
+  days         Decimal            @db.Decimal(6, 2)
+  reason       String?
+  status       LeaveRequestStatus @default(pending)
+  approvedById String?            @db.Uuid
+  approvedAt   DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  employee     Employee           @relation(fields: [employeeId], references: [id])
+  leaveType    LeaveType          @relation(fields: [leaveTypeId], references: [id])
+
+  @@index([tenantId, employeeId, status])
+  @@map("hr_leave_requests")
+}
+
+model PayrollRun {
+  id              String           @id @default(uuid()) @db.Uuid
+  tenantId        String           @db.Uuid
+  branchId        String?          @db.Uuid
+  code            String
+  periodStart     DateTime         @db.Date
+  periodEnd       DateTime         @db.Date
+  status          PayrollRunStatus @default(draft)
+  totalGross      Decimal          @default(0) @db.Decimal(18, 4)
+  totalDeductions Decimal          @default(0) @db.Decimal(18, 4)
+  totalNet        Decimal          @default(0) @db.Decimal(18, 4)
+  journalEntryId  String?          @db.Uuid
+  postedAt        DateTime?
+  createdById     String?          @db.Uuid
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  lines           PayrollRunLine[]
+
+  @@unique([tenantId, code])
+  @@index([tenantId, status])
+  @@map("hr_payroll_runs")
+}
+
+model PayrollRunLine {
+  id           String     @id @default(uuid()) @db.Uuid
+  payrollRunId String     @db.Uuid
+  employeeId   String     @db.Uuid
+  basicSalary  Decimal    @db.Decimal(18, 4)
+  allowances   Decimal    @default(0) @db.Decimal(18, 4)
+  deductions   Decimal    @default(0) @db.Decimal(18, 4)
+  netPay       Decimal    @db.Decimal(18, 4)
+  notes        String?
+  payrollRun   PayrollRun @relation(fields: [payrollRunId], references: [id], onDelete: Cascade)
+  employee     Employee   @relation(fields: [employeeId], references: [id])
+
+  @@index([payrollRunId])
+  @@map("hr_payroll_run_lines")
+}
+
+// ─── Bank Accounts & Reconciliation ─────────────────────────────────
+
+enum BankStatementLineStatus {
+  unmatched
+  matched
+  ignored
+}
+
+enum BankReconciliationStatus {
+  in_progress
+  completed
+}
+
+model BankAccount {
+  id              String               @id @default(uuid()) @db.Uuid
+  tenantId        String               @db.Uuid
+  branchId        String?              @db.Uuid
+  name            String
+  bankName        String
+  accountNumber   String?
+  iban            String?
+  currencyCode    String?
+  glAccountId     String?              @db.Uuid
+  openingBalance  Decimal              @default(0) @db.Decimal(18, 4)
+  isActive        Boolean              @default(true)
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+  statementLines  BankStatementLine[]
+  reconciliations BankReconciliation[]
+
+  @@index([tenantId, isActive])
+  @@map("bank_accounts")
+}
+
+model BankStatementLine {
+  id                    String                  @id @default(uuid()) @db.Uuid
+  tenantId              String                  @db.Uuid
+  bankAccountId         String                  @db.Uuid
+  transactionDate       DateTime                @db.Date
+  description           String
+  reference             String?
+  amount                Decimal                 @db.Decimal(18, 4)
+  status                BankStatementLineStatus @default(unmatched)
+  matchedJournalEntryId String?                 @db.Uuid
+  reconciliationId      String?                 @db.Uuid
+  createdAt             DateTime                @default(now())
+  bankAccount           BankAccount             @relation(fields: [bankAccountId], references: [id])
+  reconciliation        BankReconciliation?     @relation(fields: [reconciliationId], references: [id])
+
+  @@index([tenantId, bankAccountId, status])
+  @@map("bank_statement_lines")
+}
+
+model BankReconciliation {
+  id               String                   @id @default(uuid()) @db.Uuid
+  tenantId         String                   @db.Uuid
+  bankAccountId    String                   @db.Uuid
+  periodEnd        DateTime                 @db.Date
+  statementBalance Decimal                  @db.Decimal(18, 4)
+  bookBalance      Decimal                  @db.Decimal(18, 4)
+  status           BankReconciliationStatus @default(in_progress)
+  completedAt      DateTime?
+  completedById    String?                  @db.Uuid
+  createdAt        DateTime                 @default(now())
+  updatedAt        DateTime                 @updatedAt
+  bankAccount      BankAccount              @relation(fields: [bankAccountId], references: [id])
+  statementLines   BankStatementLine[]
+
+  @@index([tenantId, bankAccountId, status])
+  @@map("bank_reconciliations")
+}
+
+// ─── Generic Approval Workflow Engine ───────────────────────────────
+
+enum ApprovalRequestStatus {
+  pending
+  approved
+  rejected
+  cancelled
+}
+
+enum ApprovalActionDecision {
+  approved
+  rejected
+}
+
+model ApprovalWorkflow {
+  id           String            @id @default(uuid()) @db.Uuid
+  tenantId     String            @db.Uuid
+  sourceModule String
+  sourceType   String
+  name         String
+  minAmount    Decimal?          @db.Decimal(18, 4)
+  maxAmount    Decimal?          @db.Decimal(18, 4)
+  isActive     Boolean           @default(true)
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  steps        ApprovalStep[]
+  requests     ApprovalRequest[]
+
+  @@index([tenantId, sourceModule, sourceType, isActive])
+  @@map("approval_workflows")
+}
+
+model ApprovalStep {
+  id             String           @id @default(uuid()) @db.Uuid
+  workflowId     String           @db.Uuid
+  sequence       Int
+  name           String
+  approverRole   String?
+  approverUserId String?          @db.Uuid
+  workflow       ApprovalWorkflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+
+  @@unique([workflowId, sequence])
+  @@map("approval_steps")
+}
+
+model ApprovalRequest {
+  id                  String                @id @default(uuid()) @db.Uuid
+  tenantId            String                @db.Uuid
+  workflowId          String                @db.Uuid
+  sourceModule        String
+  sourceType          String
+  sourceId            String
+  amount              Decimal?              @db.Decimal(18, 4)
+  status              ApprovalRequestStatus @default(pending)
+  currentStepSequence Int                   @default(1)
+  requestedById       String                @db.Uuid
+  requestedAt         DateTime              @default(now())
+  decidedAt           DateTime?
+  workflow            ApprovalWorkflow      @relation(fields: [workflowId], references: [id])
+  actions             ApprovalAction[]
+
+  @@unique([tenantId, sourceModule, sourceType, sourceId])
+  @@index([tenantId, status])
+  @@map("approval_requests")
+}
+
+model ApprovalAction {
+  id           String                 @id @default(uuid()) @db.Uuid
+  requestId    String                 @db.Uuid
+  stepSequence Int
+  approverId   String                 @db.Uuid
+  decision     ApprovalActionDecision
+  comment      String?
+  decidedAt    DateTime               @default(now())
+  request      ApprovalRequest        @relation(fields: [requestId], references: [id], onDelete: Cascade)
+
+  @@index([requestId])
+  @@map("approval_actions")
 }

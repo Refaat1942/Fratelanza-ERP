@@ -34,6 +34,12 @@ import { ConstructionModule } from './modules/construction/construction.module';
 import { PlatformModule } from './modules/platform/platform.module';
 import { LocalizationModule } from './modules/localization/localization.module';
 import { ZatcaModule } from './modules/zatca/zatca.module';
+import { CurrencyModule } from './modules/currency/currency.module';
+import { AssetsModule } from './modules/assets/assets.module';
+import { CrmModule } from './modules/crm/crm.module';
+import { HrModule } from './modules/hr/hr.module';
+import { BankModule } from './modules/bank/bank.module';
+import { ApprovalsModule } from './modules/approvals/approvals.module';
 
 @Module({
   imports: [
@@ -79,6 +85,13 @@ import { ZatcaModule } from './modules/zatca/zatca.module';
     PlatformModule,
     ZatcaModule,
     LocalizationModule,
+    // ── World-ERP parity additions (Sept 2026) ──
+    CurrencyModule,
+    AssetsModule,
+    CrmModule,
+    HrModule,
+    BankModule,
+    ApprovalsModule,
   ],
   providers: [
     {

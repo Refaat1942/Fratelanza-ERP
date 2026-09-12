@@ -170,6 +170,69 @@ const CONSTRUCTION_PERMISSIONS: PermissionDef[] = [
   { module: 'construction', feature: 'reports', action: 'read' },
 ];
 
+const CURRENCY_PERMISSIONS: PermissionDef[] = [
+  { module: 'currency', feature: 'currencies', action: 'read' },
+  { module: 'currency', feature: 'currencies', action: 'manage' },
+  { module: 'currency', feature: 'rates', action: 'read' },
+  { module: 'currency', feature: 'rates', action: 'manage' },
+];
+
+const ASSETS_PERMISSIONS: PermissionDef[] = [
+  { module: 'assets', feature: 'categories', action: 'read' },
+  { module: 'assets', feature: 'categories', action: 'manage' },
+  { module: 'assets', feature: 'assets', action: 'read' },
+  { module: 'assets', feature: 'assets', action: 'create' },
+  { module: 'assets', feature: 'assets', action: 'dispose' },
+  { module: 'assets', feature: 'depreciation', action: 'run' },
+];
+
+const CRM_PERMISSIONS: PermissionDef[] = [
+  { module: 'crm', feature: 'leads', action: 'read' },
+  { module: 'crm', feature: 'leads', action: 'create' },
+  { module: 'crm', feature: 'leads', action: 'update' },
+  { module: 'crm', feature: 'leads', action: 'convert' },
+  { module: 'crm', feature: 'opportunities', action: 'read' },
+  { module: 'crm', feature: 'opportunities', action: 'create' },
+  { module: 'crm', feature: 'opportunities', action: 'update' },
+  { module: 'crm', feature: 'activities', action: 'read' },
+  { module: 'crm', feature: 'activities', action: 'create' },
+  { module: 'crm', feature: 'activities', action: 'update' },
+];
+
+const HR_PERMISSIONS: PermissionDef[] = [
+  { module: 'hr', feature: 'departments', action: 'read' },
+  { module: 'hr', feature: 'departments', action: 'manage' },
+  { module: 'hr', feature: 'positions', action: 'read' },
+  { module: 'hr', feature: 'positions', action: 'manage' },
+  { module: 'hr', feature: 'employees', action: 'read' },
+  { module: 'hr', feature: 'employees', action: 'create' },
+  { module: 'hr', feature: 'employees', action: 'update' },
+  { module: 'hr', feature: 'leave', action: 'read' },
+  { module: 'hr', feature: 'leave', action: 'manage' },
+  { module: 'hr', feature: 'leave', action: 'create' },
+  { module: 'hr', feature: 'leave', action: 'approve' },
+  { module: 'hr', feature: 'payroll', action: 'create' },
+  { module: 'hr', feature: 'payroll', action: 'post' },
+];
+
+const BANK_PERMISSIONS: PermissionDef[] = [
+  { module: 'bank', feature: 'accounts', action: 'read' },
+  { module: 'bank', feature: 'accounts', action: 'manage' },
+  { module: 'bank', feature: 'statements', action: 'read' },
+  { module: 'bank', feature: 'statements', action: 'import' },
+  { module: 'bank', feature: 'statements', action: 'match' },
+  { module: 'bank', feature: 'reconciliations', action: 'create' },
+  { module: 'bank', feature: 'reconciliations', action: 'complete' },
+];
+
+const APPROVALS_PERMISSIONS: PermissionDef[] = [
+  { module: 'approvals', feature: 'workflows', action: 'read' },
+  { module: 'approvals', feature: 'workflows', action: 'manage' },
+  { module: 'approvals', feature: 'requests', action: 'read' },
+  { module: 'approvals', feature: 'requests', action: 'create' },
+  { module: 'approvals', feature: 'requests', action: 'decide' },
+];
+
 const EVAL_PERMISSIONS: PermissionDef[] = [
   ...CORE_PERMISSIONS,
   ...PMS_PERMISSIONS,
@@ -177,30 +240,54 @@ const EVAL_PERMISSIONS: PermissionDef[] = [
   ...PARTY_PERMISSIONS,
   ...PROJECTS_PERMISSIONS,
   ...CONSTRUCTION_PERMISSIONS,
+  ...CURRENCY_PERMISSIONS,
+  ...ASSETS_PERMISSIONS,
+  ...CRM_PERMISSIONS,
+  ...HR_PERMISSIONS,
+  ...BANK_PERMISSIONS,
+  ...APPROVALS_PERMISSIONS,
 ];
 
 const DEFAULT_ACCOUNTS = [
   { code: '1000', name: 'Cash', type: 'asset', normalBalance: 'debit' as const },
+  { code: '1010', name: 'Bank', type: 'asset', normalBalance: 'debit' as const },
   { code: '1100', name: 'Accounts Receivable', type: 'asset', normalBalance: 'debit' as const },
   { code: '1200', name: 'Inventory', type: 'asset', normalBalance: 'debit' as const },
+  { code: '1500', name: 'Fixed Assets', type: 'asset', normalBalance: 'debit' as const },
+  { code: '1510', name: 'Accumulated Depreciation', type: 'asset', normalBalance: 'credit' as const },
   { code: '2000', name: 'Accounts Payable', type: 'liability', normalBalance: 'credit' as const },
   { code: '2100', name: 'Tax Payable', type: 'liability', normalBalance: 'credit' as const },
+  { code: '2200', name: 'Salaries Payable', type: 'liability', normalBalance: 'credit' as const },
   { code: '3000', name: 'Owner Equity', type: 'equity', normalBalance: 'credit' as const },
   { code: '4000', name: 'Sales Revenue', type: 'revenue', normalBalance: 'credit' as const },
+  { code: '4900', name: 'FX Gain', type: 'revenue', normalBalance: 'credit' as const },
   { code: '5000', name: 'Cost of Goods Sold', type: 'expense', normalBalance: 'debit' as const },
   { code: '5100', name: 'Operating Expenses', type: 'expense', normalBalance: 'debit' as const },
+  { code: '5200', name: 'Depreciation Expense', type: 'expense', normalBalance: 'debit' as const },
+  { code: '5210', name: 'Gain/Loss on Asset Disposal', type: 'expense', normalBalance: 'debit' as const },
+  { code: '5300', name: 'Salaries Expense', type: 'expense', normalBalance: 'debit' as const },
+  { code: '5900', name: 'FX Loss', type: 'expense', normalBalance: 'debit' as const },
 ];
 
 const ACCOUNT_ROLE_MAPPINGS = [
   { role: 'cash', code: '1000' },
+  { role: 'bank', code: '1010' },
   { role: 'accounts_receivable', code: '1100' },
   { role: 'inventory', code: '1200' },
+  { role: 'fixed_assets', code: '1500' },
+  { role: 'accumulated_depreciation', code: '1510' },
   { role: 'accounts_payable', code: '2000' },
   { role: 'tax_payable', code: '2100' },
+  { role: 'salary_payable', code: '2200' },
   { role: 'owner_equity', code: '3000' },
   { role: 'revenue', code: '4000' },
+  { role: 'fx_gain', code: '4900' },
   { role: 'cost_of_goods_sold', code: '5000' },
   { role: 'operating_expense', code: '5100' },
+  { role: 'depreciation_expense', code: '5200' },
+  { role: 'asset_disposal_gain_loss', code: '5210' },
+  { role: 'salary_expense', code: '5300' },
+  { role: 'fx_loss', code: '5900' },
 ];
 
 const DEFAULT_TENANT_SETTINGS = {
@@ -679,6 +766,12 @@ async function seedTradingTenant(passwordHash: string): Promise<void> {
     'accounting',
     'pos',
     'sync',
+    'currency',
+    'assets',
+    'crm',
+    'hr',
+    'bank',
+    'approvals',
   ]);
 
   const ownerRoleId = await upsertRole(
@@ -1048,6 +1141,12 @@ async function seedConstructionTenant(passwordHash: string): Promise<void> {
     'accounting',
     'projects',
     'construction',
+    'currency',
+    'assets',
+    'crm',
+    'hr',
+    'bank',
+    'approvals',
   ]);
 
   const ownerRoleId = await upsertRole(
@@ -1263,6 +1362,12 @@ async function seedServicesTenant(passwordHash: string): Promise<void> {
     'suppliers',
     'accounting',
     'sales',
+    'currency',
+    'assets',
+    'crm',
+    'hr',
+    'bank',
+    'approvals',
   ]);
 
   const ownerRoleId = await upsertRole(
