@@ -17,7 +17,20 @@ echo "==> Pull latest code"
 git pull origin main
 
 echo "==> Install dependencies (includes devDependencies for tsc/vite)"
+echo "    IMPORTANT: run from repo root, not apps/web"
+unset NODE_ENV
 npm ci
+
+if [[ ! -d node_modules/react ]]; then
+  echo "ERROR: node_modules missing after npm ci. Check disk space and npm errors above."
+  exit 1
+fi
+
+echo "==> Verify React types are available"
+test -d node_modules/@types/react || test -d apps/web/node_modules/@types/react || {
+  echo "ERROR: @types/react not installed. Do not use npm ci --omit=dev or NODE_ENV=production."
+  exit 1
+}
 
 echo "==> Build shared packages"
 npm run build -w @fratelanza/types
