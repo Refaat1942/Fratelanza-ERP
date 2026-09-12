@@ -41,9 +41,10 @@ npm run build -w @fratelanza/types
 npm run build -w @fratelanza/shared
 
 echo "==> Build web frontend"
-npm run build:web
+npm run build:deploy:web
 
-echo "==> Build and start Docker stack"
-docker compose -f infra/docker/docker-compose.prod.yml --env-file infra/docker/.env.production up -d --build
+echo "==> Build and start Docker stack (API image runs prisma generate internally)"
+docker compose -f infra/docker/docker-compose.prod.yml --env-file infra/docker/.env.production build --no-cache api
+docker compose -f infra/docker/docker-compose.prod.yml --env-file infra/docker/.env.production up -d
 
 echo "==> Done. Open https://g-erp.fratelanza.com"

@@ -2,21 +2,47 @@
 
 FROM node:20-alpine AS build
 WORKDIR /app
+
+# Prisma requires OpenSSL on Alpine
+RUN apk add --no-cache openssl
+
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/
 COPY packages ./packages
 COPY apps/api ./apps/api
-RUN npm ci --workspace=@fratelanza/api --include-workspace-root
+
+# Include @fratelanza/database so prisma CLI is available (devDependency)
+RUN npm ci --workspace=@fratelanza/api --workspace=@fratelanza/database --include-workspace-root
+
+# Generated client is gitignored — must be created before nest build
+RUN npm run generate:server -w @fratelanza/database
+
+# Workspace packages expose dist/ entrypoints consumed by the API
+RUN npm run build -w @fratelanza/types \
+ && npm run build -w @fratelanza/shared \
+ && npm run build -w @fratelanza/config \
+ && npm run build -w @fratelanza/domain
+
 RUN npm run build -w @fratelanza/api
 
 FROM node:20-alpine AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
+
+RUN apk add --no-cache openssl
+
 COPY package.json package-lock.json ./
 COPY apps/api/package.json apps/api/
 COPY packages ./packages
-RUN npm ci --workspace=@fratelanza/api --include-workspace-root --omit=dev
+
+RUN npm ci --workspace=@fratelanza/api --workspace=@fratelanza/database --include-workspace-root --omit=dev
+
 COPY --from=build /app/apps/api/dist ./apps/api/dist
 COPY --from=build /app/packages/database/generated ./packages/database/generated
+COPY --from=build /app/packages/types/dist ./packages/types/dist
+COPY --from=build /app/packages/shared/dist ./packages/shared/dist
+COPY --from=build /app/packages/config/dist ./packages/config/dist
+COPY --from=build /app/packages/domain/dist ./packages/domain/dist
+
 EXPOSE 3000
 CMD ["node", "apps/api/dist/main.js"]
