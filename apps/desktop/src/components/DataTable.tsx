@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 import { createApiClient, resolveApiBaseUrl } from '../lib/api';
 import { useAppStore, useAuthStore } from '../stores';
@@ -122,5 +122,8 @@ export { StatusBadge, Badge } from './ui/StatusBadge';
 export function useApiClient() {
   const apiUrl = useAppStore((s) => s.apiUrl);
   const accessToken = useAuthStore((s) => s.accessToken);
-  return createApiClient(() => resolveApiBaseUrl(apiUrl), () => accessToken);
+  return useMemo(
+    () => createApiClient(() => resolveApiBaseUrl(apiUrl), () => accessToken),
+    [apiUrl, accessToken],
+  );
 }
