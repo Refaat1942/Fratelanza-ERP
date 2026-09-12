@@ -39,6 +39,9 @@ const STATUS_MAP: Record<string, 'neutral' | 'success' | 'warning' | 'danger' | 
   matched: 'success',
   ignored: 'neutral',
   in_progress: 'info',
+  received: 'success',
+  partially_received: 'warning',
+  returned: 'neutral',
 };
 
 export function StatusBadge({

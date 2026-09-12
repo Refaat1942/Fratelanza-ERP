@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Param, Body, UseGuards,
+  Controller, Get, Post, Patch, Param, Body, UseGuards,
 } from '@nestjs/common';
 import {
   IsString, IsOptional, IsArray, ValidateNested, IsNumber, Min, IsUUID,
@@ -43,9 +43,24 @@ class CreatePoFromPartyDto {
   lines!: PoLineDto[];
 }
 
+class UpdatePoDto {
+  @IsOptional() @IsString() supplierId?: string;
+  @IsOptional() @IsString() warehouseId?: string;
+  @IsOptional() @IsString() orderDate?: string;
+  @IsOptional() @IsString() expectedDate?: string;
+  @IsOptional() @IsString() notes?: string;
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => PoLineDto)
+  lines?: PoLineDto[];
+}
+
 class ReceiveDimensionsDto {
   @IsOptional() @IsUUID() projectId?: string;
   @IsOptional() @IsUUID() costCenterId?: string;
+}
+
+class ReceiveLineDto {
+  @IsString() lineId!: string;
+  @IsNumber() @Min(0) quantity!: number;
 }
 
 class ReceivePurchaseOrderDto {
@@ -53,6 +68,9 @@ class ReceivePurchaseOrderDto {
   @ValidateNested()
   @Type(() => ReceiveDimensionsDto)
   dimensions?: ReceiveDimensionsDto;
+
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => ReceiveLineDto)
+  lines?: ReceiveLineDto[];
 }
 
 class RecordSupplierPaymentDto {
@@ -107,7 +125,7 @@ export class PurchasingController {
     @Body() dto: CreatePoDto,
   ) {
     this.tenantAccess.assertBranchAccess(user, dto.branchId);
-    const data = await this.purchasingService.createOrder(tenantId, dto);
+    const data = await this.purchasingService.createOrder(tenantId, { ...dto, createdById: user.sub });
     return { success: true, data };
   }
 
@@ -124,6 +142,28 @@ export class PurchasingController {
       ...dto,
       createdById: user.sub,
     });
+    return { success: true, data };
+  }
+
+  @Patch('orders/:id')
+  @RequirePermissions('purchasing:orders:update')
+  async updateOrder(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdatePoDto,
+  ) {
+    const data = await this.purchasingService.updateOrder(tenantId, id, dto);
+    return { success: true, data };
+  }
+
+  @Post('orders/:id/cancel')
+  @RequirePermissions('purchasing:orders:update')
+  async cancelOrder(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+  ) {
+    const data = await this.purchasingService.cancelOrder(tenantId, id, user.sub);
     return { success: true, data };
   }
 
@@ -147,6 +187,7 @@ export class PurchasingController {
       id,
       dimensions && Object.keys(dimensions).length > 0 ? dimensions : undefined,
       user.sub,
+      dto?.lines,
     );
     return { success: true, data };
   }

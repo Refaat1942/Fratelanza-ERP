@@ -77,10 +77,15 @@ export class ProductsService {
       taxRate: number;
       trackInventory: boolean;
       isActive: boolean;
+      reorderPoint: number;
+      reorderQuantity: number;
+      preferredSupplierId: string | null;
     }>,
   ) {
     await this.findById(tenantId, id);
-    const { costPrice, salePrice, taxRate, ...rest } = data;
+    const {
+      costPrice, salePrice, taxRate, reorderPoint, reorderQuantity, ...rest
+    } = data;
     return this.prisma.product.update({
       where: { id },
       data: {
@@ -88,6 +93,8 @@ export class ProductsService {
         ...(costPrice !== undefined && { costPrice: new Prisma.Decimal(costPrice) }),
         ...(salePrice !== undefined && { salePrice: new Prisma.Decimal(salePrice) }),
         ...(taxRate !== undefined && { taxRate: new Prisma.Decimal(taxRate) }),
+        ...(reorderPoint !== undefined && { reorderPoint: new Prisma.Decimal(reorderPoint) }),
+        ...(reorderQuantity !== undefined && { reorderQuantity: new Prisma.Decimal(reorderQuantity) }),
       },
       include: { category: true, unit: true },
     });

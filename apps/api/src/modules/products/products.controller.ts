@@ -33,6 +33,9 @@ class UpdateProductDto {
   @IsOptional() @IsNumber() @Min(0) taxRate?: number;
   @IsOptional() @IsBoolean() trackInventory?: boolean;
   @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsNumber() @Min(0) reorderPoint?: number;
+  @IsOptional() @IsNumber() @Min(0) reorderQuantity?: number;
+  @IsOptional() @IsString() preferredSupplierId?: string;
 }
 
 @Controller('products')

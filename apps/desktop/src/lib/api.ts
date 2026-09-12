@@ -2,7 +2,17 @@ import type { Locale } from '@fratelanza/types';
 
 const API_BASE = '/api/v1';
 
-export type ProductRow = { id: string; sku: string; name: string; salePrice: number; barcode?: string; isActive: boolean };
+export type ProductRow = {
+  id: string;
+  sku: string;
+  name: string;
+  salePrice: number;
+  barcode?: string;
+  isActive: boolean;
+  reorderPoint?: number;
+  reorderQuantity?: number;
+  preferredSupplierId?: string | null;
+};
 export type CustomerRow = { id: string; code: string; name: string; email?: string; phone?: string; balance: number };
 export type SupplierRow = { id: string; code: string; name: string; email?: string; balance: number };
 export type PartyRow = {
@@ -14,9 +24,52 @@ export type PartyRow = {
   phone?: string | null;
   roles?: Array<{ role: string }>;
 };
-export type InventoryBalanceRow = { id: string; quantity: number; product: { id: string; name: string; sku: string }; warehouse: { id: string; name: string } };
+export type InventoryBalanceRow = {
+  id: string;
+  quantity: number;
+  avgCost?: number;
+  product: { id: string; name: string; sku: string };
+  warehouse: { id: string; name: string };
+};
+export type LowStockItem = {
+  productId: string;
+  sku: string;
+  name: string;
+  onHand: number;
+  reorderPoint: number;
+  reorderQuantity: number;
+  costPrice: number;
+  preferredSupplierId?: string | null;
+  preferredSupplierName?: string | null;
+};
+export type StockValuation = {
+  totalValue: number;
+  byWarehouse: Array<{ warehouseId: string; warehouseName: string; value: number }>;
+};
 export type SalesInvoiceRow = { id: string; number: string; status: string; total: number; invoiceDate: string; customer?: { id: string; name: string } };
-export type PurchaseOrderRow = { id: string; number: string; status: string; total: number; supplier: { id: string; name: string } };
+export type PurchaseOrderLineRow = {
+  id: string;
+  productId: string;
+  description: string;
+  quantity: number;
+  receivedQty: number;
+  unitPrice: number;
+  product?: { id: string; sku: string; name: string };
+};
+export type PurchaseOrderRow = {
+  id: string;
+  number: string;
+  status: string;
+  total: number;
+  orderDate: string;
+  expectedDate?: string | null;
+  notes?: string | null;
+  supplierId?: string;
+  warehouseId?: string;
+  supplier: { id: string; name: string };
+  warehouse?: { id: string; name: string };
+  lines?: PurchaseOrderLineRow[];
+};
 export type ProjectRow = {
   id: string;
   code: string;
@@ -461,15 +514,38 @@ export class ApiClient {
   }
 
   getWarehouses() {
-    return this.request<Array<{ id: string; code: string; name: string; isActive: boolean; branch?: { name: string } }>>('/warehouses');
+    return this.request<Array<{ id: string; code: string; name: string; address?: string | null; isActive: boolean; branch?: { name: string } }>>('/warehouses');
   }
 
   createWarehouse(payload: { branchId: string; code: string; name: string; address?: string }) {
     return this.request('/warehouses', { method: 'POST', body: JSON.stringify(payload) });
   }
 
-  getInventoryBalances() {
-    return this.request<InventoryBalanceRow[]>('/inventory/balances');
+  updateWarehouse(id: string, payload: Partial<{ name: string; address: string; isActive: boolean }>) {
+    return this.request(`/warehouses/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  deleteWarehouse(id: string) {
+    return this.request(`/warehouses/${id}`, { method: 'DELETE' });
+  }
+
+  getInventoryBalances(warehouseId?: string) {
+    return this.request<InventoryBalanceRow[]>(`/inventory/balances${warehouseId ? `?warehouseId=${warehouseId}` : ''}`);
+  }
+
+  getInventoryValuation() {
+    return this.request<StockValuation>('/inventory/valuation');
+  }
+
+  getLowStock(warehouseId: string) {
+    return this.request<LowStockItem[]>(`/inventory/low-stock?warehouseId=${warehouseId}`);
+  }
+
+  generateReorderPurchaseOrders(branchId: string, warehouseId: string) {
+    return this.request<{ createdOrders: PurchaseOrderRow[]; skipped: LowStockItem[] }>('/inventory/reorder/generate', {
+      method: 'POST',
+      body: JSON.stringify({ branchId, warehouseId }),
+    });
   }
 
   getSalesInvoices() {
@@ -478,6 +554,23 @@ export class ApiClient {
 
   getPurchaseOrders() {
     return this.request<PurchaseOrderRow[]>('/purchasing/orders');
+  }
+
+  getPurchaseOrder(id: string) {
+    return this.request<PurchaseOrderRow>(`/purchasing/orders/${id}`);
+  }
+
+  updatePurchaseOrder(id: string, payload: Partial<{
+    supplierId: string;
+    warehouseId: string;
+    notes: string;
+    lines: Array<{ productId: string; description: string; quantity: number; unitPrice: number }>;
+  }>) {
+    return this.request(`/purchasing/orders/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  cancelPurchaseOrder(id: string) {
+    return this.request(`/purchasing/orders/${id}/cancel`, { method: 'POST' });
   }
 
   getAccounts() {
@@ -740,6 +833,9 @@ export class ApiClient {
     salePrice?: number;
     costPrice?: number;
     isActive?: boolean;
+    reorderPoint?: number;
+    reorderQuantity?: number;
+    preferredSupplierId?: string;
   }) {
     return this.request(`/products/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
   }
@@ -917,8 +1013,17 @@ export class ApiClient {
     });
   }
 
-  receivePurchaseOrder(id: string) {
-    return this.request(`/purchasing/orders/${id}/receive`, { method: 'POST' });
+  receivePurchaseOrder(id: string, lines?: Array<{ lineId: string; quantity: number }>) {
+    return this.request(`/purchasing/orders/${id}/receive`, {
+      method: 'POST',
+      body: JSON.stringify(lines ? { lines } : {}),
+    });
+  }
+
+  getApprovalForSource(sourceModule: string, sourceType: string, sourceId: string) {
+    return this.request<ApprovalRequestRow | null>(
+      `/approvals/requests/for-source?sourceModule=${sourceModule}&sourceType=${sourceType}&sourceId=${sourceId}`,
+    );
   }
 
   recordSupplierPayment(payload: {

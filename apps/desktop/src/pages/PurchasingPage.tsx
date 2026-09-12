@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { DataTable, FormField, Modal, PageHeader, StatusBadge, useApiClient } from '../components/DataTable';
+import {
+  ConfirmDialog, DataTable, FormField, Modal, PageHeader, StatusBadge, useApiClient,
+} from '../components/DataTable';
 import { LineItemsEditor, type DocumentLineItem } from '../components/LineItemsEditor';
 import type { PartyRow, PurchaseOrderRow } from '../lib/api';
+import { formatCurrency } from '../lib/format';
 import { useAuthStore } from '../stores';
 
 type SupplierMode = 'supplier' | 'party';
@@ -25,6 +28,16 @@ export function PurchasingPage() {
   const [suppliers, setSuppliers] = useState<Array<{ id: string; name: string }>>([]);
   const [parties, setParties] = useState<PartyRow[]>([]);
   const [warehouses, setWarehouses] = useState<Array<{ id: string; name: string }>>([]);
+
+  const [editingOrder, setEditingOrder] = useState<PurchaseOrderRow | null>(null);
+  const [editSupplierId, setEditSupplierId] = useState('');
+  const [editWarehouseId, setEditWarehouseId] = useState('');
+  const [editLines, setEditLines] = useState<DocumentLineItem[]>([]);
+  const [cancelTarget, setCancelTarget] = useState<PurchaseOrderRow | null>(null);
+
+  const [receiveOrder, setReceiveOrder] = useState<PurchaseOrderRow | null>(null);
+  const [receiveQtys, setReceiveQtys] = useState<Record<string, number>>({});
+  const [approvalBlocked, setApprovalBlocked] = useState<string | null>(null);
 
   async function openForm() {
     setError('');
@@ -91,10 +104,90 @@ export function PurchasingPage() {
     }
   }
 
-  async function receiveOrder(id: string) {
+  async function openEdit(row: PurchaseOrderRow) {
+    setError('');
+    const [order, productList, supplierList, warehouseList] = await Promise.all([
+      client.getPurchaseOrder(row.id),
+      client.getProducts(),
+      client.getSuppliers(),
+      client.getWarehouses(),
+    ]);
+    setProducts(productList.filter((p) => p.isActive));
+    setSuppliers(supplierList);
+    setWarehouses(warehouseList.filter((w) => w.isActive));
+    setEditingOrder(order);
+    setEditSupplierId(order.supplierId ?? order.supplier.id);
+    setEditWarehouseId(order.warehouseId ?? order.warehouse?.id ?? '');
+    setEditLines(
+      (order.lines ?? []).map((l) => ({
+        productId: l.productId,
+        description: l.description,
+        quantity: Number(l.quantity),
+        unitPrice: Number(l.unitPrice),
+      })),
+    );
+  }
+
+  async function handleSaveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingOrder) return;
+    setError('');
+    const validLines = editLines.filter((l) => l.productId && l.quantity > 0);
+    if (validLines.length === 0) {
+      setError(t('lineItems.required'));
+      return;
+    }
     try {
-      await client.receivePurchaseOrder(id);
+      await client.updatePurchaseOrder(editingOrder.id, {
+        supplierId: editSupplierId,
+        warehouseId: editWarehouseId,
+        lines: validLines,
+      });
+      setEditingOrder(null);
+      setRefreshKey((k) => k + 1);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t('errors.generic'));
+    }
+  }
+
+  async function handleCancel() {
+    if (!cancelTarget) return;
+    try {
+      await client.cancelPurchaseOrder(cancelTarget.id);
+      setMessage(t('purchasing.cancelled'));
+    } catch (err) {
+      setMessage(err instanceof Error ? err.message : t('errors.generic'));
+    } finally {
+      setCancelTarget(null);
+      setRefreshKey((k) => k + 1);
+    }
+  }
+
+  async function openReceive(row: PurchaseOrderRow) {
+    setApprovalBlocked(null);
+    const approval = await client.getApprovalForSource('purchasing', 'order', row.id).catch(() => null);
+    if (approval && approval.status !== 'approved') {
+      setApprovalBlocked(t('purchasing.pendingApproval', { status: approval.status }));
+    }
+    const order = await client.getPurchaseOrder(row.id);
+    const initial: Record<string, number> = {};
+    for (const line of order.lines ?? []) {
+      initial[line.id] = Number(line.quantity) - Number(line.receivedQty);
+    }
+    setReceiveQtys(initial);
+    setReceiveOrder(order);
+  }
+
+  async function handleReceiveSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!receiveOrder) return;
+    const receiveLines = Object.entries(receiveQtys)
+      .filter(([, qty]) => qty > 0)
+      .map(([lineId, quantity]) => ({ lineId, quantity }));
+    try {
+      await client.receivePurchaseOrder(receiveOrder.id, receiveLines);
       setMessage(t('purchasing.received'));
+      setReceiveOrder(null);
       setRefreshKey((k) => k + 1);
     } catch (err) {
       setMessage(err instanceof Error ? err.message : t('errors.generic'));
@@ -131,23 +224,37 @@ export function PurchasingPage() {
       {message && <p style={{ marginBottom: 12 }}>{message}</p>}
       <DataTable<PurchaseOrderRow>
         refreshKey={refreshKey}
+        exportFilename="purchase-orders"
         columns={[
           { key: 'number', label: t('purchasing.number') },
-          { key: 'supplier', label: t('nav.suppliers'), render: (r) => r.supplier?.name ?? '—' },
+          { key: 'supplier', label: t('nav.suppliers'), render: (r) => r.supplier?.name ?? '—', exportValue: (r) => r.supplier?.name ?? '' },
           { key: 'status', label: t('common.status'), render: (r) => <StatusBadge status={r.status} /> },
-          { key: 'total', label: t('sales.total'), align: 'end', render: (r) => Number(r.total).toFixed(2) },
+          {
+            key: 'total',
+            label: t('sales.total'),
+            align: 'end',
+            render: (r) => formatCurrency(Number(r.total), user?.currency ?? 'EGP'),
+            exportValue: (r) => Number(r.total),
+          },
           {
             key: 'actions',
             label: t('common.actions'),
+            exportValue: () => '',
             render: (r) => (
-              <div style={{ display: 'flex', gap: 8 }}>
-                {r.status !== 'received' && r.status !== 'returned' ? (
-                  <button type="button" className="btn btn-ghost" onClick={() => void receiveOrder(r.id)}>
+              <div className="row-actions">
+                {r.status === 'draft' ? (
+                  <>
+                    <button type="button" className="btn-link" onClick={() => void openEdit(r)}>{t('common.edit')}</button>
+                    <button type="button" className="btn-link btn-link--danger" onClick={() => setCancelTarget(r)}>{t('common.delete')}</button>
+                  </>
+                ) : null}
+                {r.status === 'draft' || r.status === 'partially_received' ? (
+                  <button type="button" className="btn-link" onClick={() => void openReceive(r)}>
                     {t('purchasing.receive')}
                   </button>
                 ) : null}
                 {r.status === 'received' ? (
-                  <button type="button" className="btn btn-ghost" onClick={() => void payOrder(r)}>
+                  <button type="button" className="btn-link" onClick={() => void payOrder(r)}>
                     {t('purchasing.pay')}
                   </button>
                 ) : null}
@@ -200,6 +307,63 @@ export function PurchasingPage() {
           <button type="submit" className="btn btn-primary" style={{ marginTop: 16 }}>{t('common.save')}</button>
         </form>
       </Modal>
+
+      <Modal open={!!editingOrder} title={t('purchasing.editOrder')} onClose={() => setEditingOrder(null)}>
+        <form onSubmit={(e) => void handleSaveEdit(e)}>
+          <FormField label={t('nav.suppliers')}>
+            <select className="select-input" value={editSupplierId} onChange={(e) => setEditSupplierId(e.target.value)} required>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+          </FormField>
+          <FormField label={t('nav.warehouses')}>
+            <select className="select-input" value={editWarehouseId} onChange={(e) => setEditWarehouseId(e.target.value)} required>
+              {warehouses.map((w) => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+          </FormField>
+          <LineItemsEditor lines={editLines} products={products} onChange={setEditLines} />
+          {error && <p className="form-error">{error}</p>}
+          <button type="submit" className="btn btn-primary" style={{ marginTop: 16 }}>{t('common.save')}</button>
+        </form>
+      </Modal>
+
+      <Modal open={!!receiveOrder} title={t('purchasing.receive')} onClose={() => setReceiveOrder(null)}>
+        {approvalBlocked ? (
+          <p className="form-error">{approvalBlocked}</p>
+        ) : (
+          <form onSubmit={(e) => void handleReceiveSubmit(e)}>
+            {(receiveOrder?.lines ?? []).map((line) => {
+              const remaining = Number(line.quantity) - Number(line.receivedQty);
+              if (remaining <= 0) return null;
+              return (
+                <FormField key={line.id} label={`${line.product?.name ?? line.description} (${t('purchasing.remaining')}: ${remaining})`}>
+                  <input
+                    className="form-input"
+                    type="number"
+                    min={0}
+                    max={remaining}
+                    step="0.01"
+                    value={receiveQtys[line.id] ?? 0}
+                    onChange={(e) => setReceiveQtys({ ...receiveQtys, [line.id]: Number(e.target.value) })}
+                  />
+                </FormField>
+              );
+            })}
+            <button type="submit" className="btn btn-primary" style={{ marginTop: 16 }}>{t('purchasing.receive')}</button>
+          </form>
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        open={!!cancelTarget}
+        title={t('purchasing.confirmCancelTitle')}
+        message={t('common.confirmDeleteMessage')}
+        onConfirm={() => void handleCancel()}
+        onCancel={() => setCancelTarget(null)}
+      />
     </div>
   );
 }

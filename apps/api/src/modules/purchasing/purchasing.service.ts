@@ -13,6 +13,7 @@ import { AuditService } from '../audit/audit.service';
 import { PartyLegacyAdapterService } from '../parties/party-legacy-adapter.service';
 import { TenantAccessService } from '../../common/services/tenant-access.service';
 import { TaxEngineService } from '../localization/tax-engine.service';
+import { ApprovalsService } from '../approvals/approvals.service';
 
 interface PoLineInput {
   productId: string;
@@ -21,6 +22,11 @@ interface PoLineInput {
   unitPrice: number;
   taxRate?: number;
   taxCategoryId?: string;
+}
+
+interface ReceiveLineInput {
+  lineId: string;
+  quantity: number;
 }
 
 @Injectable()
@@ -35,6 +41,7 @@ export class PurchasingService {
     private audit: AuditService,
     private tenantAccess: TenantAccessService,
     private taxEngine: TaxEngineService,
+    private approvals: ApprovalsService,
   ) {}
 
   async findAll(tenantId: string, branchWhere: { branchId?: string | { in: string[] } } = {}) {
@@ -62,6 +69,119 @@ export class PurchasingService {
     return order;
   }
 
+  async updateOrder(
+    tenantId: string,
+    id: string,
+    data: {
+      supplierId?: string;
+      warehouseId?: string;
+      orderDate?: string;
+      expectedDate?: string;
+      notes?: string;
+      lines?: PoLineInput[];
+    },
+  ) {
+    const order = await this.findById(tenantId, id);
+    if (order.status !== 'draft') {
+      throw new BadRequestException('Only draft purchase orders can be edited');
+    }
+
+    if (data.supplierId) {
+      const supplier = await this.prisma.supplier.findFirst({
+        where: { id: data.supplierId, tenantId, deletedAt: null },
+      });
+      if (!supplier) throw new BadRequestException('Supplier not found');
+    }
+    if (data.warehouseId) {
+      const warehouse = await this.prisma.warehouse.findFirst({
+        where: { id: data.warehouseId, tenantId, deletedAt: null },
+      });
+      if (!warehouse) throw new BadRequestException('Warehouse not found');
+    }
+
+    let lineUpdate: Prisma.PurchaseOrderUpdateInput['lines'];
+    let subtotal = order.subtotal;
+    let taxAmount = order.taxAmount;
+    let total = order.total;
+
+    if (data.lines) {
+      if (data.lines.length === 0) {
+        throw new BadRequestException('Purchase order must have at least one line');
+      }
+      subtotal = new Prisma.Decimal(0);
+      taxAmount = new Prisma.Decimal(0);
+      const lineData: Array<{
+        productId: string;
+        description: string;
+        quantity: Prisma.Decimal;
+        unitPrice: Prisma.Decimal;
+        taxRate: Prisma.Decimal;
+        lineTotal: Prisma.Decimal;
+      }> = [];
+      for (const line of data.lines) {
+        const calc = await this.taxEngine.calculateLineTax(tenantId, {
+          quantity: line.quantity,
+          unitPrice: line.unitPrice,
+          taxCategoryId: line.taxCategoryId,
+          taxRateOverride: line.taxRate,
+        });
+        subtotal = subtotal.add(calc.gross);
+        taxAmount = taxAmount.add(calc.taxAmount);
+        lineData.push({
+          productId: line.productId,
+          description: line.description,
+          quantity: new Prisma.Decimal(line.quantity),
+          unitPrice: new Prisma.Decimal(line.unitPrice),
+          taxRate: new Prisma.Decimal(calc.taxRate),
+          lineTotal: new Prisma.Decimal(calc.lineTotal),
+        });
+      }
+      total = subtotal.add(taxAmount);
+      lineUpdate = { deleteMany: {}, create: lineData };
+    }
+
+    return this.prisma.purchaseOrder.update({
+      where: { id },
+      data: {
+        supplierId: data.supplierId,
+        warehouseId: data.warehouseId,
+        orderDate: data.orderDate ? new Date(data.orderDate) : undefined,
+        expectedDate: data.expectedDate ? new Date(data.expectedDate) : undefined,
+        notes: data.notes,
+        subtotal,
+        taxAmount,
+        total,
+        lines: lineUpdate,
+      },
+      include: { lines: true, supplier: true, warehouse: true },
+    });
+  }
+
+  async cancelOrder(tenantId: string, id: string, actorUserId?: string) {
+    const order = await this.findById(tenantId, id);
+    if (order.status !== 'draft') {
+      throw new BadRequestException('Only draft purchase orders can be cancelled');
+    }
+
+    const cancelled = await this.prisma.purchaseOrder.update({
+      where: { id },
+      data: { status: 'cancelled' },
+      include: { lines: true, supplier: true },
+    });
+
+    await this.audit.log({
+      tenantId,
+      branchId: order.branchId,
+      userId: actorUserId,
+      entity: 'purchase_order',
+      entityId: order.id,
+      action: 'purchasing.order.cancelled',
+      newValue: { status: 'cancelled' },
+    });
+
+    return cancelled;
+  }
+
   async createOrder(
     tenantId: string,
     data: {
@@ -72,6 +192,7 @@ export class PurchasingService {
       expectedDate?: string;
       notes?: string;
       lines: PoLineInput[];
+      createdById?: string;
     },
   ) {
     if (!data.lines.length) {
@@ -133,7 +254,7 @@ export class PurchasingService {
 
     const total = subtotal.add(taxAmount);
 
-    return this.prisma.$transaction(async (tx) => {
+    const order = await this.prisma.$transaction(async (tx) => {
       const number = await this.documentNumbers.nextNumber(
         tenantId, 'PO', 'PO', data.branchId, tx,
       );
@@ -157,6 +278,37 @@ export class PurchasingService {
         include: { lines: true, supplier: true, warehouse: true },
       });
     });
+
+    await this.maybeSubmitForApproval(tenantId, order.id, Number(order.total), data.createdById);
+
+    return order;
+  }
+
+  /**
+   * If an active approval workflow matches this PO's amount band, opens an
+   * approval request for it. Tenants that never configured a purchasing
+   * workflow simply skip this — it's opt-in per tenant, not a hard gate.
+   */
+  private async maybeSubmitForApproval(
+    tenantId: string,
+    orderId: string,
+    amount: number,
+    requestedById?: string,
+  ): Promise<void> {
+    if (!requestedById) return;
+    try {
+      await this.approvals.submitForApproval(tenantId, {
+        sourceModule: 'purchasing',
+        sourceType: 'order',
+        sourceId: orderId,
+        amount,
+        requestedById,
+      });
+    } catch (error) {
+      if (!(error instanceof NotFoundException)) {
+        throw error;
+      }
+    }
   }
 
   async createOrderFromParty(
@@ -185,6 +337,7 @@ export class PurchasingService {
       expectedDate: data.expectedDate,
       notes: data.notes,
       lines: data.lines,
+      createdById: data.createdById,
     });
 
     await this.audit.log({
@@ -204,40 +357,64 @@ export class PurchasingService {
     id: string,
     dimensions?: PostingDimensions,
     actorUserId?: string,
+    receiveLines?: ReceiveLineInput[],
   ) {
     const order = await this.findById(tenantId, id);
-    if (order.status === 'received') {
-      throw new BadRequestException('Purchase order already received');
+    if (order.status === 'received' || order.status === 'cancelled' || order.status === 'returned') {
+      throw new BadRequestException(`Purchase order is ${order.status} and cannot be received`);
     }
 
-    const totalNum = Number(order.total);
+    const approvalRequest = await this.approvals.getRequestForSource(tenantId, 'purchasing', 'order', id);
+    if (approvalRequest && approvalRequest.status !== 'approved') {
+      throw new BadRequestException(`Purchase order requires approval (currently ${approvalRequest.status}) before it can be received`);
+    }
+
+    const requestedQtyByLine = new Map((receiveLines ?? []).map((l) => [l.lineId, l.quantity]));
     const useUniversalFinancePilot = getAppConfig().universalFinancePilotEnabled;
+    let receivedValue = new Prisma.Decimal(0);
+    let allLinesComplete = true;
 
     const result = await this.prisma.$transaction(async (tx) => {
       for (const line of order.lines) {
         const remaining = Number(line.quantity) - Number(line.receivedQty);
-        if (remaining <= 0) continue;
+        const requested = requestedQtyByLine.has(line.id) ? requestedQtyByLine.get(line.id)! : remaining;
+        const receiveQty = Math.max(0, Math.min(requested, remaining));
 
-        await this.inventoryLedger.applyMovement(
-          {
-            tenantId,
-            branchId: order.branchId,
-            warehouseId: order.warehouseId,
-            productId: line.productId,
-            movementType: 'purchase',
-            quantity: remaining,
-            unitCost: Number(line.unitPrice),
-            referenceType: 'purchase_order',
-            referenceId: order.id,
-          },
-          tx,
-        );
+        if (receiveQty > 0) {
+          await this.inventoryLedger.applyMovement(
+            {
+              tenantId,
+              branchId: order.branchId,
+              warehouseId: order.warehouseId,
+              productId: line.productId,
+              movementType: 'purchase',
+              quantity: receiveQty,
+              unitCost: Number(line.unitPrice),
+              referenceType: 'purchase_order',
+              referenceId: order.id,
+            },
+            tx,
+          );
 
-        await tx.purchaseOrderLine.update({
-          where: { id: line.id },
-          data: { receivedQty: line.quantity },
-        });
+          await tx.purchaseOrderLine.update({
+            where: { id: line.id },
+            data: { receivedQty: { increment: receiveQty } },
+          });
+
+          receivedValue = receivedValue.add(line.unitPrice.mul(receiveQty));
+        }
+
+        if (remaining - receiveQty > 0.0001) {
+          allLinesComplete = false;
+        }
       }
+
+      if (receivedValue.isZero()) {
+        throw new BadRequestException('Nothing to receive — all lines are already fully received or zero quantity was requested');
+      }
+
+      const receivedValueNum = Number(receivedValue);
+      const sourceEvent = `receive:${Date.now()}`;
 
       if (useUniversalFinancePilot) {
         await this.financialPosting.post(
@@ -250,8 +427,8 @@ export class PurchasingService {
             sourceModule: 'purchasing',
             sourceType: 'order',
             sourceId: order.id,
-            sourceEvent: 'receive',
-            amounts: { total: order.total.toString() },
+            sourceEvent,
+            amounts: { total: receivedValue.toString() },
             dimensions,
           },
           tx,
@@ -262,8 +439,8 @@ export class PurchasingService {
           order.branchId,
           `Purchase order ${order.number}`,
           [
-            { accountCode: '1200', debit: totalNum, credit: 0, description: 'Inventory' },
-            { accountCode: '2000', debit: 0, credit: totalNum, description: 'AP' },
+            { accountCode: '1200', debit: receivedValueNum, credit: 0, description: 'Inventory' },
+            { accountCode: '2000', debit: 0, credit: receivedValueNum, description: 'AP' },
           ],
           'purchase_order',
           order.id,
@@ -273,12 +450,15 @@ export class PurchasingService {
 
       await tx.supplier.update({
         where: { id: order.supplierId },
-        data: { balance: { increment: order.total } },
+        data: { balance: { increment: receivedValue } },
       });
 
       return tx.purchaseOrder.update({
         where: { id },
-        data: { status: 'received', receivedAt: new Date() },
+        data: {
+          status: allLinesComplete ? 'received' : 'partially_received',
+          receivedAt: allLinesComplete ? new Date() : order.receivedAt,
+        },
         include: { lines: true, supplier: true },
       });
     });
@@ -290,7 +470,7 @@ export class PurchasingService {
       entity: 'purchase_order',
       entityId: order.id,
       action: 'purchasing.order.received',
-      newValue: { total: totalNum, supplierId: order.supplierId },
+      newValue: { receivedValue: Number(receivedValue), supplierId: order.supplierId, status: result.status },
     });
 
     return result;

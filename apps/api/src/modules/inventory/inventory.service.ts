@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { PrismaService } from '../../database/prisma.service';
 import { InventoryLedgerService } from '../../common/services/inventory-ledger.service';
 import { AuditService } from '../audit/audit.service';
+import { PurchasingService } from '../purchasing/purchasing.service';
 
 @Injectable()
 export class InventoryService {
@@ -10,7 +11,111 @@ export class InventoryService {
     private prisma: PrismaService,
     private inventoryLedger: InventoryLedgerService,
     private audit: AuditService,
+    private purchasing: PurchasingService,
   ) {}
+
+  /** Stock-on-hand value (qty × avg cost) per warehouse, and the tenant total. */
+  async getStockValuation(
+    tenantId: string,
+    warehouseFilter?: { warehouseId?: string | { in: string[] } },
+  ) {
+    const balances = await this.prisma.stockBalance.findMany({
+      where: { tenantId, ...(warehouseFilter ?? {}) },
+      include: { warehouse: { select: { id: true, name: true } } },
+    });
+
+    const byWarehouse = new Map<string, { warehouseId: string; warehouseName: string; value: number }>();
+    let totalValue = 0;
+    for (const b of balances) {
+      const value = Number(b.quantity) * Number(b.avgCost);
+      totalValue += value;
+      const key = b.warehouseId;
+      const current = byWarehouse.get(key) ?? { warehouseId: key, warehouseName: b.warehouse.name, value: 0 };
+      current.value += value;
+      byWarehouse.set(key, current);
+    }
+
+    return { totalValue, byWarehouse: [...byWarehouse.values()].sort((a, b) => b.value - a.value) };
+  }
+
+  /** Products at or below their reorder point, scoped to one warehouse (a reorder always targets a receiving warehouse). */
+  async getLowStockReport(tenantId: string, warehouseId: string) {
+    const products = await this.prisma.product.findMany({
+      where: {
+        tenantId, deletedAt: null, isActive: true, trackInventory: true, reorderPoint: { gt: 0 },
+      },
+      include: {
+        stockBalances: { where: { tenantId, warehouseId } },
+      },
+    });
+
+    const supplierIds = [...new Set(products.map((p) => p.preferredSupplierId).filter((id): id is string => Boolean(id)))];
+    const suppliers = supplierIds.length
+      ? await this.prisma.supplier.findMany({ where: { tenantId, id: { in: supplierIds } } })
+      : [];
+    const supplierById = new Map(suppliers.map((s) => [s.id, s]));
+
+    return products
+      .map((p) => {
+        const onHand = p.stockBalances.reduce((sum, b) => sum + Number(b.quantity), 0);
+        return {
+          productId: p.id,
+          sku: p.sku,
+          name: p.name,
+          onHand,
+          reorderPoint: Number(p.reorderPoint),
+          reorderQuantity: Number(p.reorderQuantity),
+          costPrice: Number(p.costPrice),
+          preferredSupplierId: p.preferredSupplierId,
+          preferredSupplierName: p.preferredSupplierId ? supplierById.get(p.preferredSupplierId)?.name ?? null : null,
+        };
+      })
+      .filter((p) => p.onHand <= p.reorderPoint)
+      .sort((a, b) => (a.onHand - a.reorderPoint) - (b.onHand - b.reorderPoint));
+  }
+
+  /**
+   * Groups low-stock products by preferred supplier and drafts one purchase
+   * order per supplier — the "reorder suggestions -> POs in one click" flow.
+   * Products with no preferred supplier are reported back as skipped rather
+   * than guessed at.
+   */
+  async generateReorderPurchaseOrders(
+    tenantId: string,
+    branchId: string,
+    warehouseId: string,
+    actorUserId?: string,
+  ) {
+    const lowStock = await this.getLowStockReport(tenantId, warehouseId);
+    const withSupplier = lowStock.filter((p) => p.preferredSupplierId);
+    const skipped = lowStock.filter((p) => !p.preferredSupplierId);
+
+    const bySupplier = new Map<string, typeof withSupplier>();
+    for (const p of withSupplier) {
+      const key = p.preferredSupplierId!;
+      bySupplier.set(key, [...(bySupplier.get(key) ?? []), p]);
+    }
+
+    const createdOrders = [];
+    for (const [supplierId, products] of bySupplier.entries()) {
+      const order = await this.purchasing.createOrder(tenantId, {
+        branchId,
+        supplierId,
+        warehouseId,
+        notes: 'Auto-generated from low-stock reorder suggestions',
+        createdById: actorUserId,
+        lines: products.map((p) => ({
+          productId: p.productId,
+          description: p.name,
+          quantity: Math.max(p.reorderQuantity, p.reorderPoint - p.onHand) || p.reorderPoint || 1,
+          unitPrice: p.costPrice,
+        })),
+      });
+      createdOrders.push(order);
+    }
+
+    return { createdOrders, skipped };
+  }
 
   async listMovements(
     tenantId: string,

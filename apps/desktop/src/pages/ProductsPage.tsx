@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DataTable, FormField, Modal, PageHeader, useApiClient } from '../components/DataTable';
-import type { ProductRow } from '../lib/api';
+import type { ProductRow, SupplierRow } from '../lib/api';
 import { fetchListWithOffline, mutateWithOffline, isOfflineMode } from '../lib/offline-api';
 import { useAppStore, useAuthStore } from '../stores';
 
@@ -15,8 +15,17 @@ export function ProductsPage() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ sku: '', name: '', barcode: '', salePrice: '', costPrice: '' });
-  const [editForm, setEditForm] = useState({ id: '', name: '', barcode: '', salePrice: '' });
+  const [editForm, setEditForm] = useState({
+    id: '',
+    name: '',
+    barcode: '',
+    salePrice: '',
+    reorderPoint: '0',
+    reorderQuantity: '0',
+    preferredSupplierId: '',
+  });
   const [unitId, setUnitId] = useState('');
+  const [suppliers, setSuppliers] = useState<SupplierRow[]>([]);
 
   async function openForm() {
     setError('');
@@ -31,13 +40,23 @@ export function ProductsPage() {
     setOpen(true);
   }
 
-  function openEdit(row: ProductRow) {
+  async function openEdit(row: ProductRow) {
     setEditForm({
       id: row.id,
       name: row.name,
       barcode: row.barcode ?? '',
       salePrice: String(row.salePrice),
+      reorderPoint: String(row.reorderPoint ?? 0),
+      reorderQuantity: String(row.reorderQuantity ?? 0),
+      preferredSupplierId: row.preferredSupplierId ?? '',
     });
+    if (!isOfflineMode(connectivity)) {
+      try {
+        setSuppliers(await client.getSuppliers());
+      } catch {
+        setSuppliers([]);
+      }
+    }
     setEditOpen(true);
   }
 
@@ -85,6 +104,9 @@ export function ProductsPage() {
             name: editForm.name,
             barcode: editForm.barcode || undefined,
             salePrice: Number(editForm.salePrice),
+            reorderPoint: Number(editForm.reorderPoint) || 0,
+            reorderQuantity: Number(editForm.reorderQuantity) || 0,
+            preferredSupplierId: editForm.preferredSupplierId || undefined,
           }),
         offline: () =>
           window.desktopApi!.offlineUpdateProduct({
@@ -126,7 +148,7 @@ export function ProductsPage() {
             key: 'actions',
             label: t('common.actions'),
             render: (r) => (
-              <button type="button" className="btn btn-ghost" onClick={() => openEdit(r)}>
+              <button type="button" className="btn btn-ghost" onClick={() => void openEdit(r)}>
                 {t('common.edit')}
               </button>
             ),
@@ -169,6 +191,24 @@ export function ProductsPage() {
           </FormField>
           <FormField label={t('products.price')}>
             <input className="form-input" type="number" min="0" step="0.01" value={editForm.salePrice} onChange={(e) => setEditForm({ ...editForm, salePrice: e.target.value })} />
+          </FormField>
+          <FormField label={t('inventory.reorderPoint')}>
+            <input className="form-input" type="number" min="0" step="1" value={editForm.reorderPoint} onChange={(e) => setEditForm({ ...editForm, reorderPoint: e.target.value })} />
+          </FormField>
+          <FormField label={t('products.reorderQuantity')}>
+            <input className="form-input" type="number" min="0" step="1" value={editForm.reorderQuantity} onChange={(e) => setEditForm({ ...editForm, reorderQuantity: e.target.value })} />
+          </FormField>
+          <FormField label={t('products.preferredSupplier')}>
+            <select
+              className="select-input"
+              value={editForm.preferredSupplierId}
+              onChange={(e) => setEditForm({ ...editForm, preferredSupplierId: e.target.value })}
+            >
+              <option value="">{t('common.none')}</option>
+              {suppliers.map((s) => (
+                <option key={s.id} value={s.id}>{s.code} — {s.name}</option>
+              ))}
+            </select>
           </FormField>
           {error && <p className="form-error">{error}</p>}
           <button type="submit" className="btn btn-primary">{t('common.save')}</button>

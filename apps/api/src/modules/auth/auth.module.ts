@@ -12,11 +12,13 @@ import { AuditModule } from '../audit/audit.module';
 @Module({
   imports: [
     PassportModule.register({ defaultStrategy: 'jwt' }),
-    JwtModule.register({
-      secret: getAppConfig().jwt.secret,
-      signOptions: {
-        expiresIn: 900,
-      },
+    JwtModule.registerAsync({
+      useFactory: () => ({
+        secret: getAppConfig().jwt.secret,
+        signOptions: {
+          expiresIn: 900,
+        },
+      }),
     }),
     AuditModule,
   ],

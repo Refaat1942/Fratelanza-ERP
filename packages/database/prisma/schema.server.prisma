@@ -464,6 +464,9 @@ model Product {
   salePrice                      Decimal                         @default(0) @db.Decimal(18, 4)
   taxRate                        Decimal                         @default(0) @db.Decimal(8, 4)
   trackInventory                 Boolean                         @default(true)
+  reorderPoint                   Decimal                         @default(0) @db.Decimal(18, 4)
+  reorderQuantity                Decimal                         @default(0) @db.Decimal(18, 4)
+  preferredSupplierId            String?                         @db.Uuid
   isActive                       Boolean                         @default(true)
   createdAt                      DateTime                        @default(now())
   updatedAt                      DateTime                        @updatedAt

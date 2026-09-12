@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Body, Query, UseGuards,
+  BadRequestException, Controller, Get, Post, Body, Query, UseGuards,
 } from '@nestjs/common';
 import { IsString, IsOptional, IsNumber, Min } from 'class-validator';
 import { InventoryService } from './inventory.service';
@@ -24,6 +24,11 @@ class TransferStockDto {
   @IsNumber() @Min(0.0001) quantity!: number;
   @IsOptional() @IsString() branchId?: string;
   @IsOptional() @IsString() notes?: string;
+}
+
+class GenerateReorderDto {
+  @IsString() branchId!: string;
+  @IsString() warehouseId!: string;
 }
 
 @Controller('inventory')
@@ -71,6 +76,53 @@ export class InventoryController {
     }
     const warehouseFilter = await this.tenantAccess.buildInventoryWarehouseFilter(tenantId, user);
     const data = await this.inventoryService.getBalances(tenantId, warehouseId, warehouseFilter);
+    return { success: true, data };
+  }
+
+  @Get('valuation')
+  @RequirePermissions('inventory:stock:read')
+  async getValuation(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    const warehouseFilter = await this.tenantAccess.buildInventoryWarehouseFilter(tenantId, user);
+    const data = await this.inventoryService.getStockValuation(tenantId, warehouseFilter);
+    return { success: true, data };
+  }
+
+  @Get('low-stock')
+  @RequirePermissions('inventory:stock:read')
+  async getLowStock(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Query('warehouseId') warehouseId: string,
+  ) {
+    const warehouse = await this.tenantAccess.assertWarehouseForTenant(tenantId, warehouseId);
+    this.tenantAccess.assertWarehouseAccess(user, warehouseId);
+    this.tenantAccess.assertBranchInScope(user, warehouse.branchId);
+    const data = await this.inventoryService.getLowStockReport(tenantId, warehouseId);
+    return { success: true, data };
+  }
+
+  @Post('reorder/generate')
+  @RequirePermissions('purchasing:orders:create')
+  async generateReorder(
+    @TenantId() tenantId: string,
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: GenerateReorderDto,
+  ) {
+    const warehouse = await this.tenantAccess.assertWarehouseForTenant(tenantId, dto.warehouseId);
+    this.tenantAccess.assertBranchAccess(user, dto.branchId);
+    this.tenantAccess.assertWarehouseAccess(user, dto.warehouseId);
+    if (warehouse.branchId !== dto.branchId) {
+      throw new BadRequestException('Warehouse does not belong to the specified branch');
+    }
+    const data = await this.inventoryService.generateReorderPurchaseOrders(
+      tenantId,
+      dto.branchId,
+      dto.warehouseId,
+      user.sub,
+    );
     return { success: true, data };
   }
 

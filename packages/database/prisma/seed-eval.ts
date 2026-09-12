@@ -63,6 +63,7 @@ const CORE_PERMISSIONS: PermissionDef[] = [
   { module: 'sales', feature: 'payments', action: 'create' },
   { module: 'purchasing', feature: 'orders', action: 'read' },
   { module: 'purchasing', feature: 'orders', action: 'create' },
+  { module: 'purchasing', feature: 'orders', action: 'update' },
   { module: 'purchasing', feature: 'orders', action: 'receive' },
   { module: 'accounting', feature: 'accounts', action: 'read' },
   { module: 'accounting', feature: 'accounts', action: 'create' },
