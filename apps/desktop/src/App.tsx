@@ -43,6 +43,12 @@ import { DemoManagementPage } from './pages/control/DemoManagementPage';
 import { ModuleManagementPage } from './pages/control/ModuleManagementPage';
 import { AuthorizationMatrixPage } from './pages/control/AuthorizationMatrixPage';
 import { ReportsPage } from './pages/ReportsPage';
+import { CrmPage } from './pages/CrmPage';
+import { HrPage } from './pages/HrPage';
+import { AssetsPage } from './pages/AssetsPage';
+import { BankPage } from './pages/BankPage';
+import { CurrencyPage } from './pages/CurrencyPage';
+import { ApprovalsPage } from './pages/ApprovalsPage';
 
 function AuthBootstrap() {
   const accessToken = useAuthStore((s) => s.accessToken);
@@ -89,6 +95,12 @@ function AppRoutes() {
             <Route path="construction/boq/:contractId" element={<ConstructionBoqPage />} />
             <Route path="construction/progress" element={<ConstructionProgressPage />} />
             <Route path="accounting" element={<AccountingPage />} />
+            <Route path="currency" element={<CurrencyPage />} />
+            <Route path="bank" element={<BankPage />} />
+            <Route path="assets" element={<AssetsPage />} />
+            <Route path="crm" element={<CrmPage />} />
+            <Route path="hr" element={<HrPage />} />
+            <Route path="approvals" element={<ApprovalsPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="pos" element={<PosPage />} />
             <Route path="users" element={<UsersPage />} />

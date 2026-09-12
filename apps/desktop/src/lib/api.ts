@@ -1013,6 +1013,46 @@ export class ApiClient {
   approveConstructionProgress(id: string) {
     return this.request(`/construction/progress/${id}/approve`, { method: 'POST' });
   }
+
+  getCrmLeads() {
+    return this.request<Array<{ id: string; code: string; contactName: string; companyName?: string | null; status: string; email?: string | null }>>('/crm/leads');
+  }
+
+  createCrmLead(payload: { contactName: string; companyName?: string; email?: string; phone?: string; source?: string }) {
+    return this.request('/crm/leads', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
+  getCrmOpportunities() {
+    return this.request<Array<{ id: string; code: string; name: string; stage: string; amount: number | string; currencyCode?: string | null }>>('/crm/opportunities');
+  }
+
+  getHrEmployees() {
+    return this.request<Array<{ id: string; code: string; firstName: string; lastName: string; status: string; basicSalary: number | string; department?: { name: string } | null }>>('/hr/employees');
+  }
+
+  getAssets() {
+    return this.request<Array<{ id: string; code: string; name: string; status: string; acquisitionCost: number | string; netBookValue?: number | string }>>('/assets');
+  }
+
+  getBankAccounts() {
+    return this.request<Array<{ id: string; name: string; bankName: string; accountNumber?: string | null; currencyCode?: string | null; openingBalance?: number | string }>>('/bank/accounts');
+  }
+
+  getCurrencies() {
+    return this.request<Array<{ id: string; code: string; name: string; symbol?: string | null; isBase: boolean; isActive: boolean }>>('/currency');
+  }
+
+  getCurrencyRates() {
+    return this.request<Array<{ id: string; fromCurrency: string; toCurrency: string; rate: number | string; asOfDate: string }>>('/currency/rates');
+  }
+
+  getApprovalWorkflows() {
+    return this.request<Array<{ id: string; name: string; sourceModule: string; sourceType: string; isActive: boolean }>>('/approvals/workflows');
+  }
+
+  getPendingApprovals() {
+    return this.request<Array<{ id: string; sourceModule: string; sourceType: string; sourceId: string; status: string; currentStep?: number }>>('/approvals/requests/pending');
+  }
 }
 
 export function createApiClient(

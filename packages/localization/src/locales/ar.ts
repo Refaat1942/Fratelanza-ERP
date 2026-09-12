@@ -304,4 +304,10 @@ export const ar: TranslationSchema = {
     enableAll: 'تفعيل جميع الوحدات',
     moduleUpdated: 'تم تحديث صلاحيات الوحدات',
   },
+  crm: { leads: 'العملاء المحتملون', opportunities: 'الفرص', createLead: 'عميل محتمل جديد' },
+  hr: { salary: 'الراتب' },
+  assets: { cost: 'تكلفة الاقتناء' },
+  bank: { account: 'الحساب', bankName: 'البنك', accountNumber: 'رقم الحساب' },
+  currency: { currencies: 'العملات', rates: 'أسعار الصرف', base: 'العملة الأساسية', from: 'من', to: 'إلى', rate: 'السعر' },
+  approvals: { pending: 'موافقات معلقة', workflows: 'مسارات الموافقة', module: 'الوحدة', document: 'المستند' },
 };

@@ -57,6 +57,7 @@ export const en = {
       projects: 'Projects',
       construction: 'Construction',
       administration: 'Administration',
+      enterprise: 'Enterprise',
     },
     expandSidebar: 'Expand sidebar',
     collapseSidebar: 'Collapse sidebar',
@@ -80,6 +81,12 @@ export const en = {
     purchasing: 'Purchasing',
     accounting: 'Accounting',
     reports: 'Reports',
+    currency: 'Multi-Currency',
+    bank: 'Bank Reconciliation',
+    assets: 'Fixed Assets',
+    crm: 'CRM',
+    hr: 'HR & Payroll',
+    approvals: 'Approvals',
     pos: 'POS',
     projects: 'Projects',
     costCenters: 'Cost Centers',
@@ -173,6 +180,12 @@ export const en = {
     products: { name: 'Products & Services', description: 'Catalog, categories, and pricing' },
     pos: { name: 'Point of Sale', description: 'Fast retail checkout' },
     accounting: { name: 'Accounting', description: 'Finance, journals, and reports' },
+    currency: { name: 'Multi-Currency', description: 'Currencies and exchange rates' },
+    bank: { name: 'Bank Reconciliation', description: 'Bank accounts, statements, and matching' },
+    assets: { name: 'Fixed Assets', description: 'Asset register and depreciation' },
+    crm: { name: 'CRM', description: 'Leads, opportunities, and sales pipeline' },
+    hr: { name: 'HR & Payroll', description: 'Employees, leave, and payroll runs' },
+    approvals: { name: 'Approvals', description: 'Workflows and pending approvals' },
     projects: { name: 'Projects', description: 'Projects and cost centers' },
     construction: { name: 'Construction', description: 'Contracts, BOQ, progress, and billing' },
     restaurant: { name: 'Restaurant', description: 'Tables, kitchen, and menu orders' },
@@ -441,6 +454,36 @@ export const en = {
     metric: 'Metric',
     value: 'Value',
   },
+  crm: {
+    leads: 'Leads',
+    opportunities: 'Opportunities',
+    createLead: 'New lead',
+  },
+  hr: {
+    salary: 'Salary',
+  },
+  assets: {
+    cost: 'Acquisition cost',
+  },
+  bank: {
+    account: 'Account',
+    bankName: 'Bank',
+    accountNumber: 'Account number',
+  },
+  currency: {
+    currencies: 'Currencies',
+    rates: 'Exchange rates',
+    base: 'Base currency',
+    from: 'From',
+    to: 'To',
+    rate: 'Rate',
+  },
+  approvals: {
+    pending: 'Pending approvals',
+    workflows: 'Approval workflows',
+    module: 'Module',
+    document: 'Document',
+  },
   pos: {
     searchPlaceholder: 'Search products or scan barcode...',
     cart: 'Cart',
@@ -529,6 +572,12 @@ export type TranslationSchema = {
   purchasing: Record<string, string>;
   accounting: Record<string, string>;
   reports: Record<string, string>;
+  crm: Record<string, string>;
+  hr: Record<string, string>;
+  assets: Record<string, string>;
+  bank: Record<string, string>;
+  currency: Record<string, string>;
+  approvals: Record<string, string>;
   pos: Record<string, string>;
   construction: Record<string, string>;
   lineItems: Record<string, string>;

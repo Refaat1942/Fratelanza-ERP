@@ -5,6 +5,7 @@ import {
   generateAllVerticalDemoVolumes,
 } from './demo-generator';
 import { assertSeedableDatabase } from './seed-guard';
+import { seedWorldErpDemoSamples } from './seed-world-erp-demo';
 
 const prisma = new PrismaClient();
 
@@ -1466,7 +1467,7 @@ async function seedDemoEnvironments(): Promise<void> {
       name: 'Cairo Trading Company',
       tenantCode: 'TRADING_DEMO',
       demoUserEmail: 'admin@fratelanza.local',
-      modules: ['dashboard', 'sales', 'purchasing', 'inventory', 'customers', 'suppliers', 'accounting', 'reports'],
+      modules: ['dashboard', 'sales', 'purchasing', 'inventory', 'customers', 'suppliers', 'accounting', 'reports', 'crm', 'hr', 'currency', 'bank', 'assets', 'approvals'],
     },
     {
       slug: 'egypt/construction',
@@ -1605,6 +1606,12 @@ export async function main(): Promise<void> {
       `  [VOLUME/${code}] products=${stats.products} customers=${stats.customers} invoices=${stats.salesInvoices} POs=${stats.purchaseOrders} payments=${stats.customerPayments} movements=${stats.inventoryMovements}${stats.posSales ? ` pos=${stats.posSales}` : ''}`,
     );
   }
+
+  console.log('');
+  console.log('Seeding world ERP module samples (CRM, HR, assets, bank, currency, approvals)...');
+  await seedWorldErpDemoSamples(prisma, 'TRADING_DEMO');
+  await seedWorldErpDemoSamples(prisma, 'CONSTRUCTION_DEMO');
+  await seedWorldErpDemoSamples(prisma, 'SERVICES_DEMO');
 
   console.log('');
   console.log('Evaluation seed completed.');

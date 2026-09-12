@@ -47,7 +47,18 @@ const NAV_GROUPS: NavGroup[] = [
     labelKey: 'nav.groups.finance',
     items: [
       { to: '/accounting', labelKey: 'nav.accounting' },
+      { to: '/currency', labelKey: 'nav.currency' },
+      { to: '/bank', labelKey: 'nav.bank' },
+      { to: '/assets', labelKey: 'nav.assets' },
       { to: '/reports', labelKey: 'nav.reports' },
+    ],
+  },
+  {
+    labelKey: 'nav.groups.enterprise',
+    items: [
+      { to: '/crm', labelKey: 'nav.crm' },
+      { to: '/hr', labelKey: 'nav.hr' },
+      { to: '/approvals', labelKey: 'nav.approvals' },
     ],
   },
   {
