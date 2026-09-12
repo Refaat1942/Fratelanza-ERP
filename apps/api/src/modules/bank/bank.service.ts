@@ -20,6 +20,19 @@ interface ImportStatementLineInput {
   amount: number;
 }
 
+interface UpdateBankAccountInput {
+  name?: string;
+  bankName?: string;
+  accountNumber?: string;
+  iban?: string;
+  currencyCode?: string;
+  glAccountId?: string;
+  isActive?: boolean;
+}
+
+const MATCH_WINDOW_DAYS = 10;
+const MATCH_AMOUNT_TOLERANCE = new Prisma.Decimal('0.01');
+
 @Injectable()
 export class BankService {
   constructor(private prisma: PrismaService) {}
@@ -42,6 +55,11 @@ export class BankService {
         openingBalance: dto.openingBalance ?? 0,
       },
     });
+  }
+
+  async updateAccount(tenantId: string, id: string, dto: UpdateBankAccountInput) {
+    await this.getAccount(tenantId, id);
+    return this.prisma.bankAccount.update({ where: { id }, data: dto });
   }
 
   private async getAccount(tenantId: string, bankAccountId: string) {
@@ -78,6 +96,86 @@ export class BankService {
       where: { tenantId, bankAccountId, status: status as never },
       orderBy: { transactionDate: 'asc' },
     });
+  }
+
+  /**
+   * Smart reconciliation assist: for every unmatched statement line, finds
+   * candidate journal entries posted to this account's GL account (or any
+   * cash/bank-role account when none is configured) with a matching amount
+   * within a date window, ranked by confidence so the reconciler can accept
+   * with one click instead of hunting through the ledger by hand.
+   */
+  async suggestMatches(tenantId: string, bankAccountId: string) {
+    const account = await this.getAccount(tenantId, bankAccountId);
+
+    const unmatched = await this.prisma.bankStatementLine.findMany({
+      where: { tenantId, bankAccountId, status: 'unmatched' },
+      orderBy: { transactionDate: 'asc' },
+    });
+    if (unmatched.length === 0) {
+      return [];
+    }
+
+    const dates = unmatched.map((l) => l.transactionDate.getTime());
+    const windowMs = MATCH_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    const rangeStart = new Date(Math.min(...dates) - windowMs);
+    const rangeEnd = new Date(Math.max(...dates) + windowMs);
+
+    const alreadyLinked = new Set(
+      (
+        await this.prisma.bankStatementLine.findMany({
+          where: { tenantId, status: 'matched', matchedJournalEntryId: { not: null } },
+          select: { matchedJournalEntryId: true },
+        })
+      ).map((l) => l.matchedJournalEntryId as string),
+    );
+
+    const candidateLines = await this.prisma.journalLine.findMany({
+      where: {
+        ...(account.glAccountId ? { accountId: account.glAccountId } : {}),
+        entry: {
+          tenantId,
+          entryDate: { gte: rangeStart, lte: rangeEnd },
+          id: alreadyLinked.size > 0 ? { notIn: [...alreadyLinked] } : undefined,
+        },
+      },
+      include: { entry: { select: { id: true, number: true, description: true, entryDate: true } } },
+    });
+
+    const suggestions = unmatched.map((line) => {
+      const amount = new Prisma.Decimal(line.amount);
+      const wantDebit = amount.gt(0);
+      const target = amount.abs();
+
+      const ranked = candidateLines
+        .filter((jl) => {
+          const side = wantDebit ? jl.debit : jl.credit;
+          return side.sub(target).abs().lte(MATCH_AMOUNT_TOLERANCE);
+        })
+        .map((jl) => {
+          const dayDiff = Math.abs(jl.entry.entryDate.getTime() - line.transactionDate.getTime()) / (24 * 60 * 60 * 1000);
+          const confidence = dayDiff === 0 ? 'high' : dayDiff <= 3 ? 'medium' : 'low';
+          return {
+            journalEntryId: jl.entry.id,
+            journalEntryNumber: jl.entry.number,
+            journalEntryDescription: jl.entry.description,
+            journalEntryDate: jl.entry.entryDate.toISOString().slice(0, 10),
+            dayDiff,
+            confidence,
+          };
+        })
+        .sort((a, b) => a.dayDiff - b.dayDiff);
+
+      return {
+        statementLineId: line.id,
+        description: line.description,
+        amount: line.amount.toString(),
+        transactionDate: line.transactionDate.toISOString().slice(0, 10),
+        suggestions: ranked.slice(0, 3),
+      };
+    });
+
+    return suggestions.filter((s) => s.suggestions.length > 0);
   }
 
   async matchStatementLine(tenantId: string, lineId: string, journalEntryId: string) {

@@ -29,6 +29,24 @@ export class ExchangeRateService {
     });
   }
 
+  /** Chronological rate history for a currency pair, for the trend chart. */
+  async trend(tenantId: string, fromCurrency: string, toCurrency: string) {
+    const rows = await this.prisma.exchangeRate.findMany({
+      where: { tenantId, fromCurrency: fromCurrency.toUpperCase(), toCurrency: toCurrency.toUpperCase() },
+      orderBy: { asOfDate: 'asc' },
+    });
+    return rows.map((r) => ({ asOfDate: r.asOfDate.toISOString().slice(0, 10), rate: r.rate.toString() }));
+  }
+
+  async delete(tenantId: string, id: string) {
+    const rate = await this.prisma.exchangeRate.findFirst({ where: { id, tenantId } });
+    if (!rate) {
+      throw new NotFoundException('Exchange rate not found');
+    }
+    await this.prisma.exchangeRate.delete({ where: { id } });
+    return { deleted: true };
+  }
+
   async record(tenantId: string, dto: RecordRateInput) {
     const fromCurrency = dto.fromCurrency.toUpperCase();
     const toCurrency = dto.toCurrency.toUpperCase();

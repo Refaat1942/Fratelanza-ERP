@@ -11,6 +11,14 @@ interface CreateWorkflowInput {
   steps: Array<{ sequence: number; name: string; approverRole?: string; approverUserId?: string }>;
 }
 
+interface UpdateWorkflowInput {
+  name?: string;
+  minAmount?: number;
+  maxAmount?: number;
+  isActive?: boolean;
+  steps?: Array<{ sequence: number; name: string; approverRole?: string; approverUserId?: string }>;
+}
+
 interface SubmitForApprovalInput {
   sourceModule: string;
   sourceType: string;
@@ -47,6 +55,49 @@ export class ApprovalsService {
       },
       include: { steps: { orderBy: { sequence: 'asc' } } },
     });
+  }
+
+  async updateWorkflow(tenantId: string, id: string, dto: UpdateWorkflowInput) {
+    const workflow = await this.prisma.approvalWorkflow.findFirst({ where: { id, tenantId } });
+    if (!workflow) {
+      throw new NotFoundException('Approval workflow not found');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      if (dto.steps) {
+        if (dto.steps.length === 0) {
+          throw new BadRequestException('Workflow requires at least one step');
+        }
+        await tx.approvalStep.deleteMany({ where: { workflowId: id } });
+        await tx.approvalStep.createMany({ data: dto.steps.map((s) => ({ ...s, workflowId: id })) });
+      }
+
+      return tx.approvalWorkflow.update({
+        where: { id },
+        data: {
+          name: dto.name,
+          minAmount: dto.minAmount,
+          maxAmount: dto.maxAmount,
+          isActive: dto.isActive,
+        },
+        include: { steps: { orderBy: { sequence: 'asc' } } },
+      });
+    });
+  }
+
+  async deleteWorkflow(tenantId: string, id: string) {
+    const workflow = await this.prisma.approvalWorkflow.findFirst({ where: { id, tenantId } });
+    if (!workflow) {
+      throw new NotFoundException('Approval workflow not found');
+    }
+    const requestCount = await this.prisma.approvalRequest.count({ where: { workflowId: id } });
+    if (requestCount > 0) {
+      // Preserve history for any request ever routed through this workflow — deactivate instead of deleting.
+      return this.prisma.approvalWorkflow.update({ where: { id }, data: { isActive: false } });
+    }
+    await this.prisma.approvalStep.deleteMany({ where: { workflowId: id } });
+    await this.prisma.approvalWorkflow.delete({ where: { id } });
+    return { deleted: true };
   }
 
   /**
@@ -117,16 +168,25 @@ export class ApprovalsService {
     });
   }
 
-  async listPendingForApprover(tenantId: string, userId: string, role?: string) {
+  /**
+   * A step names either a specific approverUserId or a generic approverRole
+   * (e.g. "manager") — but JwtPayload carries no role-name field to match
+   * against, so a role-based step can't be routed to "whoever holds that
+   * role" today. Until that mapping exists, treat any step with no specific
+   * approverUserId as visible to any user with approvals:requests:decide
+   * (the permission guard on decide() is the real access control here);
+   * a step explicitly assigned to a user is visible only to that user.
+   */
+  async listPendingForApprover(tenantId: string, userId: string) {
     const requests = await this.prisma.approvalRequest.findMany({
       where: { tenantId, status: 'pending' },
-      include: { workflow: { include: { steps: true } } },
+      include: { workflow: { include: { steps: { orderBy: { sequence: 'asc' } } } } },
     });
 
     return requests.filter((request) => {
       const step = request.workflow.steps.find((s) => s.sequence === request.currentStepSequence);
       if (!step) return false;
-      return step.approverUserId === userId || (role && step.approverRole === role);
+      return step.approverUserId ? step.approverUserId === userId : Boolean(step.approverRole);
     });
   }
 

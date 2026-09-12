@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, Param, Post, Patch, UseGuards,
+  Body, Controller, Delete, Get, Param, Post, Patch, UseGuards,
 } from '@nestjs/common';
 import {
   IsIn, IsInt, IsNumber, IsOptional, IsString, Max, Min,
@@ -27,6 +27,26 @@ class CreateLeadDto {
 
 class UpdateLeadStatusDto {
   @IsIn(LEAD_STATUSES) status!: string;
+}
+
+class UpdateLeadDto {
+  @IsOptional() @IsString() companyName?: string;
+  @IsOptional() @IsString() contactName?: string;
+  @IsOptional() @IsString() email?: string;
+  @IsOptional() @IsString() phone?: string;
+  @IsOptional() @IsString() source?: string;
+  @IsOptional() @IsString() ownerId?: string;
+  @IsOptional() @IsString() notes?: string;
+}
+
+class UpdateOpportunityDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsNumber() @Min(0) amount?: number;
+  @IsOptional() @IsString() currencyCode?: string;
+  @IsOptional() @IsInt() @Min(0) @Max(100) probability?: number;
+  @IsOptional() @IsString() expectedCloseDate?: string;
+  @IsOptional() @IsString() ownerId?: string;
+  @IsOptional() @IsString() notes?: string;
 }
 
 class ConvertLeadDto {
@@ -111,6 +131,24 @@ export class CrmController {
     return { success: true, data };
   }
 
+  @Patch('leads/:id')
+  @RequirePermissions('crm:leads:update')
+  async updateLead(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateLeadDto,
+  ) {
+    const data = await this.crmService.updateLead(tenantId, id, dto);
+    return { success: true, data };
+  }
+
+  @Delete('leads/:id')
+  @RequirePermissions('crm:leads:delete')
+  async deleteLead(@TenantId() tenantId: string, @Param('id') id: string) {
+    const data = await this.crmService.deleteLead(tenantId, id);
+    return { success: true, data };
+  }
+
   @Post('leads/:id/convert')
   @RequirePermissions('crm:leads:convert')
   async convertLead(
@@ -152,6 +190,24 @@ export class CrmController {
   ) {
     if (dto.branchId) this.tenantAccess.assertBranchAccess(user, dto.branchId);
     const data = await this.crmService.createOpportunity(tenantId, dto);
+    return { success: true, data };
+  }
+
+  @Patch('opportunities/:id')
+  @RequirePermissions('crm:opportunities:update')
+  async updateOpportunity(
+    @TenantId() tenantId: string,
+    @Param('id') id: string,
+    @Body() dto: UpdateOpportunityDto,
+  ) {
+    const data = await this.crmService.updateOpportunity(tenantId, id, dto);
+    return { success: true, data };
+  }
+
+  @Delete('opportunities/:id')
+  @RequirePermissions('crm:opportunities:delete')
+  async deleteOpportunity(@TenantId() tenantId: string, @Param('id') id: string) {
+    const data = await this.crmService.deleteOpportunity(tenantId, id);
     return { success: true, data };
   }
 

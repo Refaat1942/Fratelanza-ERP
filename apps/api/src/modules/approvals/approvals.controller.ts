@@ -1,8 +1,8 @@
 import {
-  Body, Controller, Get, Param, Post, Query, UseGuards,
+  Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
 import {
-  IsArray, IsIn, IsInt, IsNumber, IsOptional, IsString, Min, ValidateNested,
+  IsArray, IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Min, ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApprovalsService } from './approvals.service';
@@ -25,6 +25,15 @@ class CreateWorkflowDto {
   @IsOptional() @IsNumber() @Min(0) maxAmount?: number;
   @IsArray() @ValidateNested({ each: true }) @Type(() => WorkflowStepDto)
   steps!: WorkflowStepDto[];
+}
+
+class UpdateWorkflowDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsNumber() @Min(0) minAmount?: number;
+  @IsOptional() @IsNumber() @Min(0) maxAmount?: number;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => WorkflowStepDto)
+  steps?: WorkflowStepDto[];
 }
 
 class SubmitForApprovalDto {
@@ -55,6 +64,18 @@ export class ApprovalsController {
   @RequirePermissions('approvals:workflows:manage')
   async createWorkflow(@TenantId() tenantId: string, @Body() dto: CreateWorkflowDto) {
     return { success: true, data: await this.approvalsService.createWorkflow(tenantId, dto) };
+  }
+
+  @Patch('workflows/:id')
+  @RequirePermissions('approvals:workflows:manage')
+  async updateWorkflow(@TenantId() tenantId: string, @Param('id') id: string, @Body() dto: UpdateWorkflowDto) {
+    return { success: true, data: await this.approvalsService.updateWorkflow(tenantId, id, dto) };
+  }
+
+  @Delete('workflows/:id')
+  @RequirePermissions('approvals:workflows:manage')
+  async deleteWorkflow(@TenantId() tenantId: string, @Param('id') id: string) {
+    return { success: true, data: await this.approvalsService.deleteWorkflow(tenantId, id) };
   }
 
   @Post('requests')

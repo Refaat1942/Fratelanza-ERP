@@ -31,6 +31,24 @@ interface CreateAssetInput {
   location?: string;
 }
 
+interface UpdateAssetCategoryInput {
+  name?: string;
+  defaultUsefulLifeMonths?: number;
+  defaultDepreciationMethod?: 'straight_line' | 'declining_balance';
+  defaultDecliningRate?: number;
+  isActive?: boolean;
+}
+
+interface UpdateAssetInput {
+  name?: string;
+  description?: string;
+  costCenterId?: string;
+  projectId?: string;
+  serialNumber?: string;
+  location?: string;
+  notes?: string;
+}
+
 function monthsBetween(from: Date, to: Date): number {
   return (to.getFullYear() - from.getFullYear()) * 12 + (to.getMonth() - from.getMonth());
 }
@@ -58,6 +76,22 @@ export class AssetsService {
         defaultDecliningRate: dto.defaultDecliningRate,
       },
     });
+  }
+
+  async updateCategory(tenantId: string, id: string, dto: UpdateAssetCategoryInput) {
+    const category = await this.prisma.assetCategory.findFirst({ where: { id, tenantId } });
+    if (!category) {
+      throw new NotFoundException('Asset category not found');
+    }
+    return this.prisma.assetCategory.update({ where: { id }, data: dto });
+  }
+
+  async updateAsset(tenantId: string, id: string, dto: UpdateAssetInput) {
+    const asset = await this.prisma.asset.findFirst({ where: { id, tenantId } });
+    if (!asset) {
+      throw new NotFoundException('Asset not found');
+    }
+    return this.prisma.asset.update({ where: { id }, data: dto, include: { category: true } });
   }
 
   async listAssets(
@@ -149,6 +183,66 @@ export class AssetsService {
     }
 
     return amount.gt(remainingDepreciable) ? remainingDepreciable : amount;
+  }
+
+  /**
+   * Full depreciation timeline for the asset detail chart: actual posted
+   * entries plus a forward simulation (never persisted) from the asset's
+   * current book value out to salvage value, so the UI can plot the whole
+   * cost -> book-value curve rather than just history-to-date.
+   */
+  async getDepreciationSchedule(tenantId: string, assetId: string) {
+    const asset = await this.prisma.asset.findFirst({
+      where: { id: assetId, tenantId },
+      include: { depreciationEntries: { orderBy: { periodDate: 'asc' } } },
+    });
+    if (!asset) {
+      throw new NotFoundException('Asset not found');
+    }
+
+    const actual = asset.depreciationEntries.map((e) => ({
+      periodDate: e.periodDate.toISOString().slice(0, 10),
+      depreciationAmount: e.depreciationAmount.toString(),
+      bookValue: e.bookValue.toString(),
+      projected: false,
+    }));
+
+    const projected: typeof actual = [];
+    if (asset.status === 'active') {
+      let simulated = {
+        acquisitionCost: asset.acquisitionCost,
+        salvageValue: asset.salvageValue,
+        usefulLifeMonths: asset.usefulLifeMonths,
+        depreciationMethod: asset.depreciationMethod,
+        decliningRate: asset.decliningRate,
+        accumulatedDepreciation: asset.accumulatedDepreciation,
+        bookValue: asset.bookValue,
+      };
+      let cursor = asset.lastDepreciationDate ? new Date(asset.lastDepreciationDate) : new Date(asset.acquisitionDate);
+      for (let i = 0; i < asset.usefulLifeMonths && simulated.bookValue.gt(simulated.salvageValue); i += 1) {
+        cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
+        const amount = this.computeMonthlyDepreciation(simulated);
+        if (amount.isZero()) break;
+        simulated = {
+          ...simulated,
+          accumulatedDepreciation: simulated.accumulatedDepreciation.add(amount),
+          bookValue: simulated.bookValue.sub(amount),
+        };
+        projected.push({
+          periodDate: cursor.toISOString().slice(0, 10),
+          depreciationAmount: amount.toString(),
+          bookValue: simulated.bookValue.toString(),
+          projected: true,
+        });
+      }
+    }
+
+    return {
+      assetId: asset.id,
+      acquisitionCost: asset.acquisitionCost.toString(),
+      salvageValue: asset.salvageValue.toString(),
+      timeline: [...actual, ...projected],
+    };
   }
 
   /**

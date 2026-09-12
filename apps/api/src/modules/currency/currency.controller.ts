@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, Param, Patch, Post, Query, UseGuards,
+  Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
 import {
   IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min,
@@ -74,6 +74,24 @@ export class CurrencyController {
   @RequirePermissions('currency:rates:manage')
   async recordRate(@TenantId() tenantId: string, @Body() dto: RecordExchangeRateDto) {
     const data = await this.exchangeRates.record(tenantId, dto);
+    return { success: true, data };
+  }
+
+  @Get('rates/trend')
+  @RequirePermissions('currency:rates:read')
+  async trend(
+    @TenantId() tenantId: string,
+    @Query('from') from: string,
+    @Query('to') to: string,
+  ) {
+    const data = await this.exchangeRates.trend(tenantId, from, to);
+    return { success: true, data };
+  }
+
+  @Delete('rates/:id')
+  @RequirePermissions('currency:rates:manage')
+  async deleteRate(@TenantId() tenantId: string, @Param('id') id: string) {
+    const data = await this.exchangeRates.delete(tenantId, id);
     return { success: true, data };
   }
 

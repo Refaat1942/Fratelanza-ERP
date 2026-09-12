@@ -35,6 +35,29 @@ interface CreateEmployeeInput {
   currencyCode?: string;
 }
 
+interface UpdateDepartmentInput {
+  name?: string;
+  managerId?: string;
+  isActive?: boolean;
+}
+
+interface UpdatePositionInput {
+  title?: string;
+  departmentId?: string;
+  isActive?: boolean;
+}
+
+interface UpdateEmployeeInput {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string;
+  departmentId?: string;
+  positionId?: string;
+  managerId?: string;
+  basicSalary?: number;
+}
+
 interface CreateLeaveTypeInput {
   code: string;
   name: string;
@@ -85,12 +108,28 @@ export class HrService {
     return this.prisma.department.create({ data: { tenantId, ...dto } });
   }
 
+  async updateDepartment(tenantId: string, id: string, dto: UpdateDepartmentInput) {
+    const department = await this.prisma.department.findFirst({ where: { id, tenantId } });
+    if (!department) {
+      throw new NotFoundException('Department not found');
+    }
+    return this.prisma.department.update({ where: { id }, data: dto });
+  }
+
   async listPositions(tenantId: string) {
     return this.prisma.position.findMany({ where: { tenantId }, orderBy: { code: 'asc' } });
   }
 
   async createPosition(tenantId: string, dto: CreatePositionInput) {
     return this.prisma.position.create({ data: { tenantId, ...dto } });
+  }
+
+  async updatePosition(tenantId: string, id: string, dto: UpdatePositionInput) {
+    const position = await this.prisma.position.findFirst({ where: { id, tenantId } });
+    if (!position) {
+      throw new NotFoundException('Position not found');
+    }
+    return this.prisma.position.update({ where: { id }, data: dto });
   }
 
   // ── Employees ──
@@ -134,6 +173,59 @@ export class HrService {
         currencyCode: dto.currencyCode,
       },
     });
+  }
+
+  async updateEmployee(tenantId: string, id: string, dto: UpdateEmployeeInput) {
+    const employee = await this.prisma.employee.findFirst({ where: { id, tenantId } });
+    if (!employee) {
+      throw new NotFoundException('Employee not found');
+    }
+    if (dto.managerId === id) {
+      throw new BadRequestException('An employee cannot be their own manager');
+    }
+    return this.prisma.employee.update({
+      where: { id },
+      data: dto,
+      include: { department: true, position: true },
+    });
+  }
+
+  /**
+   * Reporting-line tree (by managerId) plus per-department headcount —
+   * powers the org chart and headcount visualization on the HR page.
+   */
+  async getOrgChart(tenantId: string, branchWhere: { branchId?: string | { in: string[] } } = {}) {
+    const employees = await this.prisma.employee.findMany({
+      where: { tenantId, status: 'active', ...branchWhere },
+      include: { department: true, position: true },
+      orderBy: { hireDate: 'asc' },
+    });
+
+    type Node = (typeof employees)[number] & { reports: Node[] };
+    const byId = new Map<string, Node>(employees.map((e) => [e.id, { ...e, reports: [] }]));
+    const roots: Node[] = [];
+
+    for (const node of byId.values()) {
+      if (node.managerId && byId.has(node.managerId)) {
+        byId.get(node.managerId)!.reports.push(node);
+      } else {
+        roots.push(node);
+      }
+    }
+
+    const headcountByDepartment = new Map<string, { department: string; count: number }>();
+    for (const e of employees) {
+      const key = e.department?.name ?? 'Unassigned';
+      const current = headcountByDepartment.get(key) ?? { department: key, count: 0 };
+      current.count += 1;
+      headcountByDepartment.set(key, current);
+    }
+
+    return {
+      tree: roots,
+      headcount: [...headcountByDepartment.values()].sort((a, b) => b.count - a.count),
+      totalActive: employees.length,
+    };
   }
 
   async terminateEmployee(tenantId: string, id: string, terminationDate: string) {

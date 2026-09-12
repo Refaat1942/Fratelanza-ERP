@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, Param, Post, UseGuards,
+  Body, Controller, Get, Param, Patch, Post, UseGuards,
 } from '@nestjs/common';
 import {
   IsIn, IsNumber, IsOptional, IsString, Min,
@@ -32,6 +32,22 @@ class CreateAssetDto {
   @IsOptional() @IsNumber() @Min(1) usefulLifeMonths?: number;
   @IsOptional() @IsIn(['straight_line', 'declining_balance']) depreciationMethod?: 'straight_line' | 'declining_balance';
   @IsOptional() @IsNumber() @Min(0) decliningRate?: number;
+  @IsOptional() @IsString() serialNumber?: string;
+  @IsOptional() @IsString() location?: string;
+}
+
+class UpdateAssetCategoryDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsNumber() @Min(1) defaultUsefulLifeMonths?: number;
+  @IsOptional() @IsIn(['straight_line', 'declining_balance']) defaultDepreciationMethod?: 'straight_line' | 'declining_balance';
+  @IsOptional() @IsNumber() @Min(0) defaultDecliningRate?: number;
+}
+
+class UpdateAssetDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() description?: string;
+  @IsOptional() @IsString() costCenterId?: string;
+  @IsOptional() @IsString() projectId?: string;
   @IsOptional() @IsString() serialNumber?: string;
   @IsOptional() @IsString() location?: string;
 }
@@ -69,6 +85,13 @@ export class AssetsController {
     return { success: true, data };
   }
 
+  @Patch('categories/:id')
+  @RequirePermissions('assets:categories:manage')
+  async updateCategory(@TenantId() tenantId: string, @Param('id') id: string, @Body() dto: UpdateAssetCategoryDto) {
+    const data = await this.assetsService.updateCategory(tenantId, id, dto);
+    return { success: true, data };
+  }
+
   @Get()
   @RequirePermissions('assets:assets:read')
   async list(@TenantId() tenantId: string, @CurrentUser() user: JwtPayload) {
@@ -80,6 +103,20 @@ export class AssetsController {
   @RequirePermissions('assets:assets:read')
   async get(@TenantId() tenantId: string, @Param('id') id: string) {
     const data = await this.assetsService.getAsset(tenantId, id);
+    return { success: true, data };
+  }
+
+  @Get(':id/depreciation-schedule')
+  @RequirePermissions('assets:assets:read')
+  async depreciationSchedule(@TenantId() tenantId: string, @Param('id') id: string) {
+    const data = await this.assetsService.getDepreciationSchedule(tenantId, id);
+    return { success: true, data };
+  }
+
+  @Patch(':id')
+  @RequirePermissions('assets:assets:update')
+  async update(@TenantId() tenantId: string, @Param('id') id: string, @Body() dto: UpdateAssetDto) {
+    const data = await this.assetsService.updateAsset(tenantId, id, dto);
     return { success: true, data };
   }
 

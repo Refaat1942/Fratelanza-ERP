@@ -26,6 +26,10 @@ export const en = {
     noDataHint: 'Nothing here yet. Create your first record to get started.',
     exportExcel: 'Export to Excel',
     select: 'Select...',
+    confirmDeleteTitle: 'Delete this record?',
+    confirmDeleteMessage: 'This cannot be undone.',
+    deleted: 'Deleted',
+    saved: 'Saved',
   },
   boot: {
     loading: 'Starting application...',
@@ -461,17 +465,47 @@ export const en = {
     leads: 'Leads',
     opportunities: 'Opportunities',
     createLead: 'New lead',
+    editLead: 'Edit lead',
+    newOpportunity: 'New opportunity',
+    editOpportunity: 'Edit opportunity',
+    convert: 'Convert',
+    pipelineValue: 'open pipeline',
+    probability: 'Win probability (%)',
   },
   hr: {
     salary: 'Salary',
+    employees: 'Employees',
+    editEmployee: 'Edit employee',
+    orgChart: 'Org chart',
+    headcountByDepartment: 'Headcount by department',
   },
   assets: {
     cost: 'Acquisition cost',
+    bookValue: 'Book value',
+    editAsset: 'Edit asset',
+    location: 'Location',
+    serialNumber: 'Serial number',
+    viewSchedule: 'Depreciation chart',
+    depreciationSchedule: 'Depreciation schedule',
+    actual: 'Actual',
+    projected: 'Projected',
   },
   bank: {
     account: 'Account',
     bankName: 'Bank',
     accountNumber: 'Account number',
+    editAccount: 'Edit bank account',
+    viewStatements: 'View statements',
+    statementLines: 'Statement lines',
+    suggestMatches: 'Suggest matches',
+    accept: 'Accept',
+    unmatch: 'Unmatch',
+    ignore: 'Ignore',
+    confidence: {
+      high: 'High confidence',
+      medium: 'Medium confidence',
+      low: 'Low confidence',
+    },
   },
   currency: {
     currencies: 'Currencies',
@@ -480,12 +514,24 @@ export const en = {
     from: 'From',
     to: 'To',
     rate: 'Rate',
+    addRate: 'Add rate',
+    viewTrend: 'View trend',
+    notEnoughHistory: 'Not enough rate history to chart a trend yet.',
   },
   approvals: {
     pending: 'Pending approvals',
     workflows: 'Approval workflows',
     module: 'Module',
     document: 'Document',
+    newWorkflow: 'New workflow',
+    editWorkflow: 'Edit workflow',
+    approve: 'Approve',
+    reject: 'Reject',
+    steps: 'Steps',
+    addStep: 'Add step',
+    stepName: 'Step name',
+    approverRole: 'Approver role',
+    minAmount: 'Minimum amount',
   },
   status: {
     draft: 'Draft',
@@ -663,7 +709,7 @@ export type TranslationSchema = {
   crm: Record<string, string>;
   hr: Record<string, string>;
   assets: Record<string, string>;
-  bank: Record<string, string>;
+  bank: Record<string, string | Record<string, string>>;
   currency: Record<string, string>;
   approvals: Record<string, string>;
   pos: Record<string, string>;

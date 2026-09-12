@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, Param, Post, UseGuards,
+  Body, Controller, Get, Param, Patch, Post, UseGuards,
 } from '@nestjs/common';
 import {
   IsArray, IsBoolean, IsInt, IsNumber, IsOptional, IsString, Min, ValidateNested,
@@ -43,6 +43,29 @@ class CreateEmployeeDto {
 
 class TerminateEmployeeDto {
   @IsString() terminationDate!: string;
+}
+
+class UpdateDepartmentDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() managerId?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
+
+class UpdatePositionDto {
+  @IsOptional() @IsString() title?: string;
+  @IsOptional() @IsString() departmentId?: string;
+  @IsOptional() @IsBoolean() isActive?: boolean;
+}
+
+class UpdateEmployeeDto {
+  @IsOptional() @IsString() firstName?: string;
+  @IsOptional() @IsString() lastName?: string;
+  @IsOptional() @IsString() email?: string;
+  @IsOptional() @IsString() phone?: string;
+  @IsOptional() @IsString() departmentId?: string;
+  @IsOptional() @IsString() positionId?: string;
+  @IsOptional() @IsString() managerId?: string;
+  @IsOptional() @IsNumber() @Min(0) basicSalary?: number;
 }
 
 class CreateLeaveTypeDto {
@@ -95,6 +118,12 @@ export class HrController {
     return { success: true, data: await this.hrService.createDepartment(tenantId, dto) };
   }
 
+  @Patch('departments/:id')
+  @RequirePermissions('hr:departments:manage')
+  async updateDepartment(@TenantId() tenantId: string, @Param('id') id: string, @Body() dto: UpdateDepartmentDto) {
+    return { success: true, data: await this.hrService.updateDepartment(tenantId, id, dto) };
+  }
+
   @Get('positions')
   @RequirePermissions('hr:positions:read')
   async listPositions(@TenantId() tenantId: string) {
@@ -105,6 +134,18 @@ export class HrController {
   @RequirePermissions('hr:positions:manage')
   async createPosition(@TenantId() tenantId: string, @Body() dto: CreatePositionDto) {
     return { success: true, data: await this.hrService.createPosition(tenantId, dto) };
+  }
+
+  @Patch('positions/:id')
+  @RequirePermissions('hr:positions:manage')
+  async updatePosition(@TenantId() tenantId: string, @Param('id') id: string, @Body() dto: UpdatePositionDto) {
+    return { success: true, data: await this.hrService.updatePosition(tenantId, id, dto) };
+  }
+
+  @Get('org-chart')
+  @RequirePermissions('hr:employees:read')
+  async orgChart(@TenantId() tenantId: string, @CurrentUser() user: JwtPayload) {
+    return { success: true, data: await this.hrService.getOrgChart(tenantId, this.tenantAccess.buildBranchWhere(user)) };
   }
 
   @Get('employees')
@@ -129,6 +170,12 @@ export class HrController {
   ) {
     if (dto.branchId) this.tenantAccess.assertBranchAccess(user, dto.branchId);
     return { success: true, data: await this.hrService.createEmployee(tenantId, dto) };
+  }
+
+  @Patch('employees/:id')
+  @RequirePermissions('hr:employees:update')
+  async updateEmployee(@TenantId() tenantId: string, @Param('id') id: string, @Body() dto: UpdateEmployeeDto) {
+    return { success: true, data: await this.hrService.updateEmployee(tenantId, id, dto) };
   }
 
   @Post('employees/:id/terminate')

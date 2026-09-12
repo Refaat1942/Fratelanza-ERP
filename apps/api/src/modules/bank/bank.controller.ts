@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, Param, Post, Query, UseGuards,
+  Body, Controller, Get, Param, Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
 import {
   IsArray, IsNumber, IsOptional, IsString, ValidateNested,
@@ -20,6 +20,15 @@ class CreateBankAccountDto {
   @IsOptional() @IsString() currencyCode?: string;
   @IsOptional() @IsString() glAccountId?: string;
   @IsOptional() @IsNumber() openingBalance?: number;
+}
+
+class UpdateBankAccountDto {
+  @IsOptional() @IsString() name?: string;
+  @IsOptional() @IsString() bankName?: string;
+  @IsOptional() @IsString() accountNumber?: string;
+  @IsOptional() @IsString() iban?: string;
+  @IsOptional() @IsString() currencyCode?: string;
+  @IsOptional() @IsString() glAccountId?: string;
 }
 
 class StatementLineDto {
@@ -67,6 +76,18 @@ export class BankController {
   ) {
     if (dto.branchId) this.tenantAccess.assertBranchAccess(user, dto.branchId);
     return { success: true, data: await this.bankService.createAccount(tenantId, dto) };
+  }
+
+  @Patch('accounts/:id')
+  @RequirePermissions('bank:accounts:manage')
+  async updateAccount(@TenantId() tenantId: string, @Param('id') id: string, @Body() dto: UpdateBankAccountDto) {
+    return { success: true, data: await this.bankService.updateAccount(tenantId, id, dto) };
+  }
+
+  @Get('accounts/:id/suggest-matches')
+  @RequirePermissions('bank:statements:read')
+  async suggestMatches(@TenantId() tenantId: string, @Param('id') id: string) {
+    return { success: true, data: await this.bankService.suggestMatches(tenantId, id) };
   }
 
   @Post('accounts/:id/statement-lines')

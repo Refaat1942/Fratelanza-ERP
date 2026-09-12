@@ -111,6 +111,8 @@ export type CrmLeadRow = {
   companyName?: string | null;
   email?: string | null;
   phone?: string | null;
+  source?: string | null;
+  notes?: string | null;
   status: string;
 };
 export type CrmOpportunityRow = {
@@ -119,6 +121,9 @@ export type CrmOpportunityRow = {
   name: string;
   stage: string;
   amount: number | string;
+  probability?: number;
+  notes?: string | null;
+  expectedCloseDate?: string | null;
   currencyCode?: string | null;
 };
 export type HrEmployeeRow = {
@@ -126,14 +131,26 @@ export type HrEmployeeRow = {
   code: string;
   firstName: string;
   lastName: string;
+  email?: string | null;
+  phone?: string | null;
   status: string;
   basicSalary: number | string;
+  departmentId?: string | null;
+  positionId?: string | null;
+  managerId?: string | null;
   department?: { name: string } | null;
+};
+export type OrgChartNode = HrEmployeeRow & {
+  position?: { title: string } | null;
+  reports: OrgChartNode[];
 };
 export type AssetRow = {
   id: string;
   code: string;
   name: string;
+  description?: string | null;
+  serialNumber?: string | null;
+  location?: string | null;
   status: string;
   acquisitionCost: number | string;
   bookValue?: number | string;
@@ -143,8 +160,31 @@ export type BankAccountRow = {
   name: string;
   bankName: string;
   accountNumber?: string | null;
+  iban?: string | null;
   currencyCode?: string | null;
   openingBalance?: number | string;
+};
+export type BankStatementLineRow = {
+  id: string;
+  transactionDate: string;
+  description: string;
+  reference?: string | null;
+  amount: number | string;
+  status: string;
+  matchedJournalEntryId?: string | null;
+};
+export type BankMatchSuggestion = {
+  statementLineId: string;
+  description: string;
+  amount: string;
+  transactionDate: string;
+  suggestions: Array<{
+    journalEntryId: string;
+    journalEntryNumber: string;
+    journalEntryDescription: string | null;
+    journalEntryDate: string;
+    confidence: 'high' | 'medium' | 'low';
+  }>;
 };
 export type CurrencyRow = {
   id: string;
@@ -161,12 +201,22 @@ export type ExchangeRateRow = {
   rate: number | string;
   asOfDate: string;
 };
+export type ApprovalWorkflowStep = {
+  id: string;
+  sequence: number;
+  name: string;
+  approverRole?: string | null;
+  approverUserId?: string | null;
+};
 export type ApprovalWorkflowRow = {
   id: string;
   name: string;
   sourceModule: string;
   sourceType: string;
+  minAmount?: string | number | null;
+  maxAmount?: string | number | null;
   isActive: boolean;
+  steps: ApprovalWorkflowStep[];
 };
 export type ApprovalRequestRow = {
   id: string;
@@ -174,7 +224,9 @@ export type ApprovalRequestRow = {
   sourceType: string;
   sourceId: string;
   status: string;
+  amount?: string | number | null;
   currentStepSequence?: number;
+  workflow?: { steps: ApprovalWorkflowStep[] };
 };
 
 export function resolveApiBaseUrl(storedUrl: string): string {
@@ -1086,6 +1138,7 @@ export class ApiClient {
     return this.request(`/construction/progress/${id}/approve`, { method: 'POST' });
   }
 
+  // ── CRM ──
   getCrmLeads() {
     return this.request<CrmLeadRow[]>('/crm/leads');
   }
@@ -1094,36 +1147,170 @@ export class ApiClient {
     return this.request('/crm/leads', { method: 'POST', body: JSON.stringify(payload) });
   }
 
+  updateCrmLead(id: string, payload: Partial<{ contactName: string; companyName: string; email: string; phone: string; source: string; notes: string }>) {
+    return this.request(`/crm/leads/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  deleteCrmLead(id: string) {
+    return this.request(`/crm/leads/${id}`, { method: 'DELETE' });
+  }
+
+  convertCrmLead(id: string, opportunityName?: string) {
+    return this.request(`/crm/leads/${id}/convert`, { method: 'POST', body: JSON.stringify({ opportunityName }) });
+  }
+
   getCrmOpportunities() {
     return this.request<CrmOpportunityRow[]>('/crm/opportunities');
   }
 
+  createCrmOpportunity(payload: { name: string; amount?: number; probability?: number; notes?: string }) {
+    return this.request('/crm/opportunities', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
+  updateCrmOpportunity(id: string, payload: Partial<{ name: string; amount: number; probability: number; notes: string; expectedCloseDate: string }>) {
+    return this.request(`/crm/opportunities/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  deleteCrmOpportunity(id: string) {
+    return this.request(`/crm/opportunities/${id}`, { method: 'DELETE' });
+  }
+
+  moveCrmOpportunityStage(id: string, stage: string, lostReason?: string) {
+    return this.request(`/crm/opportunities/${id}/stage`, { method: 'PATCH', body: JSON.stringify({ stage, lostReason }) });
+  }
+
+  // ── HR ──
   getHrEmployees() {
     return this.request<HrEmployeeRow[]>('/hr/employees');
   }
 
+  updateHrEmployee(id: string, payload: Partial<{ firstName: string; lastName: string; email: string; phone: string; departmentId: string; positionId: string; managerId: string; basicSalary: number }>) {
+    return this.request(`/hr/employees/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  terminateHrEmployee(id: string, terminationDate: string) {
+    return this.request(`/hr/employees/${id}/terminate`, { method: 'POST', body: JSON.stringify({ terminationDate }) });
+  }
+
+  getHrOrgChart() {
+    return this.request<{ tree: OrgChartNode[]; headcount: Array<{ department: string; count: number }>; totalActive: number }>('/hr/org-chart');
+  }
+
+  getHrDepartments() {
+    return this.request<Array<{ id: string; code: string; name: string }>>('/hr/departments');
+  }
+
+  createHrDepartment(payload: { code: string; name: string }) {
+    return this.request('/hr/departments', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
+  updateHrDepartment(id: string, payload: Partial<{ name: string; isActive: boolean }>) {
+    return this.request(`/hr/departments/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  // ── Fixed Assets ──
   getAssets() {
     return this.request<AssetRow[]>('/assets');
   }
 
+  updateAsset(id: string, payload: Partial<{ name: string; description: string; serialNumber: string; location: string }>) {
+    return this.request(`/assets/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  getAssetDepreciationSchedule(id: string) {
+    return this.request<{ assetId: string; acquisitionCost: string; salvageValue: string; timeline: Array<{ periodDate: string; depreciationAmount: string; bookValue: string; projected: boolean }> }>(
+      `/assets/${id}/depreciation-schedule`,
+    );
+  }
+
+  disposeAsset(id: string, disposalDate: string, proceeds: number) {
+    return this.request(`/assets/${id}/dispose`, { method: 'POST', body: JSON.stringify({ disposalDate, proceeds }) });
+  }
+
+  // ── Bank ──
   getBankAccounts() {
     return this.request<BankAccountRow[]>('/bank/accounts');
   }
 
+  updateBankAccount(id: string, payload: Partial<{ name: string; bankName: string; accountNumber: string; iban: string }>) {
+    return this.request(`/bank/accounts/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  getBankStatementLines(accountId: string, status?: string) {
+    return this.request<BankStatementLineRow[]>(`/bank/accounts/${accountId}/statement-lines${status ? `?status=${status}` : ''}`);
+  }
+
+  suggestBankMatches(accountId: string) {
+    return this.request<BankMatchSuggestion[]>(`/bank/accounts/${accountId}/suggest-matches`);
+  }
+
+  matchBankStatementLine(lineId: string, journalEntryId: string) {
+    return this.request(`/bank/statement-lines/${lineId}/match`, { method: 'POST', body: JSON.stringify({ journalEntryId }) });
+  }
+
+  unmatchBankStatementLine(lineId: string) {
+    return this.request(`/bank/statement-lines/${lineId}/unmatch`, { method: 'POST' });
+  }
+
+  ignoreBankStatementLine(lineId: string) {
+    return this.request(`/bank/statement-lines/${lineId}/ignore`, { method: 'POST' });
+  }
+
+  // ── Currency ──
   getCurrencies() {
     return this.request<CurrencyRow[]>('/currency');
+  }
+
+  updateCurrency(id: string, payload: Partial<{ name: string; symbol: string; isActive: boolean }>) {
+    return this.request(`/currency/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
   }
 
   getCurrencyRates() {
     return this.request<ExchangeRateRow[]>('/currency/rates');
   }
 
+  recordCurrencyRate(payload: { fromCurrency: string; toCurrency: string; rate: number; asOfDate?: string }) {
+    return this.request('/currency/rates', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
+  deleteCurrencyRate(id: string) {
+    return this.request(`/currency/rates/${id}`, { method: 'DELETE' });
+  }
+
+  getCurrencyRateTrend(from: string, to: string) {
+    return this.request<Array<{ asOfDate: string; rate: string }>>(`/currency/rates/trend?from=${from}&to=${to}`);
+  }
+
+  // ── Approvals ──
   getApprovalWorkflows() {
     return this.request<ApprovalWorkflowRow[]>('/approvals/workflows');
   }
 
+  createApprovalWorkflow(payload: {
+    sourceModule: string;
+    sourceType: string;
+    name: string;
+    minAmount?: number;
+    maxAmount?: number;
+    steps: Array<{ sequence: number; name: string; approverRole?: string }>;
+  }) {
+    return this.request('/approvals/workflows', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
+  updateApprovalWorkflow(id: string, payload: Partial<{ name: string; minAmount: number; maxAmount: number; isActive: boolean; steps: Array<{ sequence: number; name: string; approverRole?: string }> }>) {
+    return this.request(`/approvals/workflows/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  deleteApprovalWorkflow(id: string) {
+    return this.request(`/approvals/workflows/${id}`, { method: 'DELETE' });
+  }
+
   getPendingApprovals() {
     return this.request<ApprovalRequestRow[]>('/approvals/requests/pending');
+  }
+
+  decideApprovalRequest(id: string, decision: 'approved' | 'rejected', comment?: string) {
+    return this.request(`/approvals/requests/${id}/decide`, { method: 'POST', body: JSON.stringify({ decision, comment }) });
   }
 }
 

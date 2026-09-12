@@ -26,6 +26,26 @@ interface CreateOpportunityInput {
   notes?: string;
 }
 
+interface UpdateLeadInput {
+  companyName?: string;
+  contactName?: string;
+  email?: string;
+  phone?: string;
+  source?: string;
+  ownerId?: string;
+  notes?: string;
+}
+
+interface UpdateOpportunityInput {
+  name?: string;
+  amount?: number;
+  currencyCode?: string;
+  probability?: number;
+  expectedCloseDate?: string;
+  ownerId?: string;
+  notes?: string;
+}
+
 interface CreateActivityInput {
   leadId?: string;
   opportunityId?: string;
@@ -86,6 +106,27 @@ export class CrmService {
       throw new NotFoundException('Lead not found');
     }
     return this.prisma.lead.update({ where: { id }, data: { status: status as never } });
+  }
+
+  async updateLead(tenantId: string, id: string, dto: UpdateLeadInput) {
+    const lead = await this.prisma.lead.findFirst({ where: { id, tenantId } });
+    if (!lead) {
+      throw new NotFoundException('Lead not found');
+    }
+    return this.prisma.lead.update({ where: { id }, data: dto });
+  }
+
+  async deleteLead(tenantId: string, id: string) {
+    const lead = await this.prisma.lead.findFirst({ where: { id, tenantId } });
+    if (!lead) {
+      throw new NotFoundException('Lead not found');
+    }
+    if (lead.status === 'converted') {
+      throw new BadRequestException('Cannot delete a converted lead — it is linked to a customer and opportunity');
+    }
+    await this.prisma.crmActivity.deleteMany({ where: { tenantId, leadId: id } });
+    await this.prisma.lead.delete({ where: { id } });
+    return { deleted: true };
   }
 
   /**
@@ -179,6 +220,35 @@ export class CrmService {
         notes: dto.notes,
       },
     });
+  }
+
+  async updateOpportunity(tenantId: string, id: string, dto: UpdateOpportunityInput) {
+    const opportunity = await this.prisma.opportunity.findFirst({ where: { id, tenantId } });
+    if (!opportunity) {
+      throw new NotFoundException('Opportunity not found');
+    }
+    return this.prisma.opportunity.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        amount: dto.amount,
+        currencyCode: dto.currencyCode,
+        probability: dto.probability,
+        expectedCloseDate: dto.expectedCloseDate ? new Date(dto.expectedCloseDate) : undefined,
+        ownerId: dto.ownerId,
+        notes: dto.notes,
+      },
+    });
+  }
+
+  async deleteOpportunity(tenantId: string, id: string) {
+    const opportunity = await this.prisma.opportunity.findFirst({ where: { id, tenantId } });
+    if (!opportunity) {
+      throw new NotFoundException('Opportunity not found');
+    }
+    await this.prisma.crmActivity.deleteMany({ where: { tenantId, opportunityId: id } });
+    await this.prisma.opportunity.delete({ where: { id } });
+    return { deleted: true };
   }
 
   async moveOpportunityStage(tenantId: string, id: string, stage: string, lostReason?: string) {
