@@ -24,6 +24,8 @@
     "dev:desktop": "npm run dev -w @fratelanza/desktop",
     "dev:web": "npm run dev -w @fratelanza/web",
     "build:web": "npm run build -w @fratelanza/web",
+    "build:web:deps": "npm run build -w @fratelanza/types && npm run build -w @fratelanza/shared",
+    "build:deploy:web": "npm run build:web:deps && npm run build:web",
     "lint": "npm run lint --workspaces --if-present",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
