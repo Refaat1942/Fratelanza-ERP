@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, NotFoundException, GoneException } from '@nestjs/common';
 import { IsOptional, IsString } from 'class-validator';
 import { Public } from '../../common/decorators';
 import { PrismaService } from '../../database/prisma.service';
@@ -61,7 +61,11 @@ export class DemoPublicController {
     });
 
     if (!demoRecord || !demoRecord.tenant.isActive || demoRecord.tenant.status !== 'ACTIVE') {
-      return { success: false, error: { code: 'DEMO_UNAVAILABLE', message: 'Demo not available' } };
+      throw new NotFoundException('Demo not available');
+    }
+
+    if (demoRecord.linkExpiresAt && demoRecord.linkExpiresAt < new Date()) {
+      throw new GoneException('This demo link has expired');
     }
 
     const fallbackUser = await this.prisma.user.findFirst({
@@ -71,14 +75,16 @@ export class DemoPublicController {
 
     const loginId = dto.username ?? demoRecord.demoUser?.email ?? fallbackUser?.email;
     if (!loginId) {
-      return { success: false, error: { code: 'DEMO_USER_MISSING', message: 'Demo user not configured' } };
+      throw new NotFoundException('Demo user not configured');
     }
 
     const password = dto.password ?? process.env.DEMO_SEED_PASSWORD ?? 'Eval@2026!Demo';
+    const demoModules = Array.isArray(demoRecord.modules) ? (demoRecord.modules as string[]) : undefined;
     const result = await this.authService.login(
       { username: loginId, password },
       undefined,
       'Demo Browser',
+      demoModules ? { demoModules } : undefined,
     );
 
     return {

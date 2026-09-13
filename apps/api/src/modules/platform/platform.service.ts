@@ -4,6 +4,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
+import * as bcrypt from 'bcryptjs';
 import { ERP_MODULES } from '@fratelanza/shared';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -131,6 +132,7 @@ export class PlatformService {
     tenantCode: string;
     modules?: string[];
     demoUserEmail?: string;
+    linkExpiresAt?: string;
   }) {
     const slug = data.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
     const existing = await this.prisma.demoEnvironment.findUnique({ where: { slug } });
@@ -151,13 +153,52 @@ export class PlatformService {
       },
     });
 
+    const branch = await this.prisma.branch.create({
+      data: {
+        tenantId: tenant.id,
+        code: 'MAIN',
+        name: 'Main Branch',
+        isDefault: true,
+      },
+    });
+
+    const allPermissions = await this.prisma.permission.findMany({ select: { id: true } });
+    const role = await this.prisma.role.create({
+      data: {
+        tenantId: tenant.id,
+        code: 'owner',
+        name: 'Owner',
+        description: 'Full system access',
+        isSystem: true,
+        permissions: {
+          create: allPermissions.map((p) => ({ permissionId: p.id })),
+        },
+      },
+    });
+
+    const demoEmail = data.demoUserEmail ?? `demo-${slug.replace(/\//g, '-')}@fratelanza.local`;
+    const passwordHash = await bcrypt.hash(process.env.DEMO_SEED_PASSWORD ?? 'Eval@2026!Demo', 12);
+    const demoUser = await this.prisma.user.create({
+      data: {
+        tenantId: tenant.id,
+        branchId: branch.id,
+        roleId: role.id,
+        email: demoEmail,
+        passwordHash,
+        firstName: 'Demo',
+        lastName: 'User',
+      },
+    });
+
     const demo = await this.prisma.demoEnvironment.create({
       data: {
         slug,
         name: data.name,
         tenantId: tenant.id,
+        demoUserId: demoUser.id,
         modules: data.modules ?? ERP_MODULES.map((m) => m.id),
         linkToken: randomUUID(),
+        linkExpiresAt: data.linkExpiresAt ? new Date(data.linkExpiresAt) : undefined,
       },
     });
 
@@ -171,6 +212,7 @@ export class PlatformService {
       enabled?: boolean;
       modules?: string[];
       demoUserId?: string;
+      linkExpiresAt?: string | null;
     },
   ) {
     const demo = await this.prisma.demoEnvironment.findUnique({ where: { id } });
@@ -183,6 +225,12 @@ export class PlatformService {
         enabled: data.enabled,
         modules: data.modules,
         demoUserId: data.demoUserId,
+        linkExpiresAt:
+          data.linkExpiresAt === undefined
+            ? undefined
+            : data.linkExpiresAt === null
+              ? null
+              : new Date(data.linkExpiresAt),
         linkToken: data.enabled === false ? demo.linkToken : randomUUID(),
       },
     });

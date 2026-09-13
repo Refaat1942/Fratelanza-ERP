@@ -736,6 +736,7 @@ export class ApiClient {
         name: string;
         enabled: boolean;
         linkToken: string;
+        linkExpiresAt?: string | null;
         modules: string[];
         tenant: { name: string; code: string };
       }>
@@ -785,13 +786,20 @@ export class ApiClient {
     tenantCode: string;
     modules?: string[];
     demoUserEmail?: string;
+    linkExpiresAt?: string;
   }) {
     return this.request('/platform/demos', { method: 'POST', body: JSON.stringify(payload) });
   }
 
   updatePlatformDemo(
     id: string,
-    payload: { name?: string; enabled?: boolean; modules?: string[]; demoUserId?: string },
+    payload: {
+      name?: string;
+      enabled?: boolean;
+      modules?: string[];
+      demoUserId?: string;
+      linkExpiresAt?: string | null;
+    },
   ) {
     return this.request(`/platform/demos/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
   }

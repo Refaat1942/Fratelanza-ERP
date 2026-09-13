@@ -38,6 +38,7 @@ class CreateDemoDto {
   @IsString() tenantCode!: string;
   @IsOptional() @IsArray() modules?: string[];
   @IsOptional() @IsString() demoUserEmail?: string;
+  @IsOptional() @IsString() linkExpiresAt?: string;
 }
 
 class UpdateDemoDto {
@@ -45,6 +46,7 @@ class UpdateDemoDto {
   @IsOptional() @IsBoolean() enabled?: boolean;
   @IsOptional() @IsArray() modules?: string[];
   @IsOptional() @IsString() demoUserId?: string;
+  @IsOptional() @IsString() linkExpiresAt?: string | null;
 }
 
 class SetModuleDto {

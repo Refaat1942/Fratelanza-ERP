@@ -7,7 +7,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
 import { randomUUID } from 'crypto';
 import type { JwtPayload } from '@fratelanza/types';
-import { buildPermissionKey, getCountryProfile, normalizeCountryCode } from '@fratelanza/shared';
+import { buildPermissionKey, getCountryProfile, normalizeCountryCode, ERP_MODULES } from '@fratelanza/shared';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
 import type { LoginDto } from './dto/auth.dto';
@@ -21,7 +21,12 @@ export class AuthService {
     private auditService: AuditService,
   ) {}
 
-  async login(dto: LoginDto, ipAddress?: string, userAgent?: string) {
+  async login(
+    dto: LoginDto,
+    ipAddress?: string,
+    userAgent?: string,
+    sessionOverrides?: { demoModules?: string[] },
+  ) {
     const loginId = dto.username ?? dto.email ?? '';
     const email = normalizeLoginIdentifier(loginId);
     const user = await this.prisma.user.findFirst({
@@ -91,6 +96,7 @@ export class AuthService {
         ipAddress,
         userAgent,
         expiresAt,
+        demoModules: sessionOverrides?.demoModules,
       },
     });
 
@@ -218,7 +224,7 @@ export class AuthService {
     }
   }
 
-  async validateAccessUser(userId: string, tenantId: string) {
+  async validateAccessUser(userId: string, tenantId: string, sessionId?: string) {
     const user = await this.prisma.user.findFirst({
       where: {
         id: userId,
@@ -247,7 +253,21 @@ export class AuthService {
     }
 
     const allowedWarehouseIds = user.warehouseAccess.map((entry) => entry.warehouseId);
-    const disabledModules = Array.isArray(user.disabledModules) ? (user.disabledModules as string[]) : [];
+    let disabledModules = Array.isArray(user.disabledModules) ? (user.disabledModules as string[]) : [];
+
+    if (sessionId) {
+      const session = await this.prisma.session.findUnique({
+        where: { id: sessionId },
+        select: { demoModules: true },
+      });
+      if (session && Array.isArray(session.demoModules)) {
+        const allowedForDemo = session.demoModules as string[];
+        const hiddenByDemoScope = ERP_MODULES.map((m) => m.id).filter(
+          (id) => !allowedForDemo.includes(id),
+        );
+        disabledModules = Array.from(new Set([...disabledModules, ...hiddenByDemoScope]));
+      }
+    }
 
     return {
       tenantId: user.tenantId,

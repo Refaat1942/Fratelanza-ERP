@@ -161,9 +161,22 @@ export function AppLayout() {
           {user?.isPlatformAdmin && (
             <div className="sidebar-group">
               <span className="sidebar-group-label">{t('control.title')}</span>
-              <NavLink to="/control" className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}>
-                <span className="sidebar-link-label">{t('control.nav.dashboard')}</span>
-              </NavLink>
+              {[
+                { to: '/control', end: true, labelKey: 'control.nav.dashboard' },
+                { to: '/control/organizations', labelKey: 'control.nav.organizations' },
+                { to: '/control/demos', labelKey: 'control.nav.demos' },
+                { to: '/control/modules', labelKey: 'control.nav.modules' },
+                { to: '/control/authorization', labelKey: 'control.nav.authorization' },
+              ].map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  end={link.end}
+                  className={({ isActive }) => `sidebar-link${isActive ? ' active' : ''}`}
+                >
+                  <span className="sidebar-link-label">{t(link.labelKey)}</span>
+                </NavLink>
+              ))}
             </div>
           )}
         </nav>

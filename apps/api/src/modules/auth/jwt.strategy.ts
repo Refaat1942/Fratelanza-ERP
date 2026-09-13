@@ -23,7 +23,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     await this.authService.assertSessionActive(payload.sessionId, payload.sub);
 
-    const liveUser = await this.authService.validateAccessUser(payload.sub, payload.tenantId);
+    const liveUser = await this.authService.validateAccessUser(payload.sub, payload.tenantId, payload.sessionId);
     const permissions = await this.authService.getUserPermissions(payload.sub);
 
     return {

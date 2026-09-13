@@ -9,11 +9,16 @@ type DemoRow = {
   name: string;
   enabled: boolean;
   linkToken: string;
+  linkExpiresAt?: string | null;
   modules: string[];
   tenant: { id: string; name: string; code: string };
   demoUser?: { email: string } | null;
   createdAt?: string;
 };
+
+function isExpired(demo: DemoRow): boolean {
+  return !!demo.linkExpiresAt && new Date(demo.linkExpiresAt) < new Date();
+}
 
 export function DemoManagementPage() {
   const { t } = useTranslation();
@@ -28,6 +33,7 @@ export function DemoManagementPage() {
     name: '',
     tenantCode: '',
     modules: ERP_MODULES.slice(0, 8).map((m) => m.id),
+    linkExpiresAt: '',
   });
 
   const load = useCallback(async () => {
@@ -50,9 +56,12 @@ export function DemoManagementPage() {
   async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     try {
-      await client.createPlatformDemo(form);
+      await client.createPlatformDemo({
+        ...form,
+        linkExpiresAt: form.linkExpiresAt || undefined,
+      });
       setOpen(false);
-      setForm({ slug: '', name: '', tenantCode: '', modules: ERP_MODULES.slice(0, 8).map((m) => m.id) });
+      setForm({ slug: '', name: '', tenantCode: '', modules: ERP_MODULES.slice(0, 8).map((m) => m.id), linkExpiresAt: '' });
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.error'));
@@ -67,6 +76,7 @@ export function DemoManagementPage() {
         name: form.name,
         enabled: editRow.enabled,
         modules: form.modules,
+        linkExpiresAt: form.linkExpiresAt || null,
       });
       setEditRow(null);
       await load();
@@ -100,6 +110,7 @@ export function DemoManagementPage() {
       name: demo.name,
       tenantCode: demo.tenant.code,
       modules: demo.modules ?? [],
+      linkExpiresAt: demo.linkExpiresAt ? demo.linkExpiresAt.slice(0, 10) : '',
     });
   }
 
@@ -190,6 +201,14 @@ export function DemoManagementPage() {
                 <p className="module-card-description">{demo.tenant.name} ({demo.tenant.code})</p>
                 <p className="module-card-description">
                   {demo.enabled ? t('control.demoEnabled') : t('control.demoDisabled')}
+                  {demo.linkExpiresAt && (
+                    <>
+                      {' · '}
+                      {isExpired(demo)
+                        ? t('control.demoExpired')
+                        : t('control.demoExpiresOn', { date: new Date(demo.linkExpiresAt).toLocaleDateString() })}
+                    </>
+                  )}
                 </p>
                 <div className="form-actions" style={{ borderTop: 'none', paddingTop: 0 }}>
                   <a className="btn btn-primary btn--sm" href={`/demo/${demo.slug}`} target="_blank" rel="noreferrer">
@@ -222,6 +241,14 @@ export function DemoManagementPage() {
           <FormField label={t('control.table.code')} required>
             <input className="form-input" value={form.tenantCode} onChange={(e) => setForm({ ...form, tenantCode: e.target.value.toUpperCase() })} required />
           </FormField>
+          <FormField label={t('control.demoExpiresLabel')}>
+            <input
+              className="form-input"
+              type="date"
+              value={form.linkExpiresAt}
+              onChange={(e) => setForm({ ...form, linkExpiresAt: e.target.value })}
+            />
+          </FormField>
           <FormActions>
             <button type="submit" className="btn btn-primary">{t('common.save')}</button>
             <button type="button" className="btn btn-ghost" onClick={() => setOpen(false)}>{t('common.cancel')}</button>
@@ -234,10 +261,21 @@ export function DemoManagementPage() {
           <FormField label={t('control.table.name')} required>
             <input className="form-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
           </FormField>
+          <FormField label={t('control.demoExpiresLabel')}>
+            <input
+              className="form-input"
+              type="date"
+              value={form.linkExpiresAt}
+              onChange={(e) => setForm({ ...form, linkExpiresAt: e.target.value })}
+            />
+            <p className="page-subtitle" style={{ marginTop: '0.25rem', marginBottom: 0 }}>
+              {t('control.demoExpiresHint')}
+            </p>
+          </FormField>
           <FormField label={t('control.demoModules')}>
             <div className="checkbox-grid">
               {ERP_MODULES.map((mod) => (
-                <label key={mod.id} className="checkbox-label">
+                <label key={mod.id} className="checkbox-grid-item">
                   <input
                     type="checkbox"
                     checked={form.modules.includes(mod.id)}
@@ -250,7 +288,7 @@ export function DemoManagementPage() {
                       });
                     }}
                   />
-                  {t(mod.nameKey)}
+                  <span>{t(mod.nameKey)}</span>
                 </label>
               ))}
             </div>
