@@ -45,6 +45,8 @@ export function DemoManagementPage() {
   const [rows, setRows] = useState<DemoRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const [seedingId, setSeedingId] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [editRow, setEditRow] = useState<DemoRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DemoRow | null>(null);
@@ -145,6 +147,28 @@ export function DemoManagementPage() {
     }
   }
 
+  async function handleSeedVolume(demo: DemoRow) {
+    setError(null);
+    setNotice(null);
+    setSeedingId(demo.id);
+    try {
+      const stats = await client.seedPlatformDemoVolume(demo.id);
+      setNotice(
+        t('control.demoSeedSuccess', {
+          products: stats.products,
+          customers: stats.customers,
+          suppliers: stats.suppliers,
+          invoices: stats.salesInvoices,
+          orders: stats.purchaseOrders,
+        }),
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    } finally {
+      setSeedingId(null);
+    }
+  }
+
   function openEdit(demo: DemoRow) {
     setEditRow(demo);
     setForm({
@@ -195,6 +219,7 @@ export function DemoManagementPage() {
         }
       />
       {error && <p className="form-error" role="alert">{error}</p>}
+      {notice && <p className="form-success" role="status">{notice}</p>}
 
       {!loading && enabledDemos.length > 0 && (
         <section className="module-card module-card--static" style={{ marginBottom: '1.5rem' }}>
@@ -277,6 +302,14 @@ export function DemoManagementPage() {
                   </a>
                   <button type="button" className="btn btn-ghost btn--sm" onClick={() => void openActivity(demo)}>
                     {t('control.demoActivity')}
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn-ghost btn--sm"
+                    disabled={seedingId === demo.id}
+                    onClick={() => void handleSeedVolume(demo)}
+                  >
+                    {seedingId === demo.id ? t('common.loading') : t('control.demoSeedNow')}
                   </button>
                   <button type="button" className="btn btn-ghost btn--sm" onClick={() => openEdit(demo)}>
                     {t('common.edit')}

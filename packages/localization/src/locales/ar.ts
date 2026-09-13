@@ -416,6 +416,8 @@ export const ar: TranslationSchema = {
     demoActivity: 'النشاط',
     demoSeedVolume: 'تعبئة ببيانات تجريبية',
     demoSeedVolumeHint: 'يضيف منتجات وعملاء وموردين وفواتير وأوامر شراء تجريبية حتى لا يكون العرض فارغاً.',
+    demoSeedNow: 'إضافة بيانات تجريبية',
+    demoSeedSuccess: 'تمت إضافة {{products}} منتج، {{customers}} عميل، {{suppliers}} مورد، {{invoices}} فاتورة، و{{orders}} أمر شراء.',
     demoVisits: 'الزيارات',
     demoLastAccessed: 'آخر دخول',
     demoNeverAccessed: 'لم يتم الدخول بعد',

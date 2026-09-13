@@ -257,6 +257,21 @@ export class PlatformService {
     });
   }
 
+  async seedDemoData(id: string) {
+    const demo = await this.prisma.demoEnvironment.findUnique({ where: { id } });
+    if (!demo) throw new NotFoundException('Demo not found');
+
+    const branch = await this.prisma.branch.findFirst({ where: { tenantId: demo.tenantId } });
+    if (!branch) throw new BadRequestException('Demo tenant has no branch to seed into');
+
+    const existingProducts = await this.prisma.product.count({ where: { tenantId: demo.tenantId } });
+    if (existingProducts > 0) {
+      throw new BadRequestException('This demo already has sample data. Delete and recreate it to reset.');
+    }
+
+    return seedDemoTenantVolume(this.prisma, demo.tenantId, branch.id);
+  }
+
   async getDemoActivity(id: string) {
     const demo = await this.prisma.demoEnvironment.findUnique({ where: { id } });
     if (!demo) throw new NotFoundException('Demo not found');

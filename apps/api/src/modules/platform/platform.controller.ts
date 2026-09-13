@@ -116,6 +116,12 @@ export class PlatformController {
     return { success: true };
   }
 
+  @Post('demos/:id/seed-volume')
+  async seedDemoVolume(@Param('id') id: string) {
+    const data = await this.platformService.seedDemoData(id);
+    return { success: true, data };
+  }
+
   @Get('demos/:id/activity')
   async demoActivity(@Param('id') id: string) {
     const data = await this.platformService.getDemoActivity(id);

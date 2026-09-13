@@ -228,6 +228,8 @@ export const en = {
     demoActivity: 'Activity',
     demoSeedVolume: 'Fill with sample data',
     demoSeedVolumeHint: 'Adds sample products, customers, suppliers, invoices, and purchase orders so the demo isn\'t empty.',
+    demoSeedNow: 'Seed sample data',
+    demoSeedSuccess: 'Added {{products}} products, {{customers}} customers, {{suppliers}} suppliers, {{invoices}} invoices, and {{orders}} purchase orders.',
     demoVisits: 'Visits',
     demoLastAccessed: 'Last accessed',
     demoNeverAccessed: 'Never',

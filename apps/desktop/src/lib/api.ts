@@ -857,6 +857,16 @@ export class ApiClient {
     return this.request(`/platform/demos/${id}`, { method: 'DELETE' });
   }
 
+  seedPlatformDemoVolume(id: string) {
+    return this.request<{
+      products: number;
+      customers: number;
+      suppliers: number;
+      salesInvoices: number;
+      purchaseOrders: number;
+    }>(`/platform/demos/${id}/seed-volume`, { method: 'POST' });
+  }
+
   getPlatformDemoActivity(id: string) {
     return this.request<{
       issuedTo: string | null;
