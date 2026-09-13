@@ -2,8 +2,14 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { COUNTRY_PROFILES, type CountryCode } from '@fratelanza/shared';
 import { PageHeader } from '../components/DataTable';
+import { Badge } from '../components/ui/StatusBadge';
 import { createApiClient, resolveApiBaseUrl } from '../lib/api';
 import { useAppStore, useAuthStore } from '../stores';
+
+const CREDENTIAL_BADGE_VARIANT: Record<string, 'success' | 'warning' | 'danger' | 'neutral' | 'info'> = {
+  configured: 'success',
+  missing: 'warning',
+};
 
 type IntegrationStatus = {
   authority: string;
@@ -117,6 +123,11 @@ export function IntegrationsPage() {
       />
 
       <div className="card card--flat" style={{ marginBottom: 'var(--frz-space-4)' }}>
+        <h2 className="card-title">{t('integrations.whatIsThisTitle')}</h2>
+        <p className="page-subtitle" style={{ marginTop: 0 }}>{t('integrations.whatIsThis')}</p>
+      </div>
+
+      <div className="card card--flat" style={{ marginBottom: 'var(--frz-space-4)' }}>
         <h2 className="card-title">{t('integrations.organizationContext')}</h2>
         <div className="settings-row">
           <span>{t('integrations.country')}</span>
@@ -140,7 +151,7 @@ export function IntegrationsPage() {
         <h2 className="card-title">
           {countryCode === 'EG' ? t('integrations.egyptCenter') : t('integrations.saudiCenter')}
         </h2>
-        <div className="settings-row">
+        <div className="settings-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
           <span>{t('integrations.environment')}</span>
           <select
             className="select-input"
@@ -150,8 +161,9 @@ export function IntegrationsPage() {
             <option value="sandbox">{t('integrations.sandbox')}</option>
             <option value="production">{t('integrations.production')}</option>
           </select>
+          <p className="form-hint" style={{ margin: 0 }}>{t('integrations.environmentHint')}</p>
         </div>
-        <button type="button" className="btn btn-primary" onClick={() => void saveEnvironment()}>
+        <button type="button" className="btn btn-primary btn--sm" style={{ marginTop: 'var(--frz-space-3)' }} onClick={() => void saveEnvironment()}>
           {t('integrations.saveEnvironment')}
         </button>
         {message && <p className="form-success">{message}</p>}
@@ -174,6 +186,7 @@ export function IntegrationsPage() {
 
       <div className="card card--flat">
         <h2 className="card-title">{t('integrations.logsTitle')}</h2>
+        <p className="page-subtitle" style={{ marginTop: 0 }}>{t('integrations.logsHint')}</p>
         <div className="data-table-wrap">
           <table className="data-table">
             <thead>
@@ -210,32 +223,41 @@ export function IntegrationsPage() {
 
 function IntegrationStats({ status }: { status: IntegrationStatus }) {
   const { t } = useTranslation();
+  const credentialLabel = t(`integrations.credentialStatusValues.${status.credentialsStatus}`, {
+    defaultValue: status.credentialsStatus,
+  });
+  const credentialVariant = CREDENTIAL_BADGE_VARIANT[status.credentialsStatus] ?? 'neutral';
+
   return (
     <>
       <div className="settings-row">
         <span>{t('integrations.credentialsStatus')}</span>
-        <span>{status.credentialsStatus}</span>
+        <Badge variant={credentialVariant}>{credentialLabel}</Badge>
       </div>
-      <div className="settings-row">
-        <span>{t('integrations.pendingDocuments')}</span>
-        <span>{status.pendingDocuments}</span>
+
+      <div className="dashboard-grid" style={{ marginTop: 'var(--frz-space-3)', marginBottom: 'var(--frz-space-3)' }}>
+        <div className="stat-card">
+          <p className="stat-card-label">{t('integrations.pendingDocuments')}</p>
+          <p className="stat-card-value">{status.pendingDocuments}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-card-label">{t('integrations.successfulDocuments')}</p>
+          <p className="stat-card-value">{status.successfulDocuments}</p>
+        </div>
+        <div className="stat-card">
+          <p className="stat-card-label">{t('integrations.failedDocuments')}</p>
+          <p className="stat-card-value">{status.failedDocuments}</p>
+        </div>
       </div>
-      <div className="settings-row">
-        <span>{t('integrations.successfulDocuments')}</span>
-        <span>{status.successfulDocuments}</span>
-      </div>
-      <div className="settings-row">
-        <span>{t('integrations.failedDocuments')}</span>
-        <span>{status.failedDocuments}</span>
-      </div>
+
       <div className="settings-row">
         <span>{t('integrations.lastSubmission')}</span>
         <span>{status.lastSubmission ? new Date(status.lastSubmission).toLocaleString() : t('integrations.none')}</span>
       </div>
       {status.configurationRequired.length > 0 && (
-        <div style={{ marginTop: 'var(--frz-space-3)' }}>
-          <strong>{t('integrations.configurationRequired')}</strong>
-          <ul>
+        <div className="card card--flat" style={{ marginTop: 'var(--frz-space-3)', borderColor: 'var(--frz-color-warning)' }}>
+          <strong>⚠ {t('integrations.configurationRequired')}</strong>
+          <ul style={{ marginBottom: 0 }}>
             {status.configurationRequired.map((item) => (
               <li key={item}>{item}</li>
             ))}
