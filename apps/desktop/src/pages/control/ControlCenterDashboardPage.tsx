@@ -42,7 +42,7 @@ export function ControlCenterDashboardPage() {
   return (
     <div>
       <PageHeader title={t('control.dashboardTitle')} subtitle={t('control.dashboardSubtitle')} />
-      <div className="dashboard-grid">
+      <div className="card-grid">
         {cards.map((card) => (
           <div key={card.label} className="stat-card">
             <p className="stat-card-label">{card.label}</p>

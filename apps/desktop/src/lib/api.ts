@@ -431,6 +431,23 @@ export class ApiClient {
     return this.request('/tenants/current/settings', { method: 'PATCH', body: JSON.stringify(payload) });
   }
 
+  getTaxProfile() {
+    return this.request<{
+      countryCode: string;
+      taxProfile: {
+        defaultTaxMode: 'exclusive' | 'inclusive';
+        roundingMode: 'line' | 'document';
+        categories: Array<{
+          id: string;
+          label: string;
+          labelAr: string;
+          rate: number;
+          kind: 'standard' | 'zero_rated' | 'exempt' | 'out_of_scope';
+        }>;
+      };
+    }>('/integrations/tax/profile');
+  }
+
   getIntegrationCountry() {
     return this.request<{
       countryCode: string;

@@ -35,7 +35,7 @@ type IntegrationLog = {
 };
 
 export function IntegrationsPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const apiUrl = useAppStore((s) => s.apiUrl);
   const accessToken = useAuthStore((s) => s.accessToken);
   const user = useAuthStore((s) => s.user);
@@ -53,6 +53,9 @@ export function IntegrationsPage() {
     eReceipt: IntegrationStatus & { channel?: string };
   } | null>(null);
   const [saudiStatus, setSaudiStatus] = useState<IntegrationStatus | null>(null);
+  const [taxCategories, setTaxCategories] = useState<
+    Array<{ id: string; label: string; labelAr: string; rate: number; kind: string }>
+  >([]);
   const [logs, setLogs] = useState<IntegrationLog[]>([]);
   const [environment, setEnvironment] = useState<'sandbox' | 'production'>('sandbox');
   const [message, setMessage] = useState('');
@@ -72,6 +75,9 @@ export function IntegrationsPage() {
 
       const logRes = await client.getIntegrationLogs();
       setLogs(logRes);
+
+      const taxRes = await client.getTaxProfile();
+      setTaxCategories(taxRes.taxProfile.categories);
 
       if (countryCode === 'EG') {
         const status = await client.getEgyptIntegrationStatus();
@@ -146,6 +152,21 @@ export function IntegrationsPage() {
           <span>{profile.eInvoicingProvider}</span>
         </div>
       </div>
+
+      {taxCategories.length > 0 && (
+        <div className="card card--flat" style={{ marginBottom: 'var(--frz-space-4)' }}>
+          <h2 className="card-title">{t('integrations.vatTitle')}</h2>
+          <p className="page-subtitle" style={{ marginTop: 0 }}>{t('integrations.vatHint')}</p>
+          <div className="card-grid" style={{ marginTop: 'var(--frz-space-3)' }}>
+            {taxCategories.map((cat) => (
+              <div key={cat.id} className="stat-card">
+                <p className="stat-card-label">{i18n.language === 'ar' ? cat.labelAr : cat.label}</p>
+                <p className="stat-card-value">{cat.rate}%</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="card card--flat" style={{ marginBottom: 'var(--frz-space-4)' }}>
         <h2 className="card-title">
@@ -235,7 +256,7 @@ function IntegrationStats({ status }: { status: IntegrationStatus }) {
         <Badge variant={credentialVariant}>{credentialLabel}</Badge>
       </div>
 
-      <div className="dashboard-grid" style={{ marginTop: 'var(--frz-space-3)', marginBottom: 'var(--frz-space-3)' }}>
+      <div className="card-grid" style={{ marginTop: 'var(--frz-space-3)', marginBottom: 'var(--frz-space-3)' }}>
         <div className="stat-card">
           <p className="stat-card-label">{t('integrations.pendingDocuments')}</p>
           <p className="stat-card-value">{status.pendingDocuments}</p>

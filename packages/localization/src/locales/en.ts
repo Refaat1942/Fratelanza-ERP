@@ -642,6 +642,8 @@ export const en = {
     subtitle: 'Send your invoices to {{country}}\'s tax authority automatically',
     whatIsThisTitle: 'What this page does',
     whatIsThis: 'Every sale you post can be reported to your tax authority automatically, in the format they require. This page shows whether that connection is set up and working, and lists every document sent so far.',
+    vatTitle: 'VAT / Tax Rates',
+    vatHint: 'The tax rates applied to your sales and purchases, set by law for your country.',
     organizationContext: 'Your Business',
     country: 'Country',
     currency: 'Currency',
