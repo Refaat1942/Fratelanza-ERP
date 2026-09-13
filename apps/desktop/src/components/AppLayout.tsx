@@ -5,6 +5,7 @@ import { COUNTRY_PROFILES, ERP_MODULES, type CountryCode } from '@fratelanza/sha
 import { useAuthStore } from '../stores';
 import { ConnectionStatusBadge } from './ConnectionStatusBadge';
 import { ToastContainer } from './feedback/Toast';
+import { AssistantWidget } from './AssistantWidget';
 import { createApiClient, resolveApiBaseUrl } from '../lib/api';
 import { syncElectronAccessToken } from '../lib/auth-session';
 import { useAppStore } from '../stores';
@@ -225,6 +226,7 @@ export function AppLayout() {
         </main>
       </div>
       <ToastContainer />
+      <AssistantWidget />
     </div>
   );
 }

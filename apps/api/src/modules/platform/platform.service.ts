@@ -8,6 +8,7 @@ import * as bcrypt from 'bcryptjs';
 import { ERP_MODULES } from '@fratelanza/shared';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { seedDemoTenantVolume } from './demo-volume.util';
 
 @Injectable()
 export class PlatformService {
@@ -133,6 +134,8 @@ export class PlatformService {
     modules?: string[];
     demoUserEmail?: string;
     linkExpiresAt?: string;
+    issuedTo?: string;
+    seedVolume?: boolean;
   }) {
     const slug = data.slug.toLowerCase().replace(/[^a-z0-9-]/g, '-');
     const existing = await this.prisma.demoEnvironment.findUnique({ where: { slug } });
@@ -199,8 +202,13 @@ export class PlatformService {
         modules: data.modules ?? ERP_MODULES.map((m) => m.id),
         linkToken: randomUUID(),
         linkExpiresAt: data.linkExpiresAt ? new Date(data.linkExpiresAt) : undefined,
+        issuedTo: data.issuedTo,
       },
     });
+
+    if (data.seedVolume !== false) {
+      await seedDemoTenantVolume(this.prisma, tenant.id, branch.id);
+    }
 
     return demo;
   }
@@ -213,6 +221,7 @@ export class PlatformService {
       modules?: string[];
       demoUserId?: string;
       linkExpiresAt?: string | null;
+      issuedTo?: string | null;
     },
   ) {
     const demo = await this.prisma.demoEnvironment.findUnique({ where: { id } });
@@ -231,9 +240,49 @@ export class PlatformService {
             : data.linkExpiresAt === null
               ? null
               : new Date(data.linkExpiresAt),
+        issuedTo: data.issuedTo === undefined ? undefined : data.issuedTo,
         linkToken: data.enabled === false ? demo.linkToken : randomUUID(),
       },
     });
+  }
+
+  async deleteDemo(id: string) {
+    const demo = await this.prisma.demoEnvironment.findUnique({ where: { id } });
+    if (!demo) throw new NotFoundException('Demo not found');
+
+    await this.prisma.demoEnvironment.delete({ where: { id } });
+    await this.prisma.tenant.update({
+      where: { id: demo.tenantId },
+      data: { isActive: false, status: 'ARCHIVED', deletedAt: new Date() },
+    });
+  }
+
+  async getDemoActivity(id: string) {
+    const demo = await this.prisma.demoEnvironment.findUnique({ where: { id } });
+    if (!demo) throw new NotFoundException('Demo not found');
+
+    const recentActivity = await this.prisma.auditLog.findMany({
+      where: { tenantId: demo.tenantId },
+      orderBy: { createdAt: 'desc' },
+      take: 50,
+      select: {
+        id: true,
+        entity: true,
+        entityId: true,
+        action: true,
+        createdAt: true,
+        user: { select: { firstName: true, lastName: true, email: true } },
+      },
+    });
+
+    return {
+      issuedTo: demo.issuedTo,
+      createdAt: demo.createdAt,
+      linkExpiresAt: demo.linkExpiresAt,
+      visitCount: demo.visitCount,
+      lastAccessedAt: demo.lastAccessedAt,
+      recentActivity,
+    };
   }
 
   async regenerateDemoLink(id: string) {

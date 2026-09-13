@@ -269,6 +269,9 @@ model DemoEnvironment {
   restrictions Json      @default("{}")
   linkToken    String    @unique @default(uuid())
   linkExpiresAt DateTime?
+  issuedTo     String?
+  visitCount   Int       @default(0)
+  lastAccessedAt DateTime?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
 

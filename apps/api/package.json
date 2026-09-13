@@ -13,6 +13,7 @@
     "test:integration": "jest --config jest.config.js --runInBand --testPathPattern=integration"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.125.0",
     "@fratelanza/config": "*",
     "@fratelanza/database": "*",
     "@fratelanza/domain": "*",

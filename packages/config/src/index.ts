@@ -29,6 +29,10 @@ export interface AppConfig {
   appVersion: string;
   appUrl: string;
   frontendUrl: string;
+  assistant: {
+    anthropicApiKey?: string;
+    model: string;
+  };
 }
 
 const DEV_JWT_FALLBACK = 'development-secret-change-in-production';
@@ -64,6 +68,10 @@ export function loadApiConfig(): AppConfig {
     appVersion: resolveAppVersion(),
     appUrl,
     frontendUrl,
+    assistant: {
+      anthropicApiKey: process.env.ANTHROPIC_API_KEY || undefined,
+      model: process.env.ASSISTANT_MODEL ?? 'claude-opus-5',
+    },
   };
 }
 

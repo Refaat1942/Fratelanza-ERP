@@ -222,6 +222,21 @@ export const en = {
     demoExpiresLabel: 'Link expires on',
     demoExpiresHint: 'Leave blank for a link that never expires. Past this date the link stops letting anyone log in.',
     openDemoLink: 'Open demo link →',
+    demoIssuedTo: 'Issued to',
+    demoIssuedToPlaceholder: 'Customer or contact name',
+    demoVisitCount: '{{count}} visits',
+    demoActivity: 'Activity',
+    demoSeedVolume: 'Fill with sample data',
+    demoSeedVolumeHint: 'Adds sample products, customers, suppliers, invoices, and purchase orders so the demo isn\'t empty.',
+    demoVisits: 'Visits',
+    demoLastAccessed: 'Last accessed',
+    demoNeverAccessed: 'Never',
+    demoCreatedOn: 'Created on',
+    demoNoExpiry: 'Never expires',
+    demoRecentMovements: 'Recent Movements',
+    demoNoMovements: 'No activity recorded yet.',
+    demoDeleteTitle: 'Delete demo link',
+    demoDeleteMessage: 'This will permanently remove the demo link and archive its tenant. This cannot be undone.',
     nav: {
       dashboard: 'Dashboard',
       organizations: 'Customers',
@@ -733,6 +748,18 @@ export const en = {
     enableAll: 'Enable all modules',
     moduleUpdated: 'Module access updated',
   },
+  assistant: {
+    title: 'Assistant',
+    subtitle: 'Ask about your data or how to use the ERP',
+    emptyHint: 'Ask me anything about your business or this system — in Arabic or English. For example:',
+    example1: '"What\'s my total stock value right now?"',
+    example2: '"How do I create a purchase order?"',
+    example3: '"How much does Al Noor Trading owe us?"',
+    placeholder: 'Type a question…',
+    send: 'Send',
+    thinking: 'Thinking…',
+    error: 'Something went wrong. Please try again.',
+  },
 } as const;
 
 export type TranslationSchema = {
@@ -777,6 +804,7 @@ export type TranslationSchema = {
   integrations: Record<string, string | Record<string, string>>;
   onboarding: Record<string, string>;
   license: Record<string, string>;
+  assistant: Record<string, string>;
 };
 
 export type TranslationKeys = typeof en;

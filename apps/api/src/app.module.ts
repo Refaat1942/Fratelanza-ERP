@@ -40,6 +40,7 @@ import { CrmModule } from './modules/crm/crm.module';
 import { HrModule } from './modules/hr/hr.module';
 import { BankModule } from './modules/bank/bank.module';
 import { ApprovalsModule } from './modules/approvals/approvals.module';
+import { AssistantModule } from './modules/assistant/assistant.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { ApprovalsModule } from './modules/approvals/approvals.module';
     HrModule,
     BankModule,
     ApprovalsModule,
+    AssistantModule,
   ],
   providers: [
     {

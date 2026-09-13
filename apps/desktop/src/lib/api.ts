@@ -350,6 +350,9 @@ export class ApiClient {
       if (response.status === 401) {
         throw new Error(message || 'Your session has expired. Please sign in again.');
       }
+      if (response.status === 503) {
+        throw new Error(message);
+      }
       if (response.status >= 500) {
         throw new Error(`Server error (${response.status}). Please try again shortly.`);
       }
@@ -446,6 +449,13 @@ export class ApiClient {
         }>;
       };
     }>('/integrations/tax/profile');
+  }
+
+  chatWithAssistant(message: string, history: Array<{ role: 'user' | 'assistant'; content: string }>) {
+    return this.request<{ reply: string }>('/assistant/chat', {
+      method: 'POST',
+      body: JSON.stringify({ message, history }),
+    });
   }
 
   getIntegrationCountry() {
@@ -819,6 +829,8 @@ export class ApiClient {
     modules?: string[];
     demoUserEmail?: string;
     linkExpiresAt?: string;
+    issuedTo?: string;
+    seedVolume?: boolean;
   }) {
     return this.request('/platform/demos', { method: 'POST', body: JSON.stringify(payload) });
   }
@@ -831,6 +843,7 @@ export class ApiClient {
       modules?: string[];
       demoUserId?: string;
       linkExpiresAt?: string | null;
+      issuedTo?: string | null;
     },
   ) {
     return this.request(`/platform/demos/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
@@ -838,6 +851,28 @@ export class ApiClient {
 
   regeneratePlatformDemoLink(id: string) {
     return this.request<{ linkToken: string }>(`/platform/demos/${id}/regenerate-link`, { method: 'POST' });
+  }
+
+  deletePlatformDemo(id: string) {
+    return this.request(`/platform/demos/${id}`, { method: 'DELETE' });
+  }
+
+  getPlatformDemoActivity(id: string) {
+    return this.request<{
+      issuedTo: string | null;
+      createdAt: string;
+      linkExpiresAt: string | null;
+      visitCount: number;
+      lastAccessedAt: string | null;
+      recentActivity: Array<{
+        id: string;
+        entity: string;
+        entityId: string;
+        action: string;
+        createdAt: string;
+        user?: { firstName: string; lastName: string; email: string } | null;
+      }>;
+    }>(`/platform/demos/${id}/activity`);
   }
 
   setPlatformTenantModule(tenantId: string, moduleId: string, enabled: boolean) {

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
   Patch,
@@ -39,6 +40,8 @@ class CreateDemoDto {
   @IsOptional() @IsArray() modules?: string[];
   @IsOptional() @IsString() demoUserEmail?: string;
   @IsOptional() @IsString() linkExpiresAt?: string;
+  @IsOptional() @IsString() issuedTo?: string;
+  @IsOptional() @IsBoolean() seedVolume?: boolean;
 }
 
 class UpdateDemoDto {
@@ -47,6 +50,7 @@ class UpdateDemoDto {
   @IsOptional() @IsArray() modules?: string[];
   @IsOptional() @IsString() demoUserId?: string;
   @IsOptional() @IsString() linkExpiresAt?: string | null;
+  @IsOptional() @IsString() issuedTo?: string | null;
 }
 
 class SetModuleDto {
@@ -103,6 +107,18 @@ export class PlatformController {
   @Post('demos/:id/regenerate-link')
   async regenerateLink(@Param('id') id: string) {
     const data = await this.platformService.regenerateDemoLink(id);
+    return { success: true, data };
+  }
+
+  @Delete('demos/:id')
+  async deleteDemo(@Param('id') id: string) {
+    await this.platformService.deleteDemo(id);
+    return { success: true };
+  }
+
+  @Get('demos/:id/activity')
+  async demoActivity(@Param('id') id: string) {
+    const data = await this.platformService.getDemoActivity(id);
     return { success: true, data };
   }
 

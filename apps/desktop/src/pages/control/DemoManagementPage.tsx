@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ERP_MODULES } from '@fratelanza/shared';
-import { FormActions, FormField, Modal, PageHeader, useApiClient } from '../../components/DataTable';
+import { ConfirmDialog, FormActions, FormField, Modal, PageHeader, useApiClient } from '../../components/DataTable';
 
 type DemoRow = {
   id: string;
@@ -10,10 +10,29 @@ type DemoRow = {
   enabled: boolean;
   linkToken: string;
   linkExpiresAt?: string | null;
+  issuedTo?: string | null;
+  visitCount?: number;
+  lastAccessedAt?: string | null;
   modules: string[];
   tenant: { id: string; name: string; code: string };
   demoUser?: { email: string } | null;
   createdAt?: string;
+};
+
+type DemoActivity = {
+  issuedTo: string | null;
+  createdAt: string;
+  linkExpiresAt: string | null;
+  visitCount: number;
+  lastAccessedAt: string | null;
+  recentActivity: Array<{
+    id: string;
+    entity: string;
+    entityId: string;
+    action: string;
+    createdAt: string;
+    user?: { firstName: string; lastName: string; email: string } | null;
+  }>;
 };
 
 function isExpired(demo: DemoRow): boolean {
@@ -28,12 +47,18 @@ export function DemoManagementPage() {
   const [error, setError] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [editRow, setEditRow] = useState<DemoRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<DemoRow | null>(null);
+  const [activityRow, setActivityRow] = useState<DemoRow | null>(null);
+  const [activity, setActivity] = useState<DemoActivity | null>(null);
+  const [activityLoading, setActivityLoading] = useState(false);
   const [form, setForm] = useState({
     slug: '',
     name: '',
     tenantCode: '',
     modules: ERP_MODULES.slice(0, 8).map((m) => m.id),
     linkExpiresAt: '',
+    issuedTo: '',
+    seedVolume: true,
   });
 
   const load = useCallback(async () => {
@@ -59,9 +84,14 @@ export function DemoManagementPage() {
       await client.createPlatformDemo({
         ...form,
         linkExpiresAt: form.linkExpiresAt || undefined,
+        issuedTo: form.issuedTo || undefined,
       });
       setOpen(false);
-      setForm({ slug: '', name: '', tenantCode: '', modules: ERP_MODULES.slice(0, 8).map((m) => m.id), linkExpiresAt: '' });
+      setForm({
+        slug: '', name: '', tenantCode: '',
+        modules: ERP_MODULES.slice(0, 8).map((m) => m.id),
+        linkExpiresAt: '', issuedTo: '', seedVolume: true,
+      });
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.error'));
@@ -77,8 +107,20 @@ export function DemoManagementPage() {
         enabled: editRow.enabled,
         modules: form.modules,
         linkExpiresAt: form.linkExpiresAt || null,
+        issuedTo: form.issuedTo || null,
       });
       setEditRow(null);
+      await load();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    }
+  }
+
+  async function handleDelete() {
+    if (!deleteTarget) return;
+    try {
+      await client.deletePlatformDemo(deleteTarget.id);
+      setDeleteTarget(null);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : t('common.error'));
@@ -111,7 +153,21 @@ export function DemoManagementPage() {
       tenantCode: demo.tenant.code,
       modules: demo.modules ?? [],
       linkExpiresAt: demo.linkExpiresAt ? demo.linkExpiresAt.slice(0, 10) : '',
+      issuedTo: demo.issuedTo ?? '',
+      seedVolume: true,
     });
+  }
+
+  async function openActivity(demo: DemoRow) {
+    setActivityRow(demo);
+    setActivityLoading(true);
+    try {
+      setActivity(await client.getPlatformDemoActivity(demo.id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : t('common.error'));
+    } finally {
+      setActivityLoading(false);
+    }
   }
 
   function demoUrl(slug: string): string {
@@ -199,6 +255,9 @@ export function DemoManagementPage() {
                   <code>{demoUrl(demo.slug)}</code>
                 </p>
                 <p className="module-card-description">{demo.tenant.name} ({demo.tenant.code})</p>
+                {demo.issuedTo && (
+                  <p className="module-card-description">{t('control.demoIssuedTo')}: {demo.issuedTo}</p>
+                )}
                 <p className="module-card-description">
                   {demo.enabled ? t('control.demoEnabled') : t('control.demoDisabled')}
                   {demo.linkExpiresAt && (
@@ -209,11 +268,16 @@ export function DemoManagementPage() {
                         : t('control.demoExpiresOn', { date: new Date(demo.linkExpiresAt).toLocaleDateString() })}
                     </>
                   )}
+                  {' · '}
+                  {t('control.demoVisitCount', { count: demo.visitCount ?? 0 })}
                 </p>
                 <div className="form-actions" style={{ borderTop: 'none', paddingTop: 0 }}>
                   <a className="btn btn-primary btn--sm" href={`/demo/${demo.slug}`} target="_blank" rel="noreferrer">
                     {t('control.openDemoLink')}
                   </a>
+                  <button type="button" className="btn btn-ghost btn--sm" onClick={() => void openActivity(demo)}>
+                    {t('control.demoActivity')}
+                  </button>
                   <button type="button" className="btn btn-ghost btn--sm" onClick={() => openEdit(demo)}>
                     {t('common.edit')}
                   </button>
@@ -222,6 +286,9 @@ export function DemoManagementPage() {
                   </button>
                   <button type="button" className="btn btn-ghost btn--sm" onClick={() => void regenerateLink(demo)}>
                     {t('control.regenerateLink')}
+                  </button>
+                  <button type="button" className="btn-link btn-link--danger" onClick={() => setDeleteTarget(demo)}>
+                    {t('common.delete')}
                   </button>
                 </div>
               </div>
@@ -241,6 +308,14 @@ export function DemoManagementPage() {
           <FormField label={t('control.table.code')} required>
             <input className="form-input" value={form.tenantCode} onChange={(e) => setForm({ ...form, tenantCode: e.target.value.toUpperCase() })} required />
           </FormField>
+          <FormField label={t('control.demoIssuedTo')}>
+            <input
+              className="form-input"
+              placeholder={t('control.demoIssuedToPlaceholder')}
+              value={form.issuedTo}
+              onChange={(e) => setForm({ ...form, issuedTo: e.target.value })}
+            />
+          </FormField>
           <FormField label={t('control.demoExpiresLabel')}>
             <input
               className="form-input"
@@ -248,6 +323,16 @@ export function DemoManagementPage() {
               value={form.linkExpiresAt}
               onChange={(e) => setForm({ ...form, linkExpiresAt: e.target.value })}
             />
+          </FormField>
+          <FormField label={t('control.demoSeedVolume')}>
+            <label className="checkbox-grid-item">
+              <input
+                type="checkbox"
+                checked={form.seedVolume}
+                onChange={(e) => setForm({ ...form, seedVolume: e.target.checked })}
+              />
+              <span>{t('control.demoSeedVolumeHint')}</span>
+            </label>
           </FormField>
           <FormActions>
             <button type="submit" className="btn btn-primary">{t('common.save')}</button>
@@ -260,6 +345,14 @@ export function DemoManagementPage() {
         <form onSubmit={(e) => void handleUpdate(e)}>
           <FormField label={t('control.table.name')} required>
             <input className="form-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
+          </FormField>
+          <FormField label={t('control.demoIssuedTo')}>
+            <input
+              className="form-input"
+              placeholder={t('control.demoIssuedToPlaceholder')}
+              value={form.issuedTo}
+              onChange={(e) => setForm({ ...form, issuedTo: e.target.value })}
+            />
           </FormField>
           <FormField label={t('control.demoExpiresLabel')}>
             <input
@@ -299,6 +392,78 @@ export function DemoManagementPage() {
           </FormActions>
         </form>
       </Modal>
+
+      <Modal
+        open={!!activityRow}
+        title={`${t('control.demoActivity')} · ${activityRow?.name ?? ''}`}
+        onClose={() => { setActivityRow(null); setActivity(null); }}
+      >
+        {activityLoading || !activity ? (
+          <p>{t('common.loading')}</p>
+        ) : (
+          <>
+            <div className="card-grid" style={{ marginBottom: 'var(--frz-space-4)' }}>
+              <div className="stat-card">
+                <p className="stat-card-label">{t('control.demoVisits')}</p>
+                <p className="stat-card-value">{activity.visitCount}</p>
+              </div>
+              <div className="stat-card">
+                <p className="stat-card-label">{t('control.demoLastAccessed')}</p>
+                <p className="stat-card-value" style={{ fontSize: 'var(--frz-text-lg)' }}>
+                  {activity.lastAccessedAt ? new Date(activity.lastAccessedAt).toLocaleString() : t('control.demoNeverAccessed')}
+                </p>
+              </div>
+            </div>
+            <div className="settings-row">
+              <span>{t('control.demoIssuedTo')}</span>
+              <span>{activity.issuedTo ?? '—'}</span>
+            </div>
+            <div className="settings-row">
+              <span>{t('control.demoCreatedOn')}</span>
+              <span>{new Date(activity.createdAt).toLocaleDateString()}</span>
+            </div>
+            <div className="settings-row">
+              <span>{t('control.demoExpiresLabel')}</span>
+              <span>{activity.linkExpiresAt ? new Date(activity.linkExpiresAt).toLocaleDateString() : t('control.demoNoExpiry')}</span>
+            </div>
+            <h3 className="card-title" style={{ marginTop: 'var(--frz-space-4)' }}>{t('control.demoRecentMovements')}</h3>
+            {activity.recentActivity.length === 0 ? (
+              <p className="page-subtitle">{t('control.demoNoMovements')}</p>
+            ) : (
+              <div className="table-wrap">
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>{t('control.table.actions')}</th>
+                      <th>{t('control.table.name')}</th>
+                      <th>{t('users.name')}</th>
+                      <th>{t('control.table.time', { defaultValue: 'Time' })}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {activity.recentActivity.map((a) => (
+                      <tr key={a.id}>
+                        <td>{a.action}</td>
+                        <td>{a.entity}</td>
+                        <td>{a.user ? `${a.user.firstName} ${a.user.lastName}` : '—'}</td>
+                        <td>{new Date(a.createdAt).toLocaleString()}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </Modal>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title={t('control.demoDeleteTitle')}
+        message={t('control.demoDeleteMessage')}
+        onConfirm={() => void handleDelete()}
+        onCancel={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

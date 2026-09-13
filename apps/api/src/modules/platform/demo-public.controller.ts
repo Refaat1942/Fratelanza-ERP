@@ -87,6 +87,11 @@ export class DemoPublicController {
       demoModules ? { demoModules } : undefined,
     );
 
+    await this.prisma.demoEnvironment.update({
+      where: { id: demoRecord.id },
+      data: { visitCount: { increment: 1 }, lastAccessedAt: new Date() },
+    });
+
     return {
       success: true,
       data: {
