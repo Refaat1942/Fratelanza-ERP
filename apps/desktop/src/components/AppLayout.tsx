@@ -80,6 +80,7 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/users', labelKey: 'nav.users' },
       { to: '/branches', labelKey: 'nav.branches' },
+      { to: '/settings/roles', labelKey: 'nav.roles' },
       { to: '/settings', labelKey: 'nav.settings' },
       { to: '/settings/integrations', labelKey: 'nav.integrations' },
     ],

@@ -413,7 +413,22 @@ export class ApiClient {
   }
 
   getSettings() {
-    return this.request('/settings');
+    return this.request<{
+      tenant: {
+        id: string;
+        name: string;
+        code: string;
+        country: string;
+        currency: string;
+        settings?: { companyProfile?: { address?: string; phone?: string; taxNumber?: string } };
+      };
+      country: { code: string; profile: unknown; currency: string; timezone: string; taxProfile: unknown; companyProfile: unknown };
+      deploymentFlags: Record<string, boolean>;
+    }>('/settings');
+  }
+
+  updateTenantSettings(payload: Record<string, unknown>) {
+    return this.request('/tenants/current/settings', { method: 'PATCH', body: JSON.stringify(payload) });
   }
 
   getIntegrationCountry() {

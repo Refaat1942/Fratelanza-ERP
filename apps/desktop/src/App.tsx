@@ -107,6 +107,7 @@ function AppRoutes() {
             <Route path="branches" element={<BranchesPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="settings/integrations" element={<IntegrationsPage />} />
+            <Route path="settings/roles" element={<AuthorizationMatrixPage />} />
           </Route>
         </Route>
 
