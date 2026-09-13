@@ -44,6 +44,7 @@ export interface JwtPayload {
   branchId?: string;
   allowedBranchIds?: string[];
   allowedWarehouseIds?: string[];
+  disabledModules?: string[];
   sessionId: string;
   type: 'access' | 'refresh';
   isPlatformAdmin?: boolean;

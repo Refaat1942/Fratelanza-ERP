@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ERP_MODULES } from '@fratelanza/shared';
 import { DataTable, FormField, Modal, PageHeader, useApiClient } from '../components/DataTable';
 import type { UserRow } from '../lib/api';
 import { displayLoginName } from '../lib/login-identity';
@@ -24,6 +25,7 @@ export function UsersPage() {
     branchId: '',
     phone: '',
   });
+  const [disabledModules, setDisabledModules] = useState<string[]>([]);
 
   async function loadFormDefaults(existing?: UserRow) {
     setError('');
@@ -47,8 +49,15 @@ export function UsersPage() {
         '',
       phone: existing?.phone ?? '',
     });
+    setDisabledModules(existing?.disabledModules ?? []);
     setEditing(existing ?? null);
     setOpen(true);
+  }
+
+  function toggleModule(moduleId: string) {
+    setDisabledModules((prev) =>
+      prev.includes(moduleId) ? prev.filter((id) => id !== moduleId) : [...prev, moduleId],
+    );
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -63,6 +72,7 @@ export function UsersPage() {
           roleId: form.roleId,
           branchId: form.branchId || undefined,
           phone: form.phone || undefined,
+          disabledModules,
         });
       } else {
         await client.createUser({
@@ -202,6 +212,25 @@ export function UsersPage() {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
             />
           </FormField>
+          {editing && (
+            <FormField label={t('users.visibleFeatures')}>
+              <p className="page-subtitle" style={{ marginTop: 0, marginBottom: '0.5rem' }}>
+                {t('users.visibleFeaturesHint')}
+              </p>
+              <div className="checkbox-grid">
+                {ERP_MODULES.map((mod) => (
+                  <label key={mod.id} className="checkbox-grid-item">
+                    <input
+                      type="checkbox"
+                      checked={!disabledModules.includes(mod.id)}
+                      onChange={() => toggleModule(mod.id)}
+                    />
+                    <span>{mod.icon} {t(mod.nameKey)}</span>
+                  </label>
+                ))}
+              </div>
+            </FormField>
+          )}
           {error && <p className="form-error">{error}</p>}
           <button type="submit" className="btn btn-primary">{t('common.save')}</button>
         </form>

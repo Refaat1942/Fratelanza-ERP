@@ -145,6 +145,7 @@ export type UserRow = {
   lastName: string;
   phone?: string;
   isActive: boolean;
+  disabledModules?: string[];
   branch?: { id: string; name: string; code: string };
   role?: { id: string; name: string; code: string };
 };
@@ -387,6 +388,7 @@ export class ApiClient {
         role: string;
         permissions: string[];
         isPlatformAdmin?: boolean;
+        disabledModules?: string[];
       };
     }>('/auth/login', {
       method: 'POST',
@@ -640,6 +642,7 @@ export class ApiClient {
     branchId?: string;
     phone?: string;
     isActive?: boolean;
+    disabledModules?: string[];
   }) {
     return this.request(`/users/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
   }
@@ -692,6 +695,7 @@ export class ApiClient {
         role: string;
         permissions: string[];
         isPlatformAdmin?: boolean;
+        disabledModules?: string[];
       };
     }>(`/demo/${slug}/login`, {
       method: 'POST',

@@ -150,6 +150,7 @@ export class AuthService {
         role: user.role.name,
         permissions,
         isPlatformAdmin: user.isPlatformAdmin,
+        disabledModules: Array.isArray(user.disabledModules) ? (user.disabledModules as string[]) : [],
         countryCode,
         currency: user.tenant.currency,
         timezone: typeof tenantSettings.timezone === 'string'
@@ -246,6 +247,7 @@ export class AuthService {
     }
 
     const allowedWarehouseIds = user.warehouseAccess.map((entry) => entry.warehouseId);
+    const disabledModules = Array.isArray(user.disabledModules) ? (user.disabledModules as string[]) : [];
 
     return {
       tenantId: user.tenantId,
@@ -253,6 +255,7 @@ export class AuthService {
       isPlatformAdmin: user.isPlatformAdmin,
       allowedBranchIds,
       allowedWarehouseIds,
+      disabledModules,
     };
   }
 

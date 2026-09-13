@@ -330,6 +330,8 @@ export const en = {
     create: 'Create User',
     edit: 'Edit User',
     passwordHint: 'Leave blank to keep current password',
+    visibleFeatures: 'Visible modules',
+    visibleFeaturesHint: 'Uncheck a module to hide it from this user’s navigation and block their access to it, even if their role has permission.',
   },
   devices: {
     title: 'Devices',

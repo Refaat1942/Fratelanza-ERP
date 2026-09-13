@@ -1,7 +1,7 @@
 import { Outlet, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { COUNTRY_PROFILES, type CountryCode } from '@fratelanza/shared';
+import { COUNTRY_PROFILES, ERP_MODULES, type CountryCode } from '@fratelanza/shared';
 import { useAuthStore } from '../stores';
 import { ConnectionStatusBadge } from './ConnectionStatusBadge';
 import { ToastContainer } from './feedback/Toast';
@@ -86,6 +86,10 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
+const ROUTE_TO_MODULE_ID: Record<string, string> = Object.fromEntries(
+  ERP_MODULES.map((m) => [m.route, m.id]),
+);
+
 export function AppLayout() {
   const { t } = useTranslation();
   const location = useLocation();
@@ -130,23 +134,30 @@ export function AppLayout() {
           <span className="sidebar-brand-text">{t('common.appName')}</span>
         </div>
         <nav className="sidebar-nav">
-          {NAV_GROUPS.map((group) => (
-            <div key={group.labelKey} className="sidebar-group">
-              <span className="sidebar-group-label">{t(group.labelKey)}</span>
-              {group.items.map((item) => (
-                <NavLink
-                  key={item.to}
-                  to={item.to}
-                  end={item.end}
-                  className={({ isActive }) =>
-                    `sidebar-link${isActive ? ' active' : ''}`
-                  }
-                >
-                  <span className="sidebar-link-label">{t(item.labelKey)}</span>
-                </NavLink>
-              ))}
-            </div>
-          ))}
+          {NAV_GROUPS.map((group) => {
+            const visibleItems = group.items.filter((item) => {
+              const moduleId = ROUTE_TO_MODULE_ID[item.to];
+              return !moduleId || !user?.disabledModules?.includes(moduleId);
+            });
+            if (visibleItems.length === 0) return null;
+            return (
+              <div key={group.labelKey} className="sidebar-group">
+                <span className="sidebar-group-label">{t(group.labelKey)}</span>
+                {visibleItems.map((item) => (
+                  <NavLink
+                    key={item.to}
+                    to={item.to}
+                    end={item.end}
+                    className={({ isActive }) =>
+                      `sidebar-link${isActive ? ' active' : ''}`
+                    }
+                  >
+                    <span className="sidebar-link-label">{t(item.labelKey)}</span>
+                  </NavLink>
+                ))}
+              </div>
+            );
+          })}
           {user?.isPlatformAdmin && (
             <div className="sidebar-group">
               <span className="sidebar-group-label">{t('control.title')}</span>

@@ -1,5 +1,5 @@
 import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
-import { IsString, IsOptional, IsBoolean, MinLength, Matches } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsArray, MinLength, Matches } from 'class-validator';
 import { UsersService } from './users.service';
 import { TenantId, RequirePermissions } from '../../common/decorators';
 import { PermissionsGuard } from '../../common/guards';
@@ -32,6 +32,7 @@ class UpdateUserDto {
   @IsOptional() @IsString() branchId?: string;
   @IsOptional() @IsBoolean() isActive?: boolean;
   @IsOptional() @IsString() @MinLength(8) password?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) disabledModules?: string[];
 }
 
 @Controller('users')

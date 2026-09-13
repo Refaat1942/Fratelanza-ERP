@@ -227,6 +227,8 @@ export const ar: TranslationSchema = {
     create: 'إنشاء مستخدم',
     edit: 'تعديل مستخدم',
     passwordHint: 'اتركه فارغاً للإبقاء على كلمة المرور الحالية',
+    visibleFeatures: 'الوحدات المرئية',
+    visibleFeaturesHint: 'قم بإلغاء تحديد وحدة لإخفائها من قائمة هذا المستخدم ومنع وصوله إليها، حتى لو كان دوره يملك الصلاحية.',
   },
   devices: {
     title: 'الأجهزة',

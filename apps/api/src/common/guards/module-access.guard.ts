@@ -30,6 +30,10 @@ export class ModuleAccessGuard implements CanActivate {
     }
     if (user.isPlatformAdmin) return true;
 
+    if (user.disabledModules?.includes(moduleId)) {
+      throw new ForbiddenException(`Module "${moduleId}" has been hidden for this user`);
+    }
+
     await this.tenantAccess.assertModuleEnabled(user.tenantId, moduleId);
     return true;
   }

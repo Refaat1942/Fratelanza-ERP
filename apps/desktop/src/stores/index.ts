@@ -17,6 +17,7 @@ interface AuthUser {
   role: string;
   permissions: string[];
   isPlatformAdmin?: boolean;
+  disabledModules?: string[];
   countryCode?: string;
   currency?: string;
   timezone?: string;

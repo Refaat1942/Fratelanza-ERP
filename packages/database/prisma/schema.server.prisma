@@ -163,6 +163,7 @@ model User {
   locale          String    @default("en")
   isActive        Boolean   @default(true)
   isPlatformAdmin Boolean   @default(false)
+  disabledModules Json      @default("[]")
   lastLoginAt     DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt

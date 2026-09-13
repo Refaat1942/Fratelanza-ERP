@@ -27,6 +27,7 @@ export class UsersService {
         isActive: true,
         lastLoginAt: true,
         createdAt: true,
+        disabledModules: true,
         branch: { select: { id: true, name: true, code: true } },
         role: { select: { id: true, name: true, code: true } },
       },
@@ -48,6 +49,7 @@ export class UsersService {
         lastLoginAt: true,
         branchId: true,
         roleId: true,
+        disabledModules: true,
         branch: { select: { id: true, name: true } },
         role: { select: { id: true, name: true } },
       },
@@ -113,6 +115,7 @@ export class UsersService {
     branchId: string;
     isActive: boolean;
     password: string;
+    disabledModules: string[];
   }>) {
     await this.findById(tenantId, id);
     const updateData: Record<string, unknown> = { ...data };
@@ -142,7 +145,7 @@ export class UsersService {
     return this.prisma.user.update({
       where: { id, tenantId },
       data: updateData,
-      select: { id: true, email: true, firstName: true, lastName: true, isActive: true },
+      select: { id: true, email: true, firstName: true, lastName: true, isActive: true, disabledModules: true },
     });
   }
 

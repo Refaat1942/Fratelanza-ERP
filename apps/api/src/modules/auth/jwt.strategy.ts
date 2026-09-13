@@ -33,6 +33,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       isPlatformAdmin: liveUser.isPlatformAdmin,
       allowedBranchIds: liveUser.allowedBranchIds,
       allowedWarehouseIds: liveUser.allowedWarehouseIds,
+      disabledModules: liveUser.disabledModules,
       permissions,
     };
   }

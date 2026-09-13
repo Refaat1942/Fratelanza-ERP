@@ -23,13 +23,14 @@ export function ModuleHubPage() {
           () => accessToken,
         );
         const data = await client.getTenantModules();
-        setEnabledModules(data);
+        const hidden = user?.disabledModules ?? [];
+        setEnabledModules(hidden.length > 0 ? data.filter((id) => !hidden.includes(id)) : data);
       } catch {
         setEnabledModules(undefined);
       }
     }
     if (accessToken) void loadModules();
-  }, [apiUrl, accessToken]);
+  }, [apiUrl, accessToken, user]);
 
   const modules = useMemo(
     () =>
