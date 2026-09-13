@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Param, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards } from '@nestjs/common';
 import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { BranchesService } from './branches.service';
 import { TenantId, RequirePermissions } from '../../common/decorators';
@@ -52,5 +52,12 @@ class UpdateBranchDto {
   ) {
     const data = await this.branchesService.update(tenantId, id, dto);
     return { success: true, data };
+  }
+
+  @Delete(':id')
+  @RequirePermissions('core:branches:delete')
+  async remove(@TenantId() tenantId: string, @Param('id') id: string) {
+    await this.branchesService.softDelete(tenantId, id);
+    return { success: true };
   }
 }

@@ -148,7 +148,17 @@ export type UserRow = {
   branch?: { id: string; name: string; code: string };
   role?: { id: string; name: string; code: string };
 };
-export type BranchRow = { id: string; code: string; name: string; isActive: boolean; isDefault?: boolean };
+export type BranchRow = {
+  id: string;
+  code: string;
+  name: string;
+  address?: string | null;
+  phone?: string | null;
+  email?: string | null;
+  isActive: boolean;
+  isDefault?: boolean;
+  _count?: { warehouses: number; users: number };
+};
 export type SyncConflictRow = {
   id: string;
   entityType: string;
@@ -809,6 +819,14 @@ export class ApiClient {
 
   createBranch(payload: { name: string; code: string; address?: string }) {
     return this.request('/branches', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
+  updateBranch(id: string, payload: { name?: string; address?: string; phone?: string; email?: string; isActive?: boolean }) {
+    return this.request(`/branches/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  deleteBranch(id: string) {
+    return this.request(`/branches/${id}`, { method: 'DELETE' });
   }
 
   getUnitsOfMeasure() {

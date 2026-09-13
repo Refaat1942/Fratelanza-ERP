@@ -313,6 +313,10 @@ export const en = {
     name: 'Branch Name',
     code: 'Branch Code',
     create: 'Create Branch',
+    edit: 'Edit Branch',
+    phone: 'Phone',
+    email: 'Email',
+    deleteBlocked: 'Cannot delete a branch with active warehouses or users. Reassign or deactivate them first.',
   },
   users: {
     title: 'Users',

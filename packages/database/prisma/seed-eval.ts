@@ -19,6 +19,7 @@ const CORE_PERMISSIONS: PermissionDef[] = [
   { module: 'core', feature: 'branches', action: 'read' },
   { module: 'core', feature: 'branches', action: 'create' },
   { module: 'core', feature: 'branches', action: 'update' },
+  { module: 'core', feature: 'branches', action: 'delete' },
   { module: 'core', feature: 'users', action: 'read' },
   { module: 'core', feature: 'users', action: 'create' },
   { module: 'core', feature: 'users', action: 'update' },
@@ -1200,8 +1201,9 @@ async function seedConstructionTenant(passwordHash: string): Promise<void> {
     { code: 'CC-MEP', name: 'MEP | الكهروميكانيك' },
   ];
 
+  const costCenterIds: Record<string, string> = {};
   for (const cc of costCenters) {
-    await prisma.costCenter.upsert({
+    const record = await prisma.costCenter.upsert({
       where: { tenantId_code: { tenantId: tenant.id, code: cc.code } },
       update: { name: cc.name, projectId: project.id, isActive: true },
       create: {
@@ -1213,6 +1215,7 @@ async function seedConstructionTenant(passwordHash: string): Promise<void> {
         description: `${cc.name} cost center for ${project.name}`,
       },
     });
+    costCenterIds[cc.code] = record.id;
   }
 
   await prisma.constructionProjectProfile.upsert({
@@ -1230,7 +1233,266 @@ async function seedConstructionTenant(passwordHash: string): Promise<void> {
     },
   });
 
-  console.log('  [CONSTRUCTION_DEMO] Ahram Construction — 1 project, 3 cost centers, construction profile');
+  if (primaryOwnerPartyId) {
+    const contract = await prisma.constructionContract.upsert({
+      where: { tenantId_number: { tenantId: tenant.id, number: 'CTR-2026-001' } },
+      update: {
+        title: 'Zahra Towers — Main Construction Contract | مشروع أبراج الزهراء - عقد الإنشاء الرئيسي',
+        status: 'active',
+      },
+      create: {
+        tenantId: tenant.id,
+        projectId: project.id,
+        branchId: branch.id,
+        number: 'CTR-2026-001',
+        title: 'Zahra Towers — Main Construction Contract | مشروع أبراج الزهراء - عقد الإنشاء الرئيسي',
+        description: 'Design-and-build contract for 3 residential towers, unit-price BOQ basis.',
+        direction: 'customer',
+        partyId: primaryOwnerPartyId,
+        pricingModel: 'unit_price',
+        originalValue: 45_000_000,
+        currency: 'SAR',
+        startDate: new Date('2026-02-01'),
+        endDate: new Date('2027-06-30'),
+        retentionPercent: 10,
+        retentionCap: 4_500_000,
+        advancePercent: 20,
+        advanceAmount: 9_000_000,
+        paymentTerms: 'Monthly interim payment certificates, 10% retention, net 30 days',
+        status: 'active',
+        createdById: adminUserId,
+      },
+    });
+
+    const boqItemDefs = [
+      {
+        itemCode: 'STR-EXC',
+        description: 'Excavation & earthworks | أعمال الحفر والردم',
+        unitCode: 'M3',
+        plannedQuantity: 5000,
+        unitRate: 120,
+        costCenterCode: 'CC-STRUCT',
+        category: 'material' as const,
+      },
+      {
+        itemCode: 'STR-RC',
+        description: 'Reinforced concrete frame | هيكل خرساني مسلح',
+        unitCode: 'M3',
+        plannedQuantity: 3200,
+        unitRate: 3800,
+        costCenterCode: 'CC-STRUCT',
+        category: 'material' as const,
+      },
+      {
+        itemCode: 'FIN-CLAD',
+        description: 'External cladding | تكسية خارجية',
+        unitCode: 'M2',
+        plannedQuantity: 8000,
+        unitRate: 850,
+        costCenterCode: 'CC-FINISH',
+        category: 'material' as const,
+      },
+      {
+        itemCode: 'FIN-INT',
+        description: 'Internal finishing (paint & flooring) | تشطيبات داخلية',
+        unitCode: 'M2',
+        plannedQuantity: 12000,
+        unitRate: 650,
+        costCenterCode: 'CC-FINISH',
+        category: 'material' as const,
+      },
+      {
+        itemCode: 'MEP-ELEC',
+        description: 'Electrical installation | تمديدات كهربائية',
+        unitCode: 'LOT',
+        plannedQuantity: 3,
+        unitRate: 3_500_000,
+        costCenterCode: 'CC-MEP',
+        category: 'labor' as const,
+      },
+      {
+        itemCode: 'MEP-HVAC',
+        description: 'HVAC & plumbing | تكييف وسباكة',
+        unitCode: 'LOT',
+        plannedQuantity: 3,
+        unitRate: 2_380_000,
+        costCenterCode: 'CC-MEP',
+        category: 'labor' as const,
+      },
+    ];
+
+    const totalOriginalAmount = boqItemDefs.reduce((sum, i) => sum + i.plannedQuantity * i.unitRate, 0);
+
+    const boq = await prisma.constructionBoq.upsert({
+      where: {
+        tenantId_contractId_revisionNumber: { tenantId: tenant.id, contractId: contract.id, revisionNumber: 1 },
+      },
+      update: { status: 'approved', totalOriginalAmount },
+      create: {
+        tenantId: tenant.id,
+        projectId: project.id,
+        contractId: contract.id,
+        number: 'BOQ-001',
+        revisionNumber: 1,
+        status: 'approved',
+        currency: 'SAR',
+        totalOriginalAmount,
+        approvedAt: new Date('2026-02-05'),
+        approvedById: adminUserId,
+        createdById: adminUserId,
+      },
+    });
+
+    const boqItemIds: Record<string, string> = {};
+    for (const [index, item] of boqItemDefs.entries()) {
+      const existing = await prisma.constructionBoqItem.findFirst({
+        where: { tenantId: tenant.id, boqId: boq.id, itemCode: item.itemCode },
+      });
+      const originalAmount = item.plannedQuantity * item.unitRate;
+      const data = {
+        lineNumber: index + 1,
+        itemCode: item.itemCode,
+        description: item.description,
+        unitCode: item.unitCode,
+        plannedQuantity: item.plannedQuantity,
+        unitRate: item.unitRate,
+        originalAmount,
+        costCenterId: costCenterIds[item.costCenterCode],
+        category: item.category,
+      };
+      const record = existing
+        ? await prisma.constructionBoqItem.update({ where: { id: existing.id }, data })
+        : await prisma.constructionBoqItem.create({
+            data: { tenantId: tenant.id, boqId: boq.id, ...data },
+          });
+      boqItemIds[item.itemCode] = record.id;
+    }
+
+    type ProgressItemInput = {
+      itemCode: string;
+      currentQty: number;
+      previousCumulativeQty: number;
+      unitRate: number;
+    };
+
+    async function upsertProgress(
+      number: string,
+      periodFrom: string,
+      periodTo: string,
+      status: 'approved' | 'submitted',
+      lines: ProgressItemInput[],
+      runningCumulativeBefore: number,
+    ) {
+      const totalCurrentAmount = lines.reduce((sum, l) => sum + l.currentQty * l.unitRate, 0);
+      const totalCumulativeAmount = runningCumulativeBefore + totalCurrentAmount;
+
+      const progress = await prisma.constructionProgress.upsert({
+        where: {
+          tenantId_contractId_boqId_periodFrom_periodTo: {
+            tenantId: tenant.id,
+            contractId: contract.id,
+            boqId: boq.id,
+            periodFrom: new Date(periodFrom),
+            periodTo: new Date(periodTo),
+          },
+        },
+        update: {
+          status,
+          totalCurrentAmount,
+          totalCumulativeAmount,
+        },
+        create: {
+          tenantId: tenant.id,
+          projectId: project.id,
+          branchId: branch.id,
+          contractId: contract.id,
+          boqId: boq.id,
+          number,
+          periodFrom: new Date(periodFrom),
+          periodTo: new Date(periodTo),
+          status,
+          currency: 'SAR',
+          totalCurrentAmount,
+          totalCumulativeAmount,
+          submittedAt: new Date(periodTo),
+          submittedById: adminUserId,
+          ...(status === 'approved'
+            ? { approvedAt: new Date(periodTo), approvedById: adminUserId }
+            : {}),
+          createdById: adminUserId,
+        },
+      });
+
+      for (const [index, line] of lines.entries()) {
+        const boqItemId = boqItemIds[line.itemCode];
+        const cumulativeQuantity = line.previousCumulativeQty + line.currentQty;
+        const currentPeriodAmount = line.currentQty * line.unitRate;
+        const cumulativeAmount = cumulativeQuantity * line.unitRate;
+        const existingItem = await prisma.constructionProgressItem.findFirst({
+          where: { tenantId: tenant.id, progressId: progress.id, boqItemId },
+        });
+        const data = {
+          lineNumber: index + 1,
+          currentPeriodQuantity: line.currentQty,
+          previousCumulativeQuantity: line.previousCumulativeQty,
+          cumulativeQuantity,
+          unitRateSnapshot: line.unitRate,
+          currentPeriodAmount,
+          cumulativeAmount,
+        };
+        if (existingItem) {
+          await prisma.constructionProgressItem.update({ where: { id: existingItem.id }, data });
+        } else {
+          await prisma.constructionProgressItem.create({
+            data: { tenantId: tenant.id, progressId: progress.id, boqItemId, ...data },
+          });
+        }
+      }
+
+      return totalCumulativeAmount;
+    }
+
+    const cumulativeAfterP1 = await upsertProgress(
+      'IPC-01',
+      '2026-02-01',
+      '2026-02-28',
+      'approved',
+      [
+        { itemCode: 'STR-EXC', currentQty: 5000, previousCumulativeQty: 0, unitRate: 120 },
+        { itemCode: 'STR-RC', currentQty: 320, previousCumulativeQty: 0, unitRate: 3800 },
+      ],
+      0,
+    );
+
+    const cumulativeAfterP2 = await upsertProgress(
+      'IPC-02',
+      '2026-03-01',
+      '2026-03-31',
+      'approved',
+      [
+        { itemCode: 'STR-RC', currentQty: 960, previousCumulativeQty: 320, unitRate: 3800 },
+        { itemCode: 'FIN-CLAD', currentQty: 1600, previousCumulativeQty: 0, unitRate: 850 },
+      ],
+      cumulativeAfterP1,
+    );
+
+    await upsertProgress(
+      'IPC-03',
+      '2026-04-01',
+      '2026-04-30',
+      'submitted',
+      [
+        { itemCode: 'STR-RC', currentQty: 640, previousCumulativeQty: 1280, unitRate: 3800 },
+        { itemCode: 'FIN-CLAD', currentQty: 1600, previousCumulativeQty: 1600, unitRate: 850 },
+        { itemCode: 'FIN-INT', currentQty: 2400, previousCumulativeQty: 0, unitRate: 650 },
+      ],
+      cumulativeAfterP2,
+    );
+  }
+
+  console.log(
+    '  [CONSTRUCTION_DEMO] Ahram Construction — 1 project, 3 cost centers, construction profile, 1 contract, 1 BOQ (6 items), 3 progress certificates',
+  );
 }
 
 async function seedServicesTenant(passwordHash: string): Promise<void> {
