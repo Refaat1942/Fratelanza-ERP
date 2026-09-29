@@ -1861,7 +1861,12 @@ export async function main(): Promise<void> {
   await seedConstructionTenant(passwordHash);
   await seedServicesTenant(passwordHash);
   await seedPlatformAdmin(passwordHash);
-  await seedDemoEnvironments();
+
+  if (process.env.SEED_DEMO_LINKS === 'true') {
+    await seedDemoEnvironments();
+  } else {
+    console.log('  [DEMOS] Skipped (set SEED_DEMO_LINKS=true to (re)create the default public demo links)');
+  }
 
   console.log('');
   console.log('Generating realistic demo volume (all verticals)...');
@@ -1887,10 +1892,14 @@ export async function main(): Promise<void> {
   console.log('  Construction admin: constr-admin');
   console.log('  Services admin: serv-admin');
   console.log('  Platform admin: platform-admin');
-  console.log('  Demo links:');
-  console.log('    /demo/egypt/trading  /demo/egypt/construction  /demo/egypt/restaurant');
-  console.log('    /demo/saudi/trading  /demo/saudi/construction  /demo/saudi/restaurant');
-  console.log('    /demo/trading  /demo/construction  /demo/restaurant  /demo/services');
+  if (process.env.SEED_DEMO_LINKS === 'true') {
+    console.log('  Demo links:');
+    console.log('    /demo/egypt/trading  /demo/egypt/construction  /demo/egypt/restaurant');
+    console.log('    /demo/saudi/trading  /demo/saudi/construction  /demo/saudi/restaurant');
+    console.log('    /demo/trading  /demo/construction  /demo/restaurant  /demo/services');
+  } else {
+    console.log('  Demo links: none (run with SEED_DEMO_LINKS=true to create the default public links)');
+  }
 }
 
 function isExecutedDirectly(): boolean {

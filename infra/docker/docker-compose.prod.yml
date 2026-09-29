@@ -36,6 +36,7 @@ services:
       FRONTEND_URL: ${FRONTEND_URL:-https://g-erp.fratelanza.com}
       CORS_ORIGINS: ${CORS_ORIGINS:-https://g-erp.fratelanza.com}
       DEMO_SEED_PASSWORD: ${DEMO_SEED_PASSWORD:-Eval@2026!Demo}
+      SEED_DEMO_LINKS: ${SEED_DEMO_LINKS:-false}
     depends_on:
       postgres:
         condition: service_healthy
