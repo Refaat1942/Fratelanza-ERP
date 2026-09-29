@@ -462,6 +462,16 @@ export class ApiClient {
     return this.request('/tenants/current/settings', { method: 'PATCH', body: JSON.stringify(payload) });
   }
 
+  seedSampleData() {
+    return this.request<{
+      products: number;
+      customers: number;
+      suppliers: number;
+      salesInvoices: number;
+      purchaseOrders: number;
+    }>('/settings/seed-sample-data', { method: 'POST' });
+  }
+
   getTaxProfile() {
     return this.request<{
       countryCode: string;

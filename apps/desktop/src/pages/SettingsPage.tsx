@@ -28,6 +28,10 @@ export function SettingsPage() {
   const [profileSaved, setProfileSaved] = useState(false);
   const [profileError, setProfileError] = useState('');
 
+  const [seedLoading, setSeedLoading] = useState(false);
+  const [seedMessage, setSeedMessage] = useState('');
+  const [seedError, setSeedError] = useState('');
+
   useEffect(() => {
     async function loadProfile() {
       try {
@@ -54,6 +58,28 @@ export function SettingsPage() {
       setProfileSaved(true);
     } catch (err) {
       setProfileError(err instanceof Error ? err.message : t('errors.generic'));
+    }
+  }
+
+  async function seedSampleData() {
+    setSeedLoading(true);
+    setSeedMessage('');
+    setSeedError('');
+    try {
+      const stats = await client.seedSampleData();
+      setSeedMessage(
+        t('settings.sampleDataSuccess', {
+          products: stats.products,
+          customers: stats.customers,
+          suppliers: stats.suppliers,
+          invoices: stats.salesInvoices,
+          orders: stats.purchaseOrders,
+        }),
+      );
+    } catch (err) {
+      setSeedError(err instanceof Error ? err.message : t('errors.generic'));
+    } finally {
+      setSeedLoading(false);
     }
   }
 
@@ -164,6 +190,22 @@ export function SettingsPage() {
             <button type="submit" className="btn btn-primary btn--sm">{t('common.save')}</button>
           </div>
         </form>
+      </div>
+
+      <div className="card card--flat" style={{ marginBottom: 'var(--frz-space-4)' }}>
+        <h2 className="card-title" style={{ marginBottom: 'var(--frz-space-3)' }}>
+          {t('settings.sampleData')}
+        </h2>
+        <p className="page-subtitle" style={{ marginTop: 0, marginBottom: 'var(--frz-space-3)' }}>
+          {t('settings.sampleDataHint')}
+        </p>
+        <div className="form-actions" style={{ borderTop: 'none', paddingTop: 0, marginTop: 0 }}>
+          <button type="button" className="btn btn-primary btn--sm" onClick={() => void seedSampleData()} disabled={seedLoading}>
+            {seedLoading ? t('common.loading') : t('settings.seedSampleData')}
+          </button>
+        </div>
+        {seedError && <p className="form-error">{seedError}</p>}
+        {seedMessage && <p className="form-success">{seedMessage}</p>}
       </div>
 
       <div className="card card--flat" style={{ marginBottom: 'var(--frz-space-4)' }}>
