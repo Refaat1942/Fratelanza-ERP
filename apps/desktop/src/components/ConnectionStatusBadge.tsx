@@ -15,12 +15,12 @@ export function ConnectionStatusBadge() {
   };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+    <div className="connection-status">
       <span className={`sync-badge ${connectivity}`}>
         <span className="sync-dot" />
         {labels[connectivity] ?? connectivity}
       </span>
-      <span style={{ fontSize: '0.75rem', color: 'var(--color-text-secondary)' }}>
+      <span className="connection-status-detail">
         {apiUrl || t('connection.serverNotConfigured')}
       </span>
     </div>

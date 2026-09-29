@@ -187,6 +187,9 @@
 .sync-badge.sync_error { background: var(--frz-color-danger-subtle); color: var(--frz-color-danger); }
 .sync-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; }
 
+.connection-status { display: flex; align-items: center; gap: var(--frz-space-2); flex-wrap: wrap; min-width: 0; }
+.connection-status-detail { font-size: var(--frz-text-xs); color: var(--frz-color-text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
 .login-page {
   min-height: 100vh;
   display: flex;
@@ -259,4 +262,55 @@
 @media (max-width: 1280px) {
   .form-grid { grid-template-columns: 1fr; }
   .pos-grid { grid-template-columns: 1fr; }
+}
+
+.sidebar-mobile-toggle { display: none; }
+.sidebar-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 90;
+}
+
+@media (max-width: 768px) {
+  .sidebar-mobile-toggle { display: inline-flex; }
+
+  .sidebar {
+    position: fixed;
+    inset-block: 0;
+    inset-inline-start: 0;
+    width: min(85vw, 300px);
+    z-index: 100;
+    transition: transform var(--frz-duration-fast, 0.2s) ease;
+    box-shadow: var(--frz-shadow-lg);
+  }
+  .sidebar--collapsed { width: min(85vw, 300px); }
+  .sidebar--collapsed .sidebar-brand-text,
+  .sidebar--collapsed .sidebar-group-label,
+  .sidebar--collapsed .sidebar-link-label { display: block; }
+  .sidebar-collapse-btn { display: none; }
+
+  html[dir='ltr'] .sidebar { transform: translateX(-100%); }
+  html[dir='rtl'] .sidebar { transform: translateX(100%); }
+  .sidebar--mobile-open { transform: translateX(0) !important; }
+
+  .topbar { padding: 0 var(--frz-space-3); gap: var(--frz-space-2); }
+  .topbar-start { gap: var(--frz-space-2); flex-wrap: nowrap; overflow: hidden; }
+  .topbar-context { min-width: 0; overflow: hidden; }
+  .topbar-context-label {
+    display: block;
+    max-width: 40vw;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .connection-status-detail,
+  .topbar-country-badge { display: none; }
+  .user-menu span { display: none; }
+  .page-content { padding: var(--frz-space-4); }
+  .login-card { padding: var(--frz-space-6); }
+}
+
+@media (max-width: 400px) {
+  .sync-badge { display: none; }
 }

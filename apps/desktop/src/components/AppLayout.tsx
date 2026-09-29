@@ -101,12 +101,17 @@ export function AppLayout() {
   const clearAuth = useAuthStore((s) => s.clearAuth);
   const apiUrl = useAppStore((s) => s.apiUrl);
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     if (accessToken) {
       void syncElectronAccessToken();
     }
   }, [accessToken]);
+
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [location.pathname]);
 
   async function handleLogout() {
     try {
@@ -130,7 +135,10 @@ export function AppLayout() {
 
   return (
     <div className="app-layout">
-      <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}`}>
+      {mobileOpen && (
+        <div className="sidebar-overlay" onClick={() => setMobileOpen(false)} role="presentation" />
+      )}
+      <aside className={`sidebar${collapsed ? ' sidebar--collapsed' : ''}${mobileOpen ? ' sidebar--mobile-open' : ''}`}>
         <div className="sidebar-brand">
           <div className="sidebar-brand-mark">FG</div>
           <span className="sidebar-brand-text">{t('common.appName')}</span>
@@ -197,6 +205,14 @@ export function AppLayout() {
       <div className="main-content">
         <header className="topbar">
           <div className="topbar-start">
+            <button
+              type="button"
+              className="btn btn-ghost btn--sm sidebar-mobile-toggle"
+              onClick={() => setMobileOpen((o) => !o)}
+              aria-label={t('nav.toggleSidebar')}
+            >
+              ☰
+            </button>
             <ConnectionStatusBadge />
             <div className="topbar-context">
               <span className="topbar-context-label">{user?.tenantName ?? t('common.appName')}</span>

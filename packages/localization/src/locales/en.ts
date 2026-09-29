@@ -67,6 +67,7 @@ export const en = {
     },
     expandSidebar: 'Expand sidebar',
     collapseSidebar: 'Collapse sidebar',
+    toggleSidebar: 'Open menu',
     home: 'Home',
     dashboard: 'Dashboard',
     companies: 'Companies',

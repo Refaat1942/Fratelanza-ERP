@@ -70,6 +70,7 @@ export const ar: TranslationSchema = {
     },
     expandSidebar: 'توسيع الشريط الجانبي',
     collapseSidebar: 'طي الشريط الجانبي',
+    toggleSidebar: 'فتح القائمة',
     dashboard: 'لوحة التحكم',
     companies: 'الشركات',
     branches: 'الفروع',
