@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Param, Body, UseGuards,
+  Controller, Get, Post, Patch, Param, Body, Query, UseGuards,
 } from '@nestjs/common';
 import { IsString, IsOptional, IsBoolean } from 'class-validator';
 import { AccountingService } from './accounting.service';
@@ -74,6 +74,27 @@ class UpdateAccountDto {
   @RequirePermissions('accounting:coa:seed')
   async seedCoa(@TenantId() tenantId: string) {
     const data = await this.accountingService.seedDefaultCoa(tenantId);
+    return { success: true, data };
+  }
+
+  @Get('income-statement')
+  @RequirePermissions('accounting:reports:read')
+  async incomeStatement(
+    @TenantId() tenantId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    const data = await this.accountingService.incomeStatement(tenantId, startDate, endDate);
+    return { success: true, data };
+  }
+
+  @Get('balance-sheet')
+  @RequirePermissions('accounting:reports:read')
+  async balanceSheet(
+    @TenantId() tenantId: string,
+    @Query('asOfDate') asOfDate?: string,
+  ) {
+    const data = await this.accountingService.balanceSheet(tenantId, asOfDate);
     return { success: true, data };
   }
 }

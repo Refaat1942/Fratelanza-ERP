@@ -138,6 +138,34 @@ export type TrialBalanceResult = {
   totalDebit: number;
   totalCredit: number;
 };
+export type AccountAmountRow = { accountId: string; code: string; name: string; amount: number };
+export type IncomeStatementResult = {
+  startDate: string;
+  endDate: string;
+  revenue: AccountAmountRow[];
+  totalRevenue: number;
+  cogs: AccountAmountRow[];
+  totalCogs: number;
+  grossProfit: number;
+  expenses: AccountAmountRow[];
+  totalExpenses: number;
+  netIncome: number;
+  grossMarginPct: number;
+  netMarginPct: number;
+};
+export type BalanceSheetResult = {
+  asOfDate: string;
+  assets: AccountAmountRow[];
+  totalAssets: number;
+  liabilities: AccountAmountRow[];
+  totalLiabilities: number;
+  equity: AccountAmountRow[];
+  totalEquity: number;
+  retainedEarnings: number;
+  totalEquityWithEarnings: number;
+  totalLiabilitiesAndEquity: number;
+  isBalanced: boolean;
+};
 export type UserRow = {
   id: string;
   email: string;
@@ -633,6 +661,21 @@ export class ApiClient {
 
   getTrialBalance() {
     return this.request<TrialBalanceResult>('/accounting/trial-balance');
+  }
+
+  getIncomeStatement(params?: { startDate?: string; endDate?: string }) {
+    const query = new URLSearchParams();
+    if (params?.startDate) query.set('startDate', params.startDate);
+    if (params?.endDate) query.set('endDate', params.endDate);
+    const qs = query.toString();
+    return this.request<IncomeStatementResult>(`/accounting/income-statement${qs ? `?${qs}` : ''}`);
+  }
+
+  getBalanceSheet(params?: { asOfDate?: string }) {
+    const query = new URLSearchParams();
+    if (params?.asOfDate) query.set('asOfDate', params.asOfDate);
+    const qs = query.toString();
+    return this.request<BalanceSheetResult>(`/accounting/balance-sheet${qs ? `?${qs}` : ''}`);
   }
 
   triggerSync(deviceId: string) {

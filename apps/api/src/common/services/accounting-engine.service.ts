@@ -83,7 +83,7 @@ export class AccountingEngineService {
       { code: '2000', name: 'Accounts Payable', type: 'liability' },
       { code: '3000', name: 'Owner Equity', type: 'equity' },
       { code: '4000', name: 'Sales Revenue', type: 'revenue' },
-      { code: '5000', name: 'Cost of Goods Sold', type: 'expense' },
+      { code: '5000', name: 'Cost of Goods Sold', type: 'cogs' },
       { code: '5100', name: 'Operating Expenses', type: 'expense' },
     ];
 

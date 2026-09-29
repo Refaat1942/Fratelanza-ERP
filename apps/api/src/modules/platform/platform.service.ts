@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  GoneException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
@@ -330,6 +331,9 @@ export class PlatformService {
     });
     if (!demo || !demo.tenant.isActive || demo.tenant.status !== 'ACTIVE') {
       throw new NotFoundException('Demo not available');
+    }
+    if (demo.linkExpiresAt && demo.linkExpiresAt < new Date()) {
+      throw new GoneException('This demo link has expired');
     }
     return {
       slug: demo.slug,

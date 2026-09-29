@@ -518,6 +518,36 @@ export const en = {
     journalNumber: 'Journal #',
     journalDate: 'Date',
     description: 'Description',
+    tab: {
+      trial: 'Trial Balance',
+      journals: 'Journal Entries',
+      income: 'Income Statement',
+      balance: 'Balance Sheet',
+    },
+    startDate: 'Start date',
+    endDate: 'End date',
+    asOfDate: 'As of date',
+    generate: 'Generate',
+    noActivity: 'No activity in this period.',
+    revenue: 'Revenue',
+    cogs: 'Cost of Goods Sold',
+    totalRevenue: 'Total Revenue',
+    totalCogs: 'Total Cost of Goods Sold',
+    grossProfit: 'Gross Profit',
+    grossMargin: 'Gross margin',
+    operatingExpenses: 'Operating Expenses',
+    totalExpenses: 'Total Operating Expenses',
+    netIncome: 'Net Income',
+    netMargin: 'Net margin',
+    assets: 'Assets',
+    totalAssets: 'Total Assets',
+    liabilities: 'Liabilities',
+    totalLiabilities: 'Total Liabilities',
+    equity: 'Equity',
+    totalEquity: "Owner's Equity",
+    retainedEarnings: 'Retained Earnings (current period)',
+    totalLiabilitiesEquity: 'Total Liabilities & Equity',
+    notBalanced: "Assets don't equal Liabilities + Equity. This usually means some journal entries are missing account postings.",
   },
   reports: {
     subtitle: 'Financial and operational summary for your organization',
@@ -792,7 +822,7 @@ export type TranslationSchema = {
   warehouses: Record<string, string>;
   sales: Record<string, string>;
   purchasing: Record<string, string>;
-  accounting: Record<string, string>;
+  accounting: Record<string, string | Record<string, string>>;
   reports: Record<string, string>;
   crm: Record<string, string>;
   hr: Record<string, string>;
