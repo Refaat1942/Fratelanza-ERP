@@ -71,6 +71,67 @@ export interface DemoVolumeStats {
   purchaseOrders: number;
 }
 
+const CHART_OF_ACCOUNTS = [
+  { code: '1000', name: 'Cash', type: 'asset' },
+  { code: '1100', name: 'Accounts Receivable', type: 'asset' },
+  { code: '1200', name: 'Inventory', type: 'asset' },
+  { code: '2000', name: 'Accounts Payable', type: 'liability' },
+  { code: '2100', name: 'Tax Payable', type: 'liability' },
+  { code: '3000', name: 'Owner Equity', type: 'equity' },
+  { code: '4000', name: 'Sales Revenue', type: 'revenue' },
+  { code: '5000', name: 'Cost of Goods Sold', type: 'cogs' },
+  { code: '5100', name: 'Operating Expenses', type: 'expense' },
+] as const;
+
+async function ensureChartOfAccounts(
+  prisma: PrismaService,
+  tenantId: string,
+): Promise<Record<string, string>> {
+  const byCode: Record<string, string> = {};
+  for (const acc of CHART_OF_ACCOUNTS) {
+    const account = await prisma.account.upsert({
+      where: { tenantId_code: { tenantId, code: acc.code } },
+      update: {},
+      create: { tenantId, code: acc.code, name: acc.name, type: acc.type, isSystem: true },
+    });
+    byCode[acc.code] = account.id;
+  }
+  return byCode;
+}
+
+type JournalLineInput = { accountId: string; debit?: number; credit?: number };
+
+async function postJournalEntry(
+  prisma: PrismaService,
+  tenantId: string,
+  branchId: string,
+  number: string,
+  entryDate: Date,
+  description: string,
+  lines: JournalLineInput[],
+): Promise<void> {
+  const postingLines = lines.filter((l) => (l.debit ?? 0) > 0 || (l.credit ?? 0) > 0);
+  if (postingLines.length === 0) return;
+
+  await prisma.journalEntry.create({
+    data: {
+      tenantId,
+      branchId,
+      number,
+      entryDate,
+      description,
+      postedAt: entryDate,
+      lines: {
+        create: postingLines.map((l) => ({
+          accountId: l.accountId,
+          debit: l.debit ?? 0,
+          credit: l.credit ?? 0,
+        })),
+      },
+    },
+  });
+}
+
 /**
  * Populates a freshly created demo tenant with a realistic-looking dataset —
  * products, customers, suppliers, stock, sales invoices and purchase orders —
@@ -81,6 +142,10 @@ export async function seedDemoTenantVolume(
   tenantId: string,
   branchId: string,
 ): Promise<DemoVolumeStats> {
+  const accounts = await ensureChartOfAccounts(prisma, tenantId);
+  let journalNumber = 1;
+  const nextJournalNumber = () => `JE-DEMO-${String(journalNumber++).padStart(4, '0')}`;
+
   const warehouse = await prisma.warehouse.create({
     data: { tenantId, branchId, code: 'WH-MAIN', name: 'Main Warehouse' },
   });
@@ -157,11 +222,13 @@ export async function seedDemoTenantVolume(
   for (let i = 0; i < invoiceCount; i++) {
     const customer = randomItem(customers);
     const lineCount = randomInt(1, 4);
+    let costBasis = 0;
     const lines = Array.from({ length: lineCount }, () => {
       const product = randomItem(products);
       const quantity = randomInt(1, 10);
       const unitPrice = Number(product.salePrice);
       const lineTotal = quantity * unitPrice;
+      costBasis += quantity * Number(product.costPrice);
       return {
         productId: product.id,
         description: product.name,
@@ -203,6 +270,17 @@ export async function seedDemoTenantVolume(
         where: { id: customer.id },
         data: { balance: { increment: total - paidAmount } },
       });
+    }
+
+    if (status !== 'draft') {
+      await postJournalEntry(prisma, tenantId, branchId, nextJournalNumber(), invoiceDate, `Sale ${customer.name}`, [
+        { accountId: accounts['1000']!, debit: paidAmount },
+        { accountId: accounts['1100']!, debit: total - paidAmount },
+        { accountId: accounts['4000']!, credit: subtotal },
+        { accountId: accounts['2100']!, credit: taxAmount },
+        { accountId: accounts['5000']!, debit: costBasis },
+        { accountId: accounts['1200']!, credit: costBasis },
+      ]);
     }
   }
 
@@ -253,6 +331,12 @@ export async function seedDemoTenantVolume(
         where: { id: supplier.id },
         data: { balance: { increment: total } },
       });
+
+      await postJournalEntry(prisma, tenantId, branchId, nextJournalNumber(), orderDate, `Purchase from ${supplier.name}`, [
+        { accountId: accounts['1200']!, debit: subtotal },
+        { accountId: accounts['2100']!, debit: taxAmount },
+        { accountId: accounts['2000']!, credit: total },
+      ]);
     }
   }
 
