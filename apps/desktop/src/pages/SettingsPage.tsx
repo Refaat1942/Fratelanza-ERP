@@ -5,7 +5,7 @@ import { ConnectivityStatus } from '@fratelanza/types';
 import { LOCALE_LABELS, SUPPORTED_LOCALES } from '@fratelanza/localization';
 import type { Locale, ThemeMode } from '@fratelanza/types';
 import { createApiClient, resolveApiBaseUrl } from '../lib/api';
-import { FormField, PageHeader, useApiClient } from '../components/DataTable';
+import { ConfirmDialog, FormField, PageHeader, useApiClient } from '../components/DataTable';
 import { useAppStore, useAuthStore } from '../stores';
 
 export function SettingsPage() {
@@ -31,6 +31,8 @@ export function SettingsPage() {
   const [seedLoading, setSeedLoading] = useState(false);
   const [seedMessage, setSeedMessage] = useState('');
   const [seedError, setSeedError] = useState('');
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const [resetLoading, setResetLoading] = useState(false);
 
   useEffect(() => {
     async function loadProfile() {
@@ -80,6 +82,29 @@ export function SettingsPage() {
       setSeedError(err instanceof Error ? err.message : t('errors.generic'));
     } finally {
       setSeedLoading(false);
+    }
+  }
+
+  async function resetSampleData() {
+    setResetLoading(true);
+    setSeedMessage('');
+    setSeedError('');
+    try {
+      const stats = await client.resetSampleData();
+      setSeedMessage(
+        t('settings.sampleDataSuccess', {
+          products: stats.products,
+          customers: stats.customers,
+          suppliers: stats.suppliers,
+          invoices: stats.salesInvoices,
+          orders: stats.purchaseOrders,
+        }),
+      );
+    } catch (err) {
+      setSeedError(err instanceof Error ? err.message : t('errors.generic'));
+    } finally {
+      setResetLoading(false);
+      setResetConfirmOpen(false);
     }
   }
 
@@ -203,10 +228,23 @@ export function SettingsPage() {
           <button type="button" className="btn btn-primary btn--sm" onClick={() => void seedSampleData()} disabled={seedLoading}>
             {seedLoading ? t('common.loading') : t('settings.seedSampleData')}
           </button>
+          <button type="button" className="btn-link btn-link--danger" onClick={() => setResetConfirmOpen(true)}>
+            {t('settings.resetSampleData')}
+          </button>
         </div>
         {seedError && <p className="form-error">{seedError}</p>}
         {seedMessage && <p className="form-success">{seedMessage}</p>}
       </div>
+
+      <ConfirmDialog
+        open={resetConfirmOpen}
+        title={t('settings.resetSampleDataTitle')}
+        message={t('settings.resetSampleDataMessage')}
+        confirmLabel={t('settings.resetSampleData')}
+        loading={resetLoading}
+        onConfirm={() => void resetSampleData()}
+        onCancel={() => setResetConfirmOpen(false)}
+      />
 
       <div className="card card--flat" style={{ marginBottom: 'var(--frz-space-4)' }}>
         <h2 className="card-title" style={{ marginBottom: 'var(--frz-space-3)' }}>

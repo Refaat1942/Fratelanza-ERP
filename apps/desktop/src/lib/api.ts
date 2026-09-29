@@ -472,6 +472,16 @@ export class ApiClient {
     }>('/settings/seed-sample-data', { method: 'POST' });
   }
 
+  resetSampleData() {
+    return this.request<{
+      products: number;
+      customers: number;
+      suppliers: number;
+      salesInvoices: number;
+      purchaseOrders: number;
+    }>('/settings/reset-sample-data', { method: 'POST' });
+  }
+
   getTaxProfile() {
     return this.request<{
       countryCode: string;

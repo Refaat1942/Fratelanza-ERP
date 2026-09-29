@@ -64,4 +64,26 @@ export class SettingsController {
     const data = await seedDemoTenantVolume(this.prisma, tenantId, branch.id);
     return { success: true, data };
   }
+
+  @Post('reset-sample-data')
+  @RequirePermissions('core:settings:update')
+  async resetSampleData(@TenantId() tenantId: string) {
+    const branch = await this.prisma.branch.findFirst({ where: { tenantId } });
+    if (!branch) throw new BadRequestException('No branch found to seed into');
+
+    await this.prisma.salesInvoice.deleteMany({ where: { tenantId } });
+    await this.prisma.purchaseOrder.deleteMany({ where: { tenantId } });
+    await this.prisma.journalEntry.deleteMany({ where: { tenantId } });
+    await this.prisma.stockBalance.deleteMany({ where: { tenantId } });
+    await this.prisma.product.deleteMany({ where: { tenantId } });
+    await this.prisma.customer.deleteMany({ where: { tenantId } });
+    await this.prisma.supplier.deleteMany({ where: { tenantId } });
+    await this.prisma.warehouse.deleteMany({ where: { tenantId } });
+    await this.prisma.unitOfMeasure.deleteMany({ where: { tenantId } });
+    await this.prisma.productCategory.deleteMany({ where: { tenantId } });
+    await this.prisma.account.deleteMany({ where: { tenantId } });
+
+    const data = await seedDemoTenantVolume(this.prisma, tenantId, branch.id);
+    return { success: true, data };
+  }
 }
