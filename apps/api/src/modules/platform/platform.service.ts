@@ -9,6 +9,7 @@ import * as bcrypt from 'bcryptjs';
 import { ERP_MODULES } from '@fratelanza/shared';
 import { PrismaService } from '../../database/prisma.service';
 import { AuditService } from '../audit/audit.service';
+import { ModuleAccessService } from '../../common/services/module-access.service';
 import { seedDemoTenantVolume } from './demo-volume.util';
 
 @Injectable()
@@ -16,6 +17,7 @@ export class PlatformService {
   constructor(
     private prisma: PrismaService,
     private auditService: AuditService,
+    private moduleAccess: ModuleAccessService,
   ) {}
 
   async getDashboardStats() {
@@ -345,12 +347,18 @@ export class PlatformService {
   }
 
   async listModulesForTenant(tenantId: string) {
-    const access = await this.prisma.tenantModuleAccess.findMany({ where: { tenantId } });
-    const accessMap = new Map(access.map((a) => [a.moduleId, a.enabled]));
-    return ERP_MODULES.map((mod) => ({
-      ...mod,
-      enabled: accessMap.has(mod.id) ? accessMap.get(mod.id)! : true,
-    }));
+    const resolved = await this.moduleAccess.resolveAll(tenantId);
+    const resolvedMap = new Map(resolved.map((r) => [r.id, r]));
+    return ERP_MODULES.map((mod) => {
+      const r = resolvedMap.get(mod.id)!;
+      return {
+        ...mod,
+        enabled: r.enabled,
+        source: r.source,
+        overrideValue: r.overrideValue,
+        planValue: r.planValue,
+      };
+    });
   }
 
   async setTenantModule(tenantId: string, moduleId: string, enabled: boolean) {
@@ -361,11 +369,11 @@ export class PlatformService {
     });
   }
 
+  async clearTenantModuleOverride(tenantId: string, moduleId: string) {
+    await this.prisma.tenantModuleAccess.deleteMany({ where: { tenantId, moduleId } });
+  }
+
   async getEnabledModuleIds(tenantId: string): Promise<string[]> {
-    const rows = await this.prisma.tenantModuleAccess.findMany({
-      where: { tenantId, enabled: true },
-    });
-    if (rows.length === 0) return ERP_MODULES.map((m) => m.id);
-    return rows.map((r) => r.moduleId);
+    return this.moduleAccess.resolveEnabledModuleIds(tenantId);
   }
 }

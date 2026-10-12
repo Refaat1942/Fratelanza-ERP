@@ -142,15 +142,6 @@ export class TenantAccessService {
     return this.buildBranchWhere(user);
   }
 
-  async assertModuleEnabled(tenantId: string, moduleId: string): Promise<void> {
-    const rows = await this.prisma.tenantModuleAccess.findMany({ where: { tenantId } });
-    if (rows.length === 0) return;
-    const access = rows.find((r) => r.moduleId === moduleId);
-    if (!access?.enabled) {
-      throw new ForbiddenException(`Module "${moduleId}" is not enabled for this organization`);
-    }
-  }
-
   async assertBranchExists(tenantId: string, branchId: string): Promise<void> {
     const branch = await this.prisma.branch.findFirst({
       where: { id: branchId, tenantId, deletedAt: null, isActive: true },

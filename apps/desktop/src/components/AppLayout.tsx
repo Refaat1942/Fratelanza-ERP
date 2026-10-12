@@ -88,9 +88,14 @@ const NAV_GROUPS: NavGroup[] = [
   },
 ];
 
-const ROUTE_TO_MODULE_ID: Record<string, string> = Object.fromEntries(
-  ERP_MODULES.map((m) => [m.route, m.id]),
-);
+// Some modules (e.g. restaurant) intentionally reuse another module's route (e.g. /pos).
+// Keep the first-defined module id per route so a shared route resolves to its primary module.
+const ROUTE_TO_MODULE_ID: Record<string, string> = {};
+for (const m of ERP_MODULES) {
+  if (!(m.route in ROUTE_TO_MODULE_ID)) {
+    ROUTE_TO_MODULE_ID[m.route] = m.id;
+  }
+}
 
 export function AppLayout() {
   const { t } = useTranslation();
@@ -102,12 +107,28 @@ export function AppLayout() {
   const apiUrl = useAppStore((s) => s.apiUrl);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [tenantEnabledModules, setTenantEnabledModules] = useState<string[] | undefined>();
 
   useEffect(() => {
     if (accessToken) {
       void syncElectronAccessToken();
     }
   }, [accessToken]);
+
+  useEffect(() => {
+    if (!accessToken) return;
+    async function loadTenantModules() {
+      try {
+        const client = createApiClient(() => resolveApiBaseUrl(apiUrl), () => accessToken);
+        const data = await client.getTenantModules();
+        setTenantEnabledModules(data);
+      } catch {
+        // Tenant may lack core:tenants:read — fall back to per-user disabledModules only.
+        setTenantEnabledModules(undefined);
+      }
+    }
+    void loadTenantModules();
+  }, [accessToken, apiUrl]);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -147,7 +168,10 @@ export function AppLayout() {
           {NAV_GROUPS.map((group) => {
             const visibleItems = group.items.filter((item) => {
               const moduleId = ROUTE_TO_MODULE_ID[item.to];
-              return !moduleId || !user?.disabledModules?.includes(moduleId);
+              if (!moduleId) return true;
+              if (user?.disabledModules?.includes(moduleId)) return false;
+              if (tenantEnabledModules && !tenantEnabledModules.includes(moduleId)) return false;
+              return true;
             });
             if (visibleItems.length === 0) return null;
             return (
@@ -175,6 +199,7 @@ export function AppLayout() {
                 { to: '/control', end: true, labelKey: 'control.nav.dashboard' },
                 { to: '/control/organizations', labelKey: 'control.nav.organizations' },
                 { to: '/control/demos', labelKey: 'control.nav.demos' },
+                { to: '/control/plans', labelKey: 'control.nav.plans' },
                 { to: '/control/modules', labelKey: 'control.nav.modules' },
                 { to: '/control/authorization', labelKey: 'control.nav.authorization' },
               ].map((link) => (

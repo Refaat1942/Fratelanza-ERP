@@ -849,13 +849,28 @@ export class ApiClient {
   }
 
   getPlatformTenantModules(tenantId: string) {
-    return this.request<Array<{ id: string; enabled: boolean; nameKey: string }>>(
-      `/platform/modules/${tenantId}`,
-    );
+    return this.request<
+      Array<{
+        id: string;
+        enabled: boolean;
+        nameKey: string;
+        descriptionKey: string;
+        icon: string;
+        route: string;
+        category: string;
+        source: 'override' | 'plan' | 'open';
+        overrideValue: boolean | null;
+        planValue: boolean | null;
+      }>
+    >(`/platform/modules/${tenantId}`);
   }
 
   getPlatformModuleCatalog() {
     return this.request<Array<{ id: string; nameKey: string; route?: string }>>('/platform/modules/catalog');
+  }
+
+  clearPlatformTenantModuleOverride(tenantId: string, moduleId: string) {
+    return this.request(`/platform/modules/${tenantId}/${moduleId}`, { method: 'DELETE' });
   }
 
   createPlatformOrganization(payload: {
@@ -952,6 +967,117 @@ export class ApiClient {
     return this.request(`/platform/modules/${tenantId}/${moduleId}`, {
       method: 'PATCH',
       body: JSON.stringify({ enabled }),
+    });
+  }
+
+  getPlans() {
+    return this.request<
+      Array<{
+        id: string;
+        code: string;
+        name: string;
+        description: string | null;
+        priceMonthly: string;
+        priceYearly: string | null;
+        currency: string;
+        maxUsers: number | null;
+        maxBranches: number | null;
+        isActive: boolean;
+        isPublic: boolean;
+        sortOrder: number;
+        modules: Array<{ moduleId: string }>;
+        _count?: { subscriptions: number };
+      }>
+    >('/billing/plans');
+  }
+
+  getPlan(id: string) {
+    return this.request<{
+      id: string;
+      code: string;
+      name: string;
+      description: string | null;
+      priceMonthly: string;
+      priceYearly: string | null;
+      currency: string;
+      maxUsers: number | null;
+      maxBranches: number | null;
+      isActive: boolean;
+      isPublic: boolean;
+      sortOrder: number;
+      modules: Array<{ moduleId: string }>;
+    }>(`/billing/plans/${id}`);
+  }
+
+  createPlan(payload: {
+    code: string;
+    name: string;
+    description?: string;
+    priceMonthly: number;
+    priceYearly?: number;
+    currency?: string;
+    maxUsers?: number;
+    maxBranches?: number;
+    isActive?: boolean;
+    isPublic?: boolean;
+    sortOrder?: number;
+    moduleIds: string[];
+  }) {
+    return this.request('/billing/plans', { method: 'POST', body: JSON.stringify(payload) });
+  }
+
+  updatePlan(
+    id: string,
+    payload: {
+      name?: string;
+      description?: string;
+      priceMonthly?: number;
+      priceYearly?: number;
+      currency?: string;
+      maxUsers?: number;
+      maxBranches?: number;
+      isActive?: boolean;
+      isPublic?: boolean;
+      sortOrder?: number;
+      moduleIds?: string[];
+    },
+  ) {
+    return this.request(`/billing/plans/${id}`, { method: 'PATCH', body: JSON.stringify(payload) });
+  }
+
+  getTenantSubscription(tenantId: string) {
+    return this.request<{
+      id: string;
+      tenantId: string;
+      planId: string;
+      status: string;
+      billingCycle: string;
+      provider: string;
+      currentPeriodStart: string;
+      currentPeriodEnd: string | null;
+      cancelAtPeriodEnd: boolean;
+      canceledAt: string | null;
+      plan: { id: string; code: string; name: string };
+    } | null>(`/billing/tenants/${tenantId}/subscription`);
+  }
+
+  assignTenantSubscription(
+    tenantId: string,
+    payload: { planId: string; billingCycle?: 'monthly' | 'yearly'; status?: string },
+  ) {
+    return this.request(`/billing/tenants/${tenantId}/subscription`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  }
+
+  updateTenantSubscription(
+    tenantId: string,
+    payload: { planId?: string; billingCycle?: 'monthly' | 'yearly'; status?: string; cancelAtPeriodEnd?: boolean },
+  ) {
+    return this.request(`/billing/tenants/${tenantId}/subscription`, {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
     });
   }
 

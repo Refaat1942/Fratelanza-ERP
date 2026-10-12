@@ -33,6 +33,14 @@ export interface AppConfig {
     anthropicApiKey?: string;
     model: string;
   };
+  billing: {
+    stripeSecretKey?: string;
+    stripeWebhookSecret?: string;
+    paymobApiKey?: string;
+    paymobHmacSecret?: string;
+    paymobIntegrationId?: string;
+    paymobIframeId?: string;
+  };
 }
 
 const DEV_JWT_FALLBACK = 'development-secret-change-in-production';
@@ -71,6 +79,14 @@ export function loadApiConfig(): AppConfig {
     assistant: {
       anthropicApiKey: process.env.ANTHROPIC_API_KEY || undefined,
       model: process.env.ASSISTANT_MODEL ?? 'claude-opus-5',
+    },
+    billing: {
+      stripeSecretKey: process.env.STRIPE_SECRET_KEY || undefined,
+      stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET || undefined,
+      paymobApiKey: process.env.PAYMOB_API_KEY || undefined,
+      paymobHmacSecret: process.env.PAYMOB_HMAC_SECRET || undefined,
+      paymobIntegrationId: process.env.PAYMOB_INTEGRATION_ID || undefined,
+      paymobIframeId: process.env.PAYMOB_IFRAME_ID || undefined,
     },
   };
 }

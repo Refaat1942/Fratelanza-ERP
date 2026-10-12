@@ -6,6 +6,7 @@ const links = [
   { to: '/control', end: true, labelKey: 'control.nav.dashboard' },
   { to: '/control/organizations', labelKey: 'control.nav.organizations' },
   { to: '/control/demos', labelKey: 'control.nav.demos' },
+  { to: '/control/plans', labelKey: 'control.nav.plans' },
   { to: '/control/modules', labelKey: 'control.nav.modules' },
   { to: '/control/authorization', labelKey: 'control.nav.authorization' },
 ];

@@ -32,6 +32,7 @@ import { PartiesModule } from './modules/parties/parties.module';
 import { ProjectsModule } from './modules/projects/projects.module';
 import { ConstructionModule } from './modules/construction/construction.module';
 import { PlatformModule } from './modules/platform/platform.module';
+import { BillingModule } from './modules/billing/billing.module';
 import { LocalizationModule } from './modules/localization/localization.module';
 import { ZatcaModule } from './modules/zatca/zatca.module';
 import { CurrencyModule } from './modules/currency/currency.module';
@@ -84,6 +85,7 @@ import { AssistantModule } from './modules/assistant/assistant.module';
     // ── Construction Vertical (Phase 9) ──
     ConstructionModule,
     PlatformModule,
+    BillingModule,
     ZatcaModule,
     LocalizationModule,
     // ── World-ERP parity additions (Sept 2026) ──

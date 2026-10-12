@@ -20,7 +20,7 @@ async function bootstrap() {
   const appConfig = bootstrapAppConfig();
   const logger = new Logger('Bootstrap');
 
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule, { rawBody: true });
 
   app.use(helmet());
   app.enableCors({

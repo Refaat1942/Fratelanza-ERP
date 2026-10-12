@@ -7,13 +7,13 @@ import {
 import { Reflector } from '@nestjs/core';
 import type { JwtPayload } from '@fratelanza/types';
 import { MODULE_KEY } from '../decorators';
-import { TenantAccessService } from '../services/tenant-access.service';
+import { ModuleAccessService } from '../services/module-access.service';
 
 @Injectable()
 export class ModuleAccessGuard implements CanActivate {
   constructor(
     private reflector: Reflector,
-    private tenantAccess: TenantAccessService,
+    private moduleAccess: ModuleAccessService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -34,7 +34,7 @@ export class ModuleAccessGuard implements CanActivate {
       throw new ForbiddenException(`Module "${moduleId}" has been hidden for this user`);
     }
 
-    await this.tenantAccess.assertModuleEnabled(user.tenantId, moduleId);
+    await this.moduleAccess.assertModuleEnabled(user.tenantId, moduleId);
     return true;
   }
 }

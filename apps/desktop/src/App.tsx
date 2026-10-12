@@ -41,6 +41,7 @@ import { ControlCenterDashboardPage } from './pages/control/ControlCenterDashboa
 import { OrganizationsPage } from './pages/control/OrganizationsPage';
 import { DemoManagementPage } from './pages/control/DemoManagementPage';
 import { ModuleManagementPage } from './pages/control/ModuleManagementPage';
+import { PlansManagementPage } from './pages/control/PlansManagementPage';
 import { AuthorizationMatrixPage } from './pages/control/AuthorizationMatrixPage';
 import { ReportsPage } from './pages/ReportsPage';
 import { CrmPage } from './pages/CrmPage';
@@ -122,6 +123,7 @@ function AppRoutes() {
           <Route index element={<ControlCenterDashboardPage />} />
           <Route path="organizations" element={<OrganizationsPage />} />
           <Route path="demos" element={<DemoManagementPage />} />
+          <Route path="plans" element={<PlansManagementPage />} />
           <Route path="modules" element={<ModuleManagementPage />} />
           <Route path="authorization" element={<AuthorizationMatrixPage />} />
         </Route>

@@ -148,4 +148,13 @@ export class PlatformController {
     const data = await this.platformService.setTenantModule(tenantId, moduleId, dto.enabled);
     return { success: true, data };
   }
+
+  @Delete('modules/:tenantId/:moduleId')
+  async clearModuleOverride(
+    @Param('tenantId') tenantId: string,
+    @Param('moduleId') moduleId: string,
+  ) {
+    await this.platformService.clearTenantModuleOverride(tenantId, moduleId);
+    return { success: true };
+  }
 }

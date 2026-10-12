@@ -3,6 +3,7 @@ import { DocumentNumberService } from './services/document-number.service';
 import { InventoryLedgerService } from './services/inventory-ledger.service';
 import { AccountingEngineService } from './services/accounting-engine.service';
 import { TenantAccessService } from './services/tenant-access.service';
+import { ModuleAccessService } from './services/module-access.service';
 import { ModuleAccessGuard } from './guards/module-access.guard';
 
 @Global()
@@ -12,6 +13,7 @@ import { ModuleAccessGuard } from './guards/module-access.guard';
     InventoryLedgerService,
     AccountingEngineService,
     TenantAccessService,
+    ModuleAccessService,
     ModuleAccessGuard,
   ],
   exports: [
@@ -19,6 +21,7 @@ import { ModuleAccessGuard } from './guards/module-access.guard';
     InventoryLedgerService,
     AccountingEngineService,
     TenantAccessService,
+    ModuleAccessService,
     ModuleAccessGuard,
   ],
 })
