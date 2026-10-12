@@ -42,6 +42,7 @@ model Tenant {
   numberSequences                      NumberSequence[]
   demoEnvironments                     DemoEnvironment[]
   moduleAccess                         TenantModuleAccess[]
+  subscription                         Subscription?
   governmentIntegrationLogs            GovernmentIntegrationLog[]
   pmsPatients                          Patient[]
   pmsPatientAccounts                   PatientAccount[]
@@ -144,6 +145,9 @@ model Warehouse {
   purchaseOrders             PurchaseOrder[]
   constructionMaterialIssues ConstructionMaterialIssue[]
   userAccess                 UserWarehouseAccess[]
+  productionOrders           ProductionOrder[]
+  goodsReceiptNotes          GoodsReceiptNote[]
+  dispatchNotes              DispatchNote[]
 
   @@unique([tenantId, code])
   @@index([tenantId, branchId])
@@ -259,21 +263,21 @@ model GovernmentIntegrationLog {
 }
 
 model DemoEnvironment {
-  id           String   @id @default(uuid()) @db.Uuid
-  slug         String   @unique
-  name         String
-  tenantId     String   @db.Uuid
-  enabled      Boolean  @default(true)
-  modules      Json     @default("[]")
-  demoUserId   String?   @db.Uuid
-  restrictions Json      @default("{}")
-  linkToken    String    @unique @default(uuid())
-  linkExpiresAt DateTime?
-  issuedTo     String?
-  visitCount   Int       @default(0)
+  id             String    @id @default(uuid()) @db.Uuid
+  slug           String    @unique
+  name           String
+  tenantId       String    @db.Uuid
+  enabled        Boolean   @default(true)
+  modules        Json      @default("[]")
+  demoUserId     String?   @db.Uuid
+  restrictions   Json      @default("{}")
+  linkToken      String    @unique @default(uuid())
+  linkExpiresAt  DateTime?
+  issuedTo       String?
+  visitCount     Int       @default(0)
   lastAccessedAt DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
   tenant   Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   demoUser User?  @relation(fields: [demoUserId], references: [id])
@@ -486,6 +490,11 @@ model Product {
   posSaleLines                   PosSaleLine[]
   constructionBoqItems           ConstructionBoqItem[]
   constructionMaterialIssueLines ConstructionMaterialIssueLine[]
+  billsOfMaterials               BillOfMaterials[]
+  bomComponentOf                 BomComponent[]
+  productionConsumptions         ProductionMaterialConsumption[]
+  goodsReceiptLines              GoodsReceiptLine[]
+  dispatchNoteLines              DispatchNoteLine[]
 
   @@unique([tenantId, sku])
   @@index([tenantId, barcode])
@@ -1546,6 +1555,7 @@ model SalesInvoice {
   lines               SalesInvoiceLine[]
   payments            CustomerPayment[]
   constructionBilling ConstructionBilling?
+  dispatchNotes       DispatchNote[]
 
   @@unique([tenantId, number])
   @@index([tenantId, status, invoiceDate])
@@ -1591,28 +1601,29 @@ model CustomerPayment {
 }
 
 model PurchaseOrder {
-  id           String              @id @default(uuid()) @db.Uuid
-  tenantId     String              @db.Uuid
-  branchId     String              @db.Uuid
-  supplierId   String              @db.Uuid
-  warehouseId  String              @db.Uuid
-  number       String
-  status       String              @default("draft")
-  orderDate    DateTime            @default(now())
-  expectedDate DateTime?
-  subtotal     Decimal             @default(0) @db.Decimal(18, 4)
-  taxAmount    Decimal             @default(0) @db.Decimal(18, 4)
-  total        Decimal             @default(0) @db.Decimal(18, 4)
-  currencyCode String?
-  exchangeRate Decimal?            @db.Decimal(18, 8)
-  notes        String?
-  receivedAt   DateTime?
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  supplier     Supplier            @relation(fields: [supplierId], references: [id])
-  branch       Branch              @relation(fields: [branchId], references: [id])
-  warehouse    Warehouse           @relation(fields: [warehouseId], references: [id])
-  lines        PurchaseOrderLine[]
+  id                String              @id @default(uuid()) @db.Uuid
+  tenantId          String              @db.Uuid
+  branchId          String              @db.Uuid
+  supplierId        String              @db.Uuid
+  warehouseId       String              @db.Uuid
+  number            String
+  status            String              @default("draft")
+  orderDate         DateTime            @default(now())
+  expectedDate      DateTime?
+  subtotal          Decimal             @default(0) @db.Decimal(18, 4)
+  taxAmount         Decimal             @default(0) @db.Decimal(18, 4)
+  total             Decimal             @default(0) @db.Decimal(18, 4)
+  currencyCode      String?
+  exchangeRate      Decimal?            @db.Decimal(18, 8)
+  notes             String?
+  receivedAt        DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  supplier          Supplier            @relation(fields: [supplierId], references: [id])
+  branch            Branch              @relation(fields: [branchId], references: [id])
+  warehouse         Warehouse           @relation(fields: [warehouseId], references: [id])
+  lines             PurchaseOrderLine[]
+  goodsReceiptNotes GoodsReceiptNote[]
 
   @@unique([tenantId, number])
   @@index([tenantId, status])
@@ -2530,6 +2541,7 @@ model Asset {
   updatedAt               DateTime                 @updatedAt
   category                AssetCategory            @relation(fields: [categoryId], references: [id])
   depreciationEntries     AssetDepreciationEntry[]
+  custodyRecords          CustodyRecord[]
 
   @@unique([tenantId, code])
   @@index([tenantId, status])
@@ -2747,6 +2759,7 @@ model Employee {
   position        Position?        @relation(fields: [positionId], references: [id])
   leaveRequests   LeaveRequest[]
   payrollLines    PayrollRunLine[]
+  custodyRecords  CustodyRecord[]
 
   @@unique([tenantId, code])
   @@index([tenantId, status])
@@ -2980,4 +2993,422 @@ model ApprovalAction {
 
   @@index([requestId])
   @@map("approval_actions")
+}
+
+// ─── SaaS Billing & Subscription Plans ─────────────────────────────
+// Plan is a shared catalog (not tenant-scoped). Subscription binds one
+// Tenant to one Plan. PlanModule is the plan-level default for which
+// ERP_MODULES entries a tenant on that plan gets; TenantModuleAccess
+// (above) remains the per-tenant OVERRIDE layer - a Super Admin can
+// still enable/disable a specific module for a specific tenant
+// regardless of what their plan includes. Resolution order (service
+// layer, not DB-enforced): explicit TenantModuleAccess row for
+// (tenantId, moduleId) wins if present; otherwise fall back to
+// PlanModule for the tenant's active Subscription.planId; if the
+// tenant has no subscription at all (legacy/demo tenants), preserve
+// today's behavior of "open" access.
+
+enum BillingProvider {
+  stripe
+  paymob
+  manual
+}
+
+enum SubscriptionStatus {
+  trialing
+  active
+  past_due
+  canceled
+  suspended
+}
+
+enum BillingCycle {
+  monthly
+  yearly
+}
+
+enum SubscriptionInvoiceStatus {
+  draft
+  open
+  paid
+  void
+  uncollectible
+}
+
+model Plan {
+  id           String   @id @default(uuid()) @db.Uuid
+  code         String   @unique
+  name         String
+  description  String?
+  priceMonthly Decimal  @default(0) @db.Decimal(10, 2)
+  priceYearly  Decimal? @db.Decimal(10, 2)
+  currency     String   @default("USD")
+  maxUsers     Int?
+  maxBranches  Int?
+  isActive     Boolean  @default(true)
+  isPublic     Boolean  @default(true)
+  sortOrder    Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  modules       PlanModule[]
+  subscriptions Subscription[]
+
+  @@map("saas_plans")
+}
+
+model PlanModule {
+  planId   String @db.Uuid
+  moduleId String
+
+  plan Plan @relation(fields: [planId], references: [id], onDelete: Cascade)
+
+  @@id([planId, moduleId])
+  @@map("saas_plan_modules")
+}
+
+model Subscription {
+  id                     String             @id @default(uuid()) @db.Uuid
+  tenantId               String             @unique @db.Uuid
+  planId                 String             @db.Uuid
+  status                 SubscriptionStatus @default(trialing)
+  billingCycle           BillingCycle       @default(monthly)
+  provider               BillingProvider    @default(manual)
+  providerCustomerId     String?
+  providerSubscriptionId String?
+  trialEndsAt            DateTime?
+  currentPeriodStart     DateTime?
+  currentPeriodEnd       DateTime?
+  cancelAtPeriodEnd      Boolean            @default(false)
+  canceledAt             DateTime?
+  seats                  Int?
+  createdAt              DateTime           @default(now())
+  updatedAt              DateTime           @updatedAt
+
+  tenant   Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  plan     Plan                  @relation(fields: [planId], references: [id])
+  invoices SubscriptionInvoice[]
+
+  @@index([planId])
+  @@index([status])
+  @@map("saas_subscriptions")
+}
+
+model SubscriptionInvoice {
+  id                String                    @id @default(uuid()) @db.Uuid
+  subscriptionId    String                    @db.Uuid
+  tenantId          String                    @db.Uuid
+  provider          BillingProvider
+  providerInvoiceId String?
+  providerPaymentId String?
+  status            SubscriptionInvoiceStatus @default(draft)
+  amount            Decimal                   @db.Decimal(10, 2)
+  currency          String                    @default("USD")
+  periodStart       DateTime?
+  periodEnd         DateTime?
+  issuedAt          DateTime?
+  paidAt            DateTime?
+  hostedInvoiceUrl  String?
+  rawPayload        Json?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([subscriptionId])
+  @@map("saas_subscription_invoices")
+}
+
+/// Raw inbound webhook log from Stripe/Paymob, keyed by the provider's
+/// own event id so retried/replayed deliveries are no-ops.
+model BillingWebhookEvent {
+  id              String          @id @default(uuid()) @db.Uuid
+  provider        BillingProvider
+  eventType       String
+  providerEventId String          @unique
+  payload         Json
+  processedAt     DateTime?
+  createdAt       DateTime        @default(now())
+
+  @@index([provider, eventType])
+  @@map("saas_billing_webhook_events")
+}
+
+// ─── Custody Management (إدارة العهد) ──────────────────────────────
+// Links HR (Employee), Assets, and Finance (JournalEntry) to track
+// cash or asset custody issued to an employee, with settlement.
+// Settlement postings follow the same polymorphic-source convention
+// as the rest of this schema: AccountingEngineService posts a
+// JournalEntry with sourceModule: 'custody', sourceType:
+// 'CustodyRecord' | 'CustodySettlement', sourceId: <record.id> -
+// there is deliberately no journalEntryId column here (unlike
+// Asset.disposalJournalEntryId's loose scalar-FK precedent), so the
+// link stays queryable without risking an orphaned/stale UUID.
+
+enum CustodyType {
+  cash
+  asset
+  mixed
+}
+
+enum CustodyStatus {
+  active
+  partially_settled
+  settled
+  overdue
+  written_off
+}
+
+model CustodyRecord {
+  id            String        @id @default(uuid()) @db.Uuid
+  tenantId      String        @db.Uuid
+  branchId      String?       @db.Uuid
+  number        String
+  employeeId    String        @db.Uuid
+  assetId       String?       @db.Uuid
+  type          CustodyType
+  cashAmount    Decimal       @default(0) @db.Decimal(18, 4)
+  currencyCode  String?
+  purpose       String?
+  status        CustodyStatus @default(active)
+  issuedById    String?       @db.Uuid
+  issuedAt      DateTime      @default(now())
+  dueDate       DateTime?
+  settledAmount Decimal       @default(0) @db.Decimal(18, 4)
+  notes         String?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+
+  employee    Employee            @relation(fields: [employeeId], references: [id])
+  asset       Asset?              @relation(fields: [assetId], references: [id])
+  settlements CustodySettlement[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, employeeId, status])
+  @@index([tenantId, status])
+  @@map("custody_records")
+}
+
+model CustodySettlement {
+  id          String   @id @default(uuid()) @db.Uuid
+  tenantId    String   @db.Uuid
+  custodyId   String   @db.Uuid
+  amount      Decimal  @default(0) @db.Decimal(18, 4)
+  method      String   @default("cash_return")
+  settledById String?  @db.Uuid
+  settledAt   DateTime @default(now())
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  custody CustodyRecord @relation(fields: [custodyId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, custodyId])
+  @@map("custody_settlements")
+}
+
+// ─── Manufacturing / Factories (إدارة المصانع) ─────────────────────
+// BillOfMaterials describes how to build one `outputQuantity` of a
+// finished-good Product from a list of component Products. A
+// ProductionOrder executes a specific BOM at a given quantity;
+// ProductionMaterialConsumption records what was actually pulled from
+// stock, linked to the InventoryMovement that moved it (soft scalar
+// FK, matching the AssetDepreciationEntry.journalEntryId precedent -
+// no relation() to avoid widening the already-large InventoryMovement
+// model's back-relation list for what is fundamentally a traceability
+// pointer, not a structural parent/child link).
+
+enum ProductionOrderStatus {
+  draft
+  planned
+  in_progress
+  completed
+  cancelled
+}
+
+model BillOfMaterials {
+  id             String   @id @default(uuid()) @db.Uuid
+  tenantId       String   @db.Uuid
+  productId      String   @db.Uuid
+  code           String
+  name           String
+  version        Int      @default(1)
+  outputQuantity Decimal  @default(1) @db.Decimal(18, 4)
+  isActive       Boolean  @default(true)
+  notes          String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  product          Product           @relation(fields: [productId], references: [id])
+  components       BomComponent[]
+  productionOrders ProductionOrder[]
+
+  @@unique([tenantId, productId, version])
+  @@index([tenantId, productId])
+  @@map("mfg_bill_of_materials")
+}
+
+model BomComponent {
+  id           String  @id @default(uuid()) @db.Uuid
+  bomId        String  @db.Uuid
+  productId    String  @db.Uuid
+  quantity     Decimal @db.Decimal(18, 4)
+  scrapPercent Decimal @default(0) @db.Decimal(6, 4)
+  notes        String?
+
+  bom     BillOfMaterials @relation(fields: [bomId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id])
+
+  @@index([bomId])
+  @@map("mfg_bom_components")
+}
+
+model ProductionOrder {
+  id                String                @id @default(uuid()) @db.Uuid
+  tenantId          String                @db.Uuid
+  branchId          String?               @db.Uuid
+  warehouseId       String                @db.Uuid
+  bomId             String                @db.Uuid
+  number            String
+  status            ProductionOrderStatus @default(draft)
+  plannedQuantity   Decimal               @db.Decimal(18, 4)
+  completedQuantity Decimal               @default(0) @db.Decimal(18, 4)
+  scheduledStart    DateTime?
+  scheduledEnd      DateTime?
+  startedAt         DateTime?
+  completedAt       DateTime?
+  notes             String?
+  createdById       String?               @db.Uuid
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+
+  bom                  BillOfMaterials                 @relation(fields: [bomId], references: [id])
+  warehouse            Warehouse                       @relation(fields: [warehouseId], references: [id])
+  materialConsumptions ProductionMaterialConsumption[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@map("mfg_production_orders")
+}
+
+model ProductionMaterialConsumption {
+  id                  String   @id @default(uuid()) @db.Uuid
+  productionOrderId   String   @db.Uuid
+  productId           String   @db.Uuid
+  plannedQuantity     Decimal  @db.Decimal(18, 4)
+  consumedQuantity    Decimal  @default(0) @db.Decimal(18, 4)
+  inventoryMovementId String?  @db.Uuid
+  createdAt           DateTime @default(now())
+
+  productionOrder ProductionOrder @relation(fields: [productionOrderId], references: [id], onDelete: Cascade)
+  product         Product         @relation(fields: [productId], references: [id])
+
+  @@index([productionOrderId])
+  @@map("mfg_production_material_consumption")
+}
+
+// ─── Inventory: Goods Receipt Notes & Dispatch Notes ───────────────
+// Today "receiving" is only PurchaseOrderLine.receivedQty + a single
+// PurchaseOrder.receivedAt timestamp, and there is no sales-side
+// dispatch tracking at all. These add real header/line documents with
+// partial-receipt/partial-dispatch history; purchaseOrderId/
+// salesInvoiceId are optional so a GRN or DispatchNote can also stand
+// alone (ad-hoc receipt, internal transfer, etc). Multi-stage
+// movement approval is NOT a new table - call the existing
+// ApprovalsService.submitForApproval with sourceModule: 'inventory',
+// sourceType: 'GoodsReceiptNote' | 'DispatchNote', sourceId: this
+// record's id, exactly like every other approvable document in this
+// schema.
+
+enum GoodsReceiptStatus {
+  draft
+  posted
+}
+
+enum DispatchNoteStatus {
+  draft
+  posted
+}
+
+model GoodsReceiptNote {
+  id              String             @id @default(uuid()) @db.Uuid
+  tenantId        String             @db.Uuid
+  branchId        String?            @db.Uuid
+  warehouseId     String             @db.Uuid
+  purchaseOrderId String?            @db.Uuid
+  number          String
+  status          GoodsReceiptStatus @default(draft)
+  receivedDate    DateTime           @default(now())
+  receivedById    String?            @db.Uuid
+  notes           String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  warehouse     Warehouse          @relation(fields: [warehouseId], references: [id])
+  purchaseOrder PurchaseOrder?     @relation(fields: [purchaseOrderId], references: [id])
+  lines         GoodsReceiptLine[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@map("inv_goods_receipt_notes")
+}
+
+model GoodsReceiptLine {
+  id                  String   @id @default(uuid()) @db.Uuid
+  grnId               String   @db.Uuid
+  productId           String   @db.Uuid
+  purchaseOrderLineId String?  @db.Uuid
+  orderedQuantity     Decimal? @db.Decimal(18, 4)
+  receivedQuantity    Decimal  @db.Decimal(18, 4)
+  rejectedQuantity    Decimal  @default(0) @db.Decimal(18, 4)
+  unitCost            Decimal  @default(0) @db.Decimal(18, 4)
+  inventoryMovementId String?  @db.Uuid
+  notes               String?
+
+  grn     GoodsReceiptNote @relation(fields: [grnId], references: [id], onDelete: Cascade)
+  product Product          @relation(fields: [productId], references: [id])
+
+  @@index([grnId])
+  @@map("inv_goods_receipt_lines")
+}
+
+model DispatchNote {
+  id              String             @id @default(uuid()) @db.Uuid
+  tenantId        String             @db.Uuid
+  branchId        String?            @db.Uuid
+  warehouseId     String             @db.Uuid
+  salesInvoiceId  String?            @db.Uuid
+  number          String
+  status          DispatchNoteStatus @default(draft)
+  dispatchDate    DateTime           @default(now())
+  dispatchedById  String?            @db.Uuid
+  deliveryAddress String?
+  notes           String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  warehouse    Warehouse          @relation(fields: [warehouseId], references: [id])
+  salesInvoice SalesInvoice?      @relation(fields: [salesInvoiceId], references: [id])
+  lines        DispatchNoteLine[]
+
+  @@unique([tenantId, number])
+  @@index([tenantId, status])
+  @@map("inv_dispatch_notes")
+}
+
+model DispatchNoteLine {
+  id                  String   @id @default(uuid()) @db.Uuid
+  dispatchNoteId      String   @db.Uuid
+  productId           String   @db.Uuid
+  salesInvoiceLineId  String?  @db.Uuid
+  orderedQuantity     Decimal? @db.Decimal(18, 4)
+  dispatchedQuantity  Decimal  @db.Decimal(18, 4)
+  inventoryMovementId String?  @db.Uuid
+  notes               String?
+
+  dispatchNote DispatchNote @relation(fields: [dispatchNoteId], references: [id], onDelete: Cascade)
+  product      Product      @relation(fields: [productId], references: [id])
+
+  @@index([dispatchNoteId])
+  @@map("inv_dispatch_note_lines")
 }
